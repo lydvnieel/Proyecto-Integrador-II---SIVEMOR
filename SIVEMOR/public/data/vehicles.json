@@ -1,0 +1,20 @@
+[
+  {
+    "placa": "AB-123-CD",
+    "serie": "XYZ987654321",
+    "cedis": "Monterrey Norte",
+    "region": "Norte"
+  },
+  {
+    "placa": "XY-987-ZZ",
+    "serie": "ABC123456789",
+    "cedis": "Guadalajara Sur",
+    "region": "Bajío"
+  },
+  {
+    "placa": "MN-456-OP",
+    "serie": "DEF456789123",
+    "cedis": "CDMX Centro",
+    "region": "Centro"
+  }
+]

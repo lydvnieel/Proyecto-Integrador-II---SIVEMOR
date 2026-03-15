@@ -1,16 +1,16 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import Login from "../pages/Login.jsx";
-import Dashboard from "../pages/Dashboard.jsx";
-import Vehiculos from "../pages/Vehiculos.jsx";
-import Verificaciones from "../pages/Verificaciones.jsx";
-import Notas from "../pages/Notas.jsx";
-import Verificentros from "../pages/Verificentros.jsx";
-import Usuarios from "../pages/Usuarios.jsx";
-import Clientes from "../pages/Clientes.jsx";
-import Reportes from "../pages/Reportes.jsx";
-import Cedis from "../pages/Cedis.jsx";
-import Transacciones from "../pages/Transacciones.jsx";
-import Pedidos from "../pages/Pedidos.jsx";
+import Login from "../modules/login/Login.jsx";
+import Dashboard from "../modules/dashboard/Dashboard.jsx";
+import Vehiculos from "../modules/vehiculos/Vehiculos.jsx";
+import Verificaciones from "../modules/verificaciones/Verificaciones.jsx";
+import Notas from "../modules/notas/Notas.jsx";
+import Verificentros from "../modules/verificentros/Verificentros.jsx";
+import Usuarios from "../modules/usuarios/Usuarios.jsx";
+import Clientes from "../modules/clientes/Clientes.jsx";
+import Reportes from "../modules/reportes/Reportes.jsx";
+import Cedis from "../modules/cedis/Cedis.jsx";
+import Transacciones from "../modules/transacciones/Transacciones.jsx";
+import Pedidos from "../modules/pedidos/Pedidos.jsx";
 
 function AppRouter() {
   return (
