@@ -1,4 +1,4 @@
-import AdminLayout from "../components/layout/AdminLayout";
+import Admin from  "../../components/Admin"
 
 function Pedidos() {
   const rows = [
@@ -14,7 +14,7 @@ function Pedidos() {
   };
 
   return (
-    <AdminLayout>
+    <Admin>
       <div className="page-header">
         <div>
           <h2 className="page-heading">Gestión de Pedidos</h2>
@@ -94,7 +94,7 @@ function Pedidos() {
           </div>
         </div>
       </div>
-    </AdminLayout>
+    </Admin>
   );
 }
 

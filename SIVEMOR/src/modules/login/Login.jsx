@@ -1,5 +1,4 @@
 import { useNavigate } from "react-router-dom";
-import "../styles/Global.css";
 
 function Login() {
   const navigate = useNavigate();
@@ -13,6 +12,7 @@ function Login() {
     <div className="login-container">
       <div className="login-card">
         <div className="text-center mb-4">
+          <img src="/img/logo-vereficentro-2.jpg" alt="" width={114} height={74} />
           <h3 className="fw-bold mt-2">SIVEMOR</h3>
           <p className="text-muted small">Sistema de Verificación Morelos</p>
         </div>

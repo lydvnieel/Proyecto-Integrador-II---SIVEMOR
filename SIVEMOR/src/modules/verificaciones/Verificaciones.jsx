@@ -1,43 +1,31 @@
-import AdminLayout from "../components/layout/AdminLayout";
+import Admin from  "../../components/Admin"
 
-function Vehiculos() {
+function Verificaciones() {
   const rows = [
-    ["AB-123-CD", "XYZ987654321", "Monterrey Norte", "Norte"],
-    ["XY-987-ZZ", "ABC123456789", "Guadalajara Sur", "Bajío"],
-    ["MN-456-OP", "DEF456789123", "CDMX Centro", "Centro"],
+    ["Juan Pérez", "Humo", "Vanessa Tabado", "Luis Castro"],
+    ["María López", "Logística Humo", "Julian Tabado", "Christian Fuenzalida"],
   ];
 
-  const getRegionClass = (region) => {
-    if (region === "Norte") return "status-neutral";
-    if (region === "Bajío") return "status-neutral";
-    if (region === "Centro") return "status-neutral";
-    return "status-blue";
-  };
-
   return (
-    <AdminLayout>
+    <Admin>
       <div className="page-header">
         <div>
-          <h2 className="page-heading">Gestión de Vehículos</h2>
-          <p className="page-title">Administración y control de parque vehicular</p>
+          <h2 className="page-heading">Resumen de Costos</h2>
         </div>
 
-        <button className="primary-btn">
-          <i className="bi bi-plus-lg"></i>
-          Nuevo Vehículo
-        </button>
+        <button className="outline-btn">Volver</button>
       </div>
 
       <div className="panel-card">
         <div className="toolbar-row">
           <div className="search-box">
             <i className="bi bi-search"></i>
-            <input type="text" placeholder="Buscar por placa o serie..." />
+            <input type="text" placeholder="Buscar por cliente, placa, folio..." />
           </div>
 
           <button className="outline-btn">
             <i className="bi bi-funnel"></i>
-            Filtros
+            Filtros Avanzados
           </button>
         </div>
 
@@ -46,10 +34,10 @@ function Vehiculos() {
             <thead>
               <tr>
                 <th className="checkbox-cell"><input type="checkbox" /></th>
-                <th>PLACA</th>
-                <th>SERIE</th>
-                <th>CEDIS</th>
-                <th>REGIÓN</th>
+                <th>CLIENTE</th>
+                <th>MATERIA</th>
+                <th>ENCARGADO</th>
+                <th>ATIENDE Y COBRA</th>
                 <th>ACCIONES</th>
               </tr>
             </thead>
@@ -60,11 +48,7 @@ function Vehiculos() {
                   <td>{row[0]}</td>
                   <td>{row[1]}</td>
                   <td>{row[2]}</td>
-                  <td>
-                    <span className={`status-pill ${getRegionClass(row[3])}`}>
-                      {row[3]}
-                    </span>
-                  </td>
+                  <td>{row[3]}</td>
                   <td>
                     <div className="action-icons">
                       <i className="bi bi-pencil-square edit"></i>
@@ -76,9 +60,17 @@ function Vehiculos() {
             </tbody>
           </table>
         </div>
+
+        <div className="table-footer">
+          <span>Mostrando 2 registros</span>
+          <div className="pagination-mini">
+            <button disabled>Anterior</button>
+            <button>Siguiente</button>
+          </div>
+        </div>
       </div>
-    </AdminLayout>
+    </Admin>
   );
 }
 
-export default Vehiculos;
+export default Verificaciones;

@@ -1,4 +1,4 @@
-import AdminLayout from "../components/layout/AdminLayout";
+import Admin from  "../../components/Admin"
 
 function Notas() {
   const notas = [
@@ -31,7 +31,7 @@ function Notas() {
   ];
 
   return (
-    <AdminLayout>
+    <Admin>
       <div className="page-header">
         <div>
           <h2 className="page-heading">Resumen de Notas</h2>
@@ -86,7 +86,7 @@ function Notas() {
           </table>
         </div>
       </div>
-    </AdminLayout>
+    </Admin>
   );
 }
 

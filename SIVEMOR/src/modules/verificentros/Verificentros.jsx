@@ -1,4 +1,4 @@
-import AdminLayout from "../components/layout/AdminLayout";
+import Admin from  "../../components/Admin"
 
 function Verificentros() {
   const rows = [
@@ -8,7 +8,7 @@ function Verificentros() {
   ];
 
   return (
-    <AdminLayout>
+    <Admin>
       <div className="page-header">
         <div>
           <h2 className="page-heading">Gestión de Verificentros</h2>
@@ -84,7 +84,7 @@ function Verificentros() {
           </div>
         </div>
       </div>
-    </AdminLayout>
+    </Admin>
   );
 }
 

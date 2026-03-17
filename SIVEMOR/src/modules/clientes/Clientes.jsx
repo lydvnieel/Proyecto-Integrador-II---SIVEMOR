@@ -1,23 +1,24 @@
-import AdminLayout from "../components/layout/AdminLayout";
+import Admin from  "../../components/Admin"
 
-function Cedis() {
+function Clientes() {
   const rows = [
-    ["CEDIS Monterrey Norte", "Av. Constitución 1234, Monterrey, N.L.", "Carlos Méndez", "carlos.mendez@empresa.com", "81-1234-5678"],
-    ["CEDIS Guadalajara Sur", "Periférico Sur 5678, Guadalajara, JAL.", "María González", "maria.gonzalez@empresa.com", "33-2345-6789"],
-    ["CEDIS CDMX Centro", "Calzada Ignacio Zaragoza 9876, CDMX", "Roberto Silva", "roberto.silva@empresa.com", "55-3456-7890"],
+    ["Transportes del Norte SA de CV", "contacto@transportesnorte.com.mx", "81-1234-5678", "María García López"],
+    ["Logística Occidente SC", "info@logisticaoccidente.com", "33-2345-6789", "Carlos Méndez Ruiz"],
+    ["Distribuidora Central SA", "ventas@distribuidoracentral.mx", "55-3456-7890", "Roberto Silva Hernández"],
+    ["Grupo Transportista del Bajío SA de CV", "admin@grupotransportistabajio.com", "44-4567-8901", "Ana Martínez Torres"],
   ];
 
   return (
-    <AdminLayout>
+    <Admin>
       <div className="page-header">
         <div>
-          <h2 className="page-heading">Gestión de CEDIS</h2>
-          <p className="page-title">Centros de Distribución por región y cliente</p>
+          <h2 className="page-heading">Gestión de Clientes</h2>
+          <p className="page-title">Administración de empresas y contactos</p>
         </div>
 
         <button className="primary-btn">
           <i className="bi bi-plus-lg"></i>
-          Nuevo CEDIS
+          Nuevo Cliente
         </button>
       </div>
 
@@ -25,7 +26,7 @@ function Cedis() {
         <div className="toolbar-row">
           <div className="search-box">
             <i className="bi bi-search"></i>
-            <input type="text" placeholder="Buscar por nombre, dirección, encargado..." />
+            <input type="text" placeholder="Buscar por razón social, email, gestor..." />
           </div>
 
           <button className="outline-btn">
@@ -39,23 +40,21 @@ function Cedis() {
             <thead>
               <tr>
                 <th className="checkbox-cell"><input type="checkbox" /></th>
-                <th>NOMBRE</th>
-                <th>DIRECCIÓN</th>
-                <th>ENCARGADO</th>
+                <th>RAZÓN SOCIAL</th>
                 <th>CORREO</th>
                 <th>TELÉFONO</th>
+                <th>GESTOR</th>
                 <th>ACCIONES</th>
               </tr>
             </thead>
             <tbody>
-              {rows.map((row, index) => (
+              {rows.map((item, index) => (
                 <tr key={index}>
                   <td className="checkbox-cell"><input type="checkbox" /></td>
-                  <td><i className="bi bi-file-earmark-text me-2 text-primary"></i>{row[0]}</td>
-                  <td><i className="bi bi-geo-alt me-2"></i>{row[1]}</td>
-                  <td><i className="bi bi-person me-2"></i>{row[2]}</td>
-                  <td><i className="bi bi-envelope me-2"></i>{row[3]}</td>
-                  <td><i className="bi bi-telephone me-2"></i>{row[4]}</td>
+                  <td><i className="bi bi-building me-2 text-primary"></i>{item[0]}</td>
+                  <td><i className="bi bi-envelope me-2"></i>{item[1]}</td>
+                  <td><i className="bi bi-telephone me-2"></i>{item[2]}</td>
+                  <td><i className="bi bi-person me-2"></i>{item[3]}</td>
                   <td>
                     <div className="action-icons">
                       <i className="bi bi-pencil-square edit"></i>
@@ -69,11 +68,11 @@ function Cedis() {
         </div>
 
         <div className="table-footer">
-          <span>Mostrando 3 CEDIS activos</span>
+          <span>Mostrando 4 clientes activos</span>
         </div>
       </div>
-    </AdminLayout>
+    </Admin>
   );
 }
 
-export default Cedis;
+export default Clientes;

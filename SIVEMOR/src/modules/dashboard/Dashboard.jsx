@@ -1,4 +1,4 @@
-import AdminLayout from "../components/layout/AdminLayout";
+import Admin from  "../../components/Admin"
 
 function Dashboard() {
   const metricasTop = [
@@ -63,7 +63,7 @@ function Dashboard() {
   const maxValor = 600;
 
   return (
-    <AdminLayout>
+    <Admin>
       <div className="page-header">
         <div>
           <h2 className="page-heading">Dashboard General</h2>
@@ -152,7 +152,7 @@ function Dashboard() {
           </div>
         </div>
       </div>
-    </AdminLayout>
+    </Admin>
   );
 }
 

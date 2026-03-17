@@ -1,4 +1,4 @@
-import AdminLayout from "../components/layout/AdminLayout";
+import Admin from  "../../components/Admin"
 
 function Transacciones() {
   const rows = [
@@ -8,7 +8,7 @@ function Transacciones() {
   ];
 
   return (
-    <AdminLayout>
+    <Admin>
       <div className="page-header">
         <div>
           <h2 className="page-heading">Gestión de Transacciones</h2>
@@ -90,7 +90,7 @@ function Transacciones() {
           </div>
         </div>
       </div>
-    </AdminLayout>
+    </Admin>
   );
 }
 
