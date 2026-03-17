@@ -1,16 +1,32 @@
-import Admin from "../../components/Admin";
+import Admin from "../../components/Admin"
 import CreateVehicleModal from "../vehiculos/components/CreateVehicleModal";
+import DeleteVehicleModal from "../vehiculos/components/DeleteVehicleModal";
+import DeleteAllModal from "../vehiculos/components/DeleteAllModal";
+import EditVehicleModal from "../vehiculos/components/EditVehicleModal";
+import SuccessfulUpdateModal from "../vehiculos/components/SuccessfulUpdateModal";
+import SuccessfulCreationModal from "../vehiculos/components/SuccessfulCreationModal";
 import VehicleRow from "../vehiculos/components/VehicleRow";
-import vehicles from "../../../public/data/vehicles.json";
-import { useState } from "react";
+import vehiclesData from "../../data/vehicles.json";
+import { useEffect, useState } from "react";
 
 export default function Vehiculos() {
-  // Estado para guardar qué filas están seleccionadas
-  const [selectedRows, setSelectedRows] = useState({});
+  const [vehicles, setVehicles] = useState(() => {
+    const savedVehicles = localStorage.getItem("vehicles");
+    return savedVehicles ? JSON.parse(savedVehicles) : vehiclesData;
+  });
 
-  // Función para manejar "Seleccionar todo"
+  const [selectedRows, setSelectedRows] = useState({});
+  const [currentVehicle, setCurrentVehicle] = useState(null);
+  const [currentIndex, setCurrentIndex] = useState(null);
+
+  useEffect(() => {
+    localStorage.setItem("vehicles", JSON.stringify(vehicles));
+  }, [vehicles]);
+
   const handleSelectAll = () => {
-    const allSelected = vehicles.every((v, i) => selectedRows[i]);
+    const allSelected =
+      vehicles.length > 0 && vehicles.every((v, i) => selectedRows[i]);
+
     const newSelected = {};
 
     vehicles.forEach((v, i) => {
@@ -20,7 +36,6 @@ export default function Vehiculos() {
     setSelectedRows(newSelected);
   };
 
-  // Función para manejar selección individual
   const handleSelectRow = (index) => {
     setSelectedRows((prev) => ({
       ...prev,
@@ -28,16 +43,67 @@ export default function Vehiculos() {
     }));
   };
 
-  // Cancelar selección
   const handleCancelSelection = () => {
     setSelectedRows({});
   };
 
-  // Determinar si el checkbox del encabezado debe estar marcado
+  const handleOpenDeleteOne = (vehicle, index) => {
+    setCurrentVehicle(vehicle);
+    setCurrentIndex(index);
+  };
+
+  const handleOpenEdit = (vehicle, index) => {
+    setCurrentVehicle(vehicle);
+    setCurrentIndex(index);
+  };
+
+  const handleDeleteOne = () => {
+    if (currentIndex === null) return;
+
+    const updatedVehicles = vehicles.filter((_, index) => index !== currentIndex);
+    setVehicles(updatedVehicles);
+
+    const updatedSelectedRows = {};
+    updatedVehicles.forEach((_, newIndex) => {
+      const oldIndex = newIndex >= currentIndex ? newIndex + 1 : newIndex;
+      if (selectedRows[oldIndex]) {
+        updatedSelectedRows[newIndex] = true;
+      }
+    });
+
+    setSelectedRows(updatedSelectedRows);
+    setCurrentVehicle(null);
+    setCurrentIndex(null);
+  };
+
+  const handleDeleteSelected = () => {
+    const updatedVehicles = vehicles.filter((_, index) => !selectedRows[index]);
+    setVehicles(updatedVehicles);
+    setSelectedRows({});
+    setCurrentVehicle(null);
+    setCurrentIndex(null);
+  };
+
+  const handleUpdateVehicle = (updatedVehicle) => {
+    if (currentIndex === null) return;
+
+    const updatedVehicles = [...vehicles];
+    updatedVehicles[currentIndex] = {
+      ...updatedVehicles[currentIndex],
+      ...updatedVehicle,
+    };
+
+    setVehicles(updatedVehicles);
+    setCurrentVehicle(updatedVehicles[currentIndex]);
+  };
+
+  const handleCreateVehicle = (newVehicle) => {
+    setVehicles((prev) => [...prev, newVehicle]);
+  };
+
   const isAllSelected =
     vehicles.length > 0 && vehicles.every((v, i) => selectedRows[i]);
 
-  // Contar filas seleccionadas
   const selectedCount = Object.values(selectedRows).filter(Boolean).length;
 
   return (
@@ -51,37 +117,48 @@ export default function Vehiculos() {
         </div>
 
         <div className={selectedCount > 0 ? "selection-toolbar" : "d-flex gap-2"}>
-  {selectedCount === 0 ? (
-    <button
-      className="primary-btn"
-      data-bs-toggle="modal"
-      data-bs-target="#createVehicleModal"
-    >
-      <i className="bi bi-plus-lg"></i>&nbsp;Nuevo Vehículo
-    </button>
-  ) : (
-    <>
-      {isAllSelected && (
-        <div className="selection-info">
-          <i className="bi bi-info-circle"></i>
-          ¡Seleccionaste todo!
+          {selectedCount === 0 ? (
+            <button
+              className="primary-btn"
+              data-bs-toggle="modal"
+              data-bs-target="#createVehicleModal"
+              type="button"
+            >
+              <i className="bi bi-plus-lg"></i>&nbsp;Nuevo Vehículo
+            </button>
+          ) : (
+            <>
+              {isAllSelected && (
+                <div className="selection-info">
+                  <i className="bi bi-info-circle"></i>
+                  ¡Seleccionaste todo!
+                </div>
+              )}
+
+              <button
+                className="btn btn-danger"
+                data-bs-toggle="modal"
+                data-bs-target="#deleteAllVehicleModal"
+                type="button"
+              >
+                <i className="bi bi-trash"></i>
+                {selectedCount === vehicles.length
+                  ? " ¡BORRAR TODO!"
+                  : selectedCount === 1
+                  ? " Borrar seleccionado"
+                  : ` Borrar (${selectedCount}) seleccionados`}
+              </button>
+
+              <button
+                className="btn btn-outline-secondary"
+                onClick={handleCancelSelection}
+                type="button"
+              >
+                <i className="bi bi-x-lg"></i>&nbsp;Cancelar
+              </button>
+            </>
+          )}
         </div>
-      )}
-
-      <button className="btn btn-danger" data-bs-toggle = "modal" data-bs-target = "#deleteAllVehicleModal">
-        <i className="bi bi-trash"></i>
-        {selectedCount === vehicles.length
-          ? "¡BORRAR TODO!"
-          : selectedCount === 1
-          ? "Borrar seleccionado"
-          : `Borrar (${selectedCount}) seleccionados`}
-      </button>
-
-      <button className="btn btn-outline-secondary" onClick={handleCancelSelection}>
-        <i className="bi bi-x-lg"></i>&nbsp; Cancelar </button>
-    </>
-  )}
-</div>
       </div>
 
       <div className="panel-card">
@@ -91,7 +168,7 @@ export default function Vehiculos() {
             <input type="text" placeholder="Buscar por placa o serie..." />
           </div>
 
-          <button className="outline-btn">
+          <button className="outline-btn" type="button">
             <i className="bi bi-funnel"></i> Filtros
           </button>
         </div>
@@ -114,6 +191,7 @@ export default function Vehiculos() {
                 <th>ACCIONES</th>
               </tr>
             </thead>
+
             <tbody>
               {vehicles.map((vehicle, index) => (
                 <VehicleRow
@@ -122,6 +200,8 @@ export default function Vehiculos() {
                   index={index}
                   isSelected={!!selectedRows[index]}
                   onSelect={() => handleSelectRow(index)}
+                  onDeleteClick={() => handleOpenDeleteOne(vehicle, index)}
+                  onEditClick={() => handleOpenEdit(vehicle, index)}
                 />
               ))}
             </tbody>
@@ -129,7 +209,25 @@ export default function Vehiculos() {
         </div>
       </div>
 
-      <CreateVehicleModal />
+      <CreateVehicleModal onSave={handleCreateVehicle} />
+
+      <DeleteAllModal
+        selectedCount={selectedCount}
+        onConfirmDelete={handleDeleteSelected}
+      />
+
+      <DeleteVehicleModal
+        vehicle={currentVehicle}
+        onConfirmDelete={handleDeleteOne}
+      />
+
+      <EditVehicleModal
+        vehicle={currentVehicle}
+        onSave={handleUpdateVehicle}
+      />
+
+      <SuccessfulUpdateModal />
+      <SuccessfulCreationModal />
     </Admin>
   );
 }

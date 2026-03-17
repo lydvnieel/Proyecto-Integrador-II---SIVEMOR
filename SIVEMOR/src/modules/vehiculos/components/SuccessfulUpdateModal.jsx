@@ -13,7 +13,7 @@ export default function ActualizacionVehiculoExitosaModal({selectedCount}){
 
                     
                         <div className="modal-footer text-end mt-3">
-                                <button className = "btn btn-primary btn-lg mt-3">
+                                <button className = "btn btn-primary btn-lg mt-3" data-bs-dismiss = "modal">
                                 Continuar
                                 </button>
                         </div>
