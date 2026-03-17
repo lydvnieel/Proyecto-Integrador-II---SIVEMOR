@@ -1,30 +1,40 @@
-export default function VehicleRow({ vehicle }) {
+import EliminarVehiculoModal from "../components/DeleteVehicleModal";
+import CrearVehiculoModal from "./CreateVehicleModal";
+import EliminarTodoVehiculoModal from "./DeleteAllModal";
+import EditarVehiculoModal from "./EditVehicleModal";
 
-    if(!vehicle)
-        return null;
+
+export default function VehicleRow({ vehicle, index, isSelected, onSelect }) {
+    if (!vehicle) return null;
 
     return (
     <tr>
     <td>
-        <input type="checkbox" className="form-check-input" />
-    </td>
-    <td>{vehicle.placa}</td>
-    <td>{vehicle.serie}</td>
-    <td>{vehicle.cedis}</td>
-    <td>
+        <input type="checkbox" checked={isSelected} onChange={onSelect} className="form-check-input"
+        />
+        </td>
+        <td>{vehicle.placa}</td>
+        <td>{vehicle.serie}</td>
+        <td>{vehicle.cedis}</td>
+        <td>
         <span className="badge rounded-pill text-dark bg-light border">
         {vehicle.region}
         </span>
     </td>
-    <td className="text-center">
-        <button className="btn btn-link text-secondary p-0 me-3">
+    <td className="text-start">
+        <button className="btn btn-link text-secondary p-0 me-3" data-bs-toggle = "modal" data-bs-target = "#editVehicleModal">
         <i className="bi bi-pencil-square"></i>
         </button>
 
-        <button className="btn btn-link text-danger p-0">
+        <button className="btn btn-link text-danger p-0" data-bs-toggle = "modal" data-bs-target = "#deleteVehicleModal">
         <i className="bi bi-trash"></i>
         </button>
     </td>
+    {/*MODALES  */}
+    <EliminarVehiculoModal />
+    <EditarVehiculoModal />
+    <EliminarTodoVehiculoModal />
     </tr>
+
 );
 }

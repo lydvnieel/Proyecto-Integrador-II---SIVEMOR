@@ -10,13 +10,13 @@ export default function CrearVehiculoModal(){
                             <div className="row mb-3">
                                 <div className="col">
                         <label><small>Placa</small></label>
-                        <input type="text" className="form-control" />
+                        <input type="text" className="form-control" placeholder="Ej. AB-123-CD" />
                         </div>
                     </div>
                     <div className="row mb-3">
                         <div className="col">
                         <label><small>Serie</small></label>
-                        <input type="text" className="form-control" />
+                        <input type="text" className="form-control" placeholder="Ej. ABC123456789" />
                         </div>
                     </div>
                     <div className="row mb-3">
@@ -38,7 +38,7 @@ export default function CrearVehiculoModal(){
                     <div className="row mb-3">
                         <div className="col">
                         <label><small>Campo</small></label>
-                        <input type="text" className="form-control" />
+                        <input type="text" className="form-control" placeholder="Ej. Carga General"/>
                         </div>
                     </div>
                         </form>
@@ -49,13 +49,16 @@ export default function CrearVehiculoModal(){
                                 Cancelar
                                 </button>
 
-                                <button className = "btn btn-primary mt-3">
+                                <button className = "btn btn-primary mt-3" data-bs-toggle = "modal" data-bs-target = "#successfulCreateVehicleModal">
                                 &nbsp; Crear vehiculo
                                 </button>
                         </div>
                     </div>
                 </div>
             </div>
+            {/*MODALES*/}
+            <CrearVehiculoModal />
+
         </div>
     )
 }
