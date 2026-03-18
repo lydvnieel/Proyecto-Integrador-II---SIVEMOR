@@ -1,4 +1,4 @@
-export default function VehicleRow({vehicle, isSelected, onSelect, onDeleteClick, onEditClick,}) {
+export default function VehicleRow({vehicle, isSelected, onSelect, onDeleteClick, onEditClick,index }) {
     if (!vehicle) return null;
 
 return (

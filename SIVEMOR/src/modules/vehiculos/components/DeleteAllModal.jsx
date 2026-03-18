@@ -1,10 +1,10 @@
-export default function DeleteVehicleModal({ vehicle, onConfirmDelete }) {
+export default function DeleteAllModal({ totalCount, onConfirmDelete }) {
   return (
     <div
       className="modal fade"
-      id="deleteVehicleModal"
+      id="deleteAllVehicleModal"
       tabIndex={-1}
-      aria-labelledby="deleteVehicleModalLabel"
+      aria-labelledby="deleteAllVehicleModalLabel"
       aria-hidden="true"
       data-bs-backdrop="static"
       data-bs-keyboard="false"
@@ -12,14 +12,15 @@ export default function DeleteVehicleModal({ vehicle, onConfirmDelete }) {
       <div className="modal-dialog modal-dialog-centered">
         <div className="modal-content border-0 rounded-3">
           <div className="modal-header">
-            <h4 className="modal-title" id="deleteVehicleModalLabel">
+            <h4 className="modal-title" id="deleteAllVehicleModalLabel">
               <strong>Confirmar eliminación</strong>
             </h4>
           </div>
 
           <div className="modal-body">
-            ¿Estás seguro de que deseas eliminar el vehículo
-            {vehicle?.placa ? ` (${vehicle.placa})` : ""}? Esta acción no se puede deshacer.
+            ¿Estás seguro de que deseas eliminar todos los vehículos? Esta acción no se puede deshacer.
+            <br />
+            <span className="text-danger">Total a eliminar: {totalCount}</span>
           </div>
 
           <div className="modal-footer text-end mt-3">
@@ -38,7 +39,7 @@ export default function DeleteVehicleModal({ vehicle, onConfirmDelete }) {
               data-bs-dismiss="modal"
               onClick={onConfirmDelete}
             >
-              Eliminar
+              Eliminar TODO
             </button>
           </div>
         </div>

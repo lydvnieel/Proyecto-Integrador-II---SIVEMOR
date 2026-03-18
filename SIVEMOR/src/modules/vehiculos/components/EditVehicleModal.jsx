@@ -8,15 +8,24 @@ export default function EditVehicleModal({ vehicle, onSave }) {
     tipo: "",
   });
 
+  const [originalData, setOriginalData] = useState({
+    placa: "",
+    serie: "",
+    tipo: "",
+  });
+
   const [error, setError] = useState("");
 
   useEffect(() => {
     if (vehicle) {
-      setFormData({
+      const data = {
         placa: vehicle.placa || "",
         serie: vehicle.serie || "",
         tipo: vehicle.tipo || "",
-      });
+      };
+
+      setFormData(data);
+      setOriginalData(data);
       setError("");
     }
   }, [vehicle]);
@@ -30,6 +39,14 @@ export default function EditVehicleModal({ vehicle, onSave }) {
     }));
   };
 
+  const isSameData = () => {
+    return (
+      formData.placa.trim() === originalData.placa.trim() &&
+      formData.serie.trim() === originalData.serie.trim() &&
+      formData.tipo.trim() === originalData.tipo.trim()
+    );
+  };
+
   const handleSave = () => {
     if (
       !formData.placa.trim() ||
@@ -37,6 +54,11 @@ export default function EditVehicleModal({ vehicle, onSave }) {
       !formData.tipo.trim()
     ) {
       setError("Faltan campos por llenar");
+      return;
+    }
+
+    if (isSameData()) {
+      setError("No se realizaron cambios en el vehículo");
       return;
     }
 
