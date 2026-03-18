@@ -1218,3 +1218,59 @@ a {
   margin-right: 8px;
   cursor: pointer;
 }
+.selection-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: linear-gradient(90deg, #bedbff 0%, #ffffff 100%);
+  border: 1px solid #bedbff;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.08);
+}
+
+.selection-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid #bedbff;
+  color: #0084d1;
+  font-weight: 600;
+}
+
+.selection-delete {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 18px;
+  border: none;
+  border-radius: 12px;
+  background: #d94a05;
+  color: #fff;
+  font-weight: 600;
+}
+
+.selection-cancel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid #d9e2ec;
+  color: #364153;
+  font-weight: 500;
+}
+
+.icon-btn {
+  border: none;
+  background: transparent;
+  margin-right: 8px;
+  cursor: pointer;
+}
