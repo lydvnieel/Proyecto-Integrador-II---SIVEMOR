@@ -108,126 +108,99 @@ export default function Vehiculos() {
 
   return (
     <Admin>
-      <div className="page-header">
+    <div className="page-header">
         <div>
-          <h2 className="page-heading">Gestión de Vehículos</h2>
-          <p className="page-title">
-            Administración y control de parque vehicular
-          </p>
+        <h2 className="page-heading">Gestión de Vehículos</h2>
+        <p className="page-title">Administración y control de parque vehicular</p>
         </div>
 
         <div className={selectedCount > 0 ? "selection-toolbar" : "d-flex gap-2"}>
-          {selectedCount === 0 ? (
-            <button
-              className="primary-btn"
-              data-bs-toggle="modal"
-              data-bs-target="#createVehicleModal"
-              type="button"
-            >
-              <i className="bi bi-plus-lg"></i>&nbsp;Nuevo Vehículo
-            </button>
-          ) : (
+        {selectedCount === 0 ? (
+            <button className="primary-btn" data-bs-toggle="modal" data-bs-target="#createVehicleModal"type="button">
+            <i className="bi bi-plus-lg"></i>&nbsp;Nuevo Vehículo</button>
+        ) : (
             <>
-              {isAllSelected && (
+            {isAllSelected && (
                 <div className="selection-info">
-                  <i className="bi bi-info-circle"></i>
-                  ¡Seleccionaste todo!
+                <i className="bi bi-info-circle"></i>
+                ¡Seleccionaste todo!
                 </div>
-              )}
+            )}
 
-              <button
-                className="btn btn-danger"
-                data-bs-toggle="modal"
-                data-bs-target="#deleteAllVehicleModal"
-                type="button"
-              >
+            <button className="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteAllVehicleModal" type="button">
                 <i className="bi bi-trash"></i>
                 {selectedCount === vehicles.length
-                  ? " ¡BORRAR TODO!"
-                  : selectedCount === 1
-                  ? " Borrar seleccionado"
-                  : ` Borrar (${selectedCount}) seleccionados`}
-              </button>
+                ? " ¡BORRAR TODO!"
+                : selectedCount === 1
+                ? " Borrar seleccionado"
+                : ` Borrar (${selectedCount}) seleccionados`}
+            </button>
 
-              <button
-                className="btn btn-outline-secondary"
-                onClick={handleCancelSelection}
-                type="button"
-              >
+            <button className="btn btn-outline-secondary" onClick={handleCancelSelection} type="button">
                 <i className="bi bi-x-lg"></i>&nbsp;Cancelar
-              </button>
+            </button>
             </>
-          )}
+        )}
         </div>
-      </div>
+        </div>
 
-      <div className="panel-card">
+        <div className="panel-card">
         <div className="toolbar-row">
-          <div className="search-box">
+        <div className="search-box">
             <i className="bi bi-search"></i>
             <input type="text" placeholder="Buscar por placa o serie..." />
-          </div>
+        </div>
 
-          <button className="outline-btn" type="button">
-            <i className="bi bi-funnel"></i> Filtros
-          </button>
+        <button className="outline-btn" type="button"> <i className="bi bi-funnel"></i> Filtros</button>
         </div>
 
         <div className="table-shell">
-          <table className="admin-table">
+        <table className="admin-table">
             <thead>
-              <tr>
-                <th className="checkbox-cell">
-                  <input
-                    type="checkbox"
-                    checked={isAllSelected}
-                    onChange={handleSelectAll}
-                  />
-                </th>
+            <tr>
+            <th className="checkbox-cell">
+            <input type="checkbox" checked={isAllSelected} onChange={handleSelectAll}/>
+            </th>
                 <th>PLACA</th>
                 <th>SERIE</th>
                 <th>CEDIS</th>
                 <th>REGIÓN</th>
                 <th>ACCIONES</th>
-              </tr>
+            </tr>
             </thead>
 
             <tbody>
-              {vehicles.map((vehicle, index) => (
-                <VehicleRow
-                  key={index}
-                  vehicle={vehicle}
-                  index={index}
-                  isSelected={!!selectedRows[index]}
-                  onSelect={() => handleSelectRow(index)}
-                  onDeleteClick={() => handleOpenDeleteOne(vehicle, index)}
-                  onEditClick={() => handleOpenEdit(vehicle, index)}
+            {vehicles.map((vehicle, index) => (
+                <VehicleRow key={index} vehicle={vehicle} index={index} isSelected={!!selectedRows[index]}
+                onSelect={() => handleSelectRow(index)}
+                onDeleteClick={() => handleOpenDeleteOne(vehicle, index)}
+                onEditClick={() => handleOpenEdit(vehicle, index)}
                 />
-              ))}
+                ))}
             </tbody>
-          </table>
-        </div>
-      </div>
+        </table>
+    </div>
+    </div>
 
-      <CreateVehicleModal onSave={handleCreateVehicle} />
+    <CreateVehicleModal onSave={handleCreateVehicle} />
 
-      <DeleteAllModal
-        selectedCount={selectedCount}
-        onConfirmDelete={handleDeleteSelected}
-      />
+    <DeleteAllModal
+    selectedCount={selectedCount}
+    onConfirmDelete={handleDeleteSelected}
+    />
 
-      <DeleteVehicleModal
-        vehicle={currentVehicle}
-        onConfirmDelete={handleDeleteOne}
-      />
+    <DeleteVehicleModal
+    vehicle={currentVehicle}
+    onConfirmDelete={handleDeleteOne}
+    />
 
-      <EditVehicleModal
-        vehicle={currentVehicle}
-        onSave={handleUpdateVehicle}
-      />
+    <EditVehicleModal
+    vehicle={currentVehicle}
+    onSave={handleUpdateVehicle}
+    />
 
-      <SuccessfulUpdateModal />
-      <SuccessfulCreationModal />
+    <SuccessfulUpdateModal />
+    <SuccessfulCreationModal />
     </Admin>
-  );
+);
 }

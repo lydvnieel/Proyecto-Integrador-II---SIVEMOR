@@ -901,3 +901,40 @@ a {
     font-size: 1.8rem;
   }
 }
+
+.selection-toolbar {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+
+  padding: 14px 18px;
+  border-radius: 14px;
+
+  background: linear-gradient(
+    90deg,
+    #BEDBFF 0%,
+    #FFFFFF 100%
+  );
+
+  border: 1px solid #BEDBFF;
+
+  box-shadow: 
+    0px 6px 12px rgba(0, 0, 0, 0.08),
+    inset 0px 1px 0px rgba(255,255,255,0.6);
+}
+
+.selection-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  background: #FFFFFF;
+  color: #0084D1;
+
+  padding: 10px 16px;
+  border-radius: 10px;
+
+  border: 1px solid #BEDBFF;
+
+  font-weight: 500;
+}
