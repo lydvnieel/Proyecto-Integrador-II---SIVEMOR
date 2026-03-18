@@ -8,15 +8,24 @@ export default function EditVehicleModal({ vehicle, onSave }) {
     tipo: "",
   });
 
+  const [originalData, setOriginalData] = useState({
+    placa: "",
+    serie: "",
+    tipo: "",
+  });
+
   const [error, setError] = useState("");
 
   useEffect(() => {
     if (vehicle) {
-      setFormData({
+      const vehicleData = {
         placa: vehicle.placa || "",
         serie: vehicle.serie || "",
         tipo: vehicle.tipo || "",
-      });
+      };
+
+      setFormData(vehicleData);
+      setOriginalData(vehicleData);
       setError("");
     }
   }, [vehicle]);
@@ -28,36 +37,56 @@ export default function EditVehicleModal({ vehicle, onSave }) {
       ...prev,
       [name]: value,
     }));
+
+    if (error) {
+      setError("");
+    }
   };
 
   const handleSave = () => {
-    if (
-      !formData.placa.trim() ||
-      !formData.serie.trim() ||
-      !formData.tipo.trim()
-    ) {
+    const cleanedData = {
+      placa: formData.placa.trim(),
+      serie: formData.serie.trim(),
+      tipo: formData.tipo.trim(),
+    };
+
+    if (!cleanedData.placa || !cleanedData.serie || !cleanedData.tipo) {
       setError("Faltan campos por llenar");
       return;
     }
 
+    const noChanges =
+      cleanedData.placa === originalData.placa &&
+      cleanedData.serie === originalData.serie &&
+      cleanedData.tipo === originalData.tipo;
+
+    if (noChanges) {
+      setError("No hiciste ningún cambio");
+      return;
+    }
+
     setError("");
-    onSave(formData);
+    onSave(cleanedData);
 
     const editModalElement = document.getElementById("editVehicleModal");
+    const successModalElement = document.getElementById(
+      "successfulUpdateVehicleModal"
+    );
+
+    if (!editModalElement || !successModalElement) return;
+
     const editModalInstance = Modal.getOrCreateInstance(editModalElement);
-    editModalInstance.hide();
+    const successModalInstance = Modal.getOrCreateInstance(successModalElement);
 
-    setTimeout(() => {
-      const successModalElement = document.getElementById(
-        "successfulUpdateVehicleModal"
-      );
-
-      if (successModalElement) {
-        const successModalInstance =
-          Modal.getOrCreateInstance(successModalElement);
+    editModalElement.addEventListener(
+      "hidden.bs.modal",
+      () => {
         successModalInstance.show();
-      }
-    }, 200);
+      },
+      { once: true }
+    );
+
+    editModalInstance.hide();
   };
 
   return (
@@ -86,7 +115,9 @@ export default function EditVehicleModal({ vehicle, onSave }) {
             <form className="col mt-4">
               <div className="row mb-3">
                 <div className="col">
-                  <label><small>Placa</small></label>
+                  <label>
+                    <small>Placa</small>
+                  </label>
                   <input
                     type="text"
                     name="placa"
@@ -100,7 +131,9 @@ export default function EditVehicleModal({ vehicle, onSave }) {
 
               <div className="row mb-3">
                 <div className="col">
-                  <label><small>Serie</small></label>
+                  <label>
+                    <small>Serie</small>
+                  </label>
                   <input
                     type="text"
                     name="serie"
@@ -114,7 +147,9 @@ export default function EditVehicleModal({ vehicle, onSave }) {
 
               <div className="row mb-3">
                 <div className="col">
-                  <label><small>Tipo</small></label>
+                  <label>
+                    <small>Tipo</small>
+                  </label>
                   <input
                     type="text"
                     name="tipo"
