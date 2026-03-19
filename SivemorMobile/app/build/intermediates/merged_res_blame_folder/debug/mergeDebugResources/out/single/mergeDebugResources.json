@@ -1,0 +1,10 @@
+[
+    {
+        "merged": "/Users/itzelescudero/.gradle/daemon/9.0.0/com.sivemor.mobile.app-debug-65:/xml_network_security_config.xml.flat",
+        "source": "/Users/itzelescudero/.gradle/daemon/9.0.0/com.sivemor.mobile.app-main-67:/xml/network_security_config.xml"
+    },
+    {
+        "merged": "com.sivemor.mobile.app-debug-65:/drawable_logo_sivemor.jpg.flat",
+        "source": "com.sivemor.mobile.app-main-67:/drawable/logo_sivemor.jpg"
+    }
+]

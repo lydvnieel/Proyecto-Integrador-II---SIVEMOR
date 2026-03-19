@@ -1,0 +1,19 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.sivemor.mobile.app-mergeDebugResources-63:/values-h550dp-port-v13/values-h550dp-port-v13.xml",
+            "map": [
+                {
+                    "source": "/Users/itzelescudero/.gradle/caches/9.0.0/transforms/2e9992603a1f56be63d03b994d67a322/transformed/material-1.12.0/res/values-h550dp-port-v13/values-h550dp-port-v13.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "64",
+                        "endOffsets": "115"
+                    }
+                }
+            ]
+        }
+    ]
+}
