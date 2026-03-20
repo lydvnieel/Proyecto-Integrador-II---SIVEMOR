@@ -1,36 +1,229 @@
-import Admin from  "../../components/Admin"
+import { useState } from "react";
+import Admin from "../../components/Admin";
+import TransactionRow from "./components/TransactionRow";
+import CreateTransactionModal from "./components/CreateTransactionModal";
+import EditTransactionModal from "./components/EditTransactionModal";
+import UpdateTransactionSuccessModal from "./components/UpdateTransactionSuccessModal";
+import DeleteTransactionsModal from "./components/DeleteTransactionsModal";
+import MarkPaidTransactionsModal from "./components/MarkPaidTransactionsModal";
 
-function Transacciones() {
-  const rows = [
-    ["N-1001", "TRANSFERENCIA", "$1,200", "BBVA-1234", "F-900", "Sí", "2026-02-15", "C-500", "Carlos Mendoza", "Ana García", "No", "Pago completo verificado"],
-    ["N-1002", "EFECTIVO", "$800", "Santander-8123", "F-901", "No", "2026-02-16", "C-501", "María López", "Juan Pérez", "Sí", "Pendiente de validación"],
-    ["N-1001", "DEPOSITO", "$500", "Santander-5678", "F-902", "Sí", "2026-02-17", "C-500", "Carlos Mendoza", "Ana García", "No", "Segundo pago de la nota N-1001"],
-  ];
+export default function Transacciones() {
+  const [transacciones, setTransacciones] = useState([
+    {
+      id: 1,
+      nota: "N-1001",
+      tipoPago: "TRANSFERENCIA",
+      monto: "$1,200",
+      cuentaDeposito: "BBVA-1234",
+      factura: "F-900",
+      pagado: "Sí",
+      pagadoClass: "status-success",
+      fechaPedido: "2026-02-15",
+      cotizacion: "C-500",
+      reviso: "Carlos Mendoza",
+      atendio: "Ana García",
+      pendiente: "No",
+      pendienteClass: "status-success",
+      comentario: "Pago completo verificado",
+    },
+    {
+      id: 2,
+      nota: "N-1002",
+      tipoPago: "EFECTIVO",
+      monto: "$800",
+      cuentaDeposito: "-",
+      factura: "F-901",
+      pagado: "No",
+      pagadoClass: "status-warning",
+      fechaPedido: "2026-02-16",
+      cotizacion: "C-501",
+      reviso: "María López",
+      atendio: "Juan Pérez",
+      pendiente: "Sí",
+      pendienteClass: "status-warning",
+      comentario: "Pendiente de validación",
+    },
+    {
+      id: 3,
+      nota: "N-1001",
+      tipoPago: "DEPOSITO",
+      monto: "$500",
+      cuentaDeposito: "Santander-5678",
+      factura: "F-902",
+      pagado: "Sí",
+      pagadoClass: "status-success",
+      fechaPedido: "2026-02-17",
+      cotizacion: "C-500",
+      reviso: "Carlos Mendoza",
+      atendio: "Ana García",
+      pendiente: "No",
+      pendienteClass: "status-success",
+      comentario: "Segundo pago de la nota N-1001",
+    },
+  ]);
+
+  const [selectedRows, setSelectedRows] = useState({});
+  const [selectedTransaction, setSelectedTransaction] = useState(null);
+
+  const handleSelectAll = () => {
+    const allSelected = transacciones.every((item) => selectedRows[item.id]);
+    const newSelected = {};
+
+    transacciones.forEach((item) => {
+      newSelected[item.id] = !allSelected;
+    });
+
+    setSelectedRows(newSelected);
+  };
+
+  const handleSelectRow = (id) => {
+    setSelectedRows((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
+  };
+
+  const handleCancelSelection = () => {
+    setSelectedRows({});
+  };
+
+  const handleOpenEdit = (item) => {
+    setSelectedTransaction(item);
+  };
+
+  const handleCreate = (newTransaction) => {
+    setTransacciones((prev) => [
+      ...prev,
+      {
+        ...newTransaction,
+        id: Date.now(),
+      },
+    ]);
+  };
+
+  const handleSaveEdit = (updatedTransaction) => {
+    setTransacciones((prev) =>
+      prev.map((item) =>
+        item.id === updatedTransaction.id ? updatedTransaction : item
+      )
+    );
+  };
+
+  const handleDeleteSelected = () => {
+    const idsToDelete = Object.keys(selectedRows)
+      .filter((id) => selectedRows[id])
+      .map(Number);
+
+    setTransacciones((prev) =>
+      prev.filter((item) => !idsToDelete.includes(item.id))
+    );
+    setSelectedRows({});
+  };
+
+  const handleMarkPaid = () => {
+    const idsToUpdate = Object.keys(selectedRows)
+      .filter((id) => selectedRows[id])
+      .map(Number);
+
+    setTransacciones((prev) =>
+      prev.map((item) =>
+        idsToUpdate.includes(item.id)
+          ? {
+              ...item,
+              pagado: "Sí",
+              pagadoClass: "status-success",
+              pendiente: "No",
+              pendienteClass: "status-success",
+            }
+          : item
+      )
+    );
+
+    setSelectedRows({});
+  };
+
+  const isAllSelected =
+    transacciones.length > 0 &&
+    transacciones.every((item) => selectedRows[item.id]);
+
+  const selectedCount = Object.values(selectedRows).filter(Boolean).length;
 
   return (
     <Admin>
       <div className="page-header">
         <div>
           <h2 className="page-heading">Gestión de Transacciones</h2>
-          <p className="page-title">Movimientos financieros asociados a notas</p>
+          <p className="page-title">
+            Movimientos financieros asociados a notas
+          </p>
         </div>
 
-        <button className="primary-btn">
-          <i className="bi bi-plus-lg"></i>
-          Nueva transacción
-        </button>
+        <div className={selectedCount > 0 ? "selection-toolbar" : ""}>
+          {selectedCount === 0 ? (
+            <button
+              className="primary-btn"
+              data-bs-toggle="modal"
+              data-bs-target="#createTransactionModal"
+            >
+              <i className="bi bi-plus-lg"></i>&nbsp;Nueva transacción
+            </button>
+          ) : (
+            <>
+              {isAllSelected && (
+                <div className="selection-info">
+                  <i className="bi bi-info-circle"></i>
+                  ¡Seleccionaste todo!
+                </div>
+              )}
+
+              <button
+                className="selection-paid"
+                data-bs-toggle="modal"
+                data-bs-target="#markPaidTransactionsModal"
+              >
+                <i className="bi bi-check-circle"></i>
+                {selectedCount === 1
+                  ? "Marcar como Pagado"
+                  : "Marcar como Pagado"}
+              </button>
+
+              <button
+                className="selection-delete"
+                data-bs-toggle="modal"
+                data-bs-target="#deleteTransactionsModal"
+              >
+                <i className="bi bi-trash"></i>
+                {selectedCount === transacciones.length
+                  ? "¡BORRAR TODO!"
+                  : selectedCount === 1
+                  ? "Borrar Seleccionada"
+                  : "Borrar Seleccionadas"}
+              </button>
+
+              <button
+                className="selection-cancel"
+                onClick={handleCancelSelection}
+              >
+                <i className="bi bi-x-lg"></i>
+                Cancelar
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       <div className="panel-card">
         <div className="toolbar-row">
           <div className="search-box">
             <i className="bi bi-search"></i>
-            <input type="text" placeholder="Buscar por nota, factura, empleado..." />
+            <input
+              type="text"
+              placeholder="Buscar por nota, factura, empleado..."
+            />
           </div>
 
           <button className="outline-btn">
-            <i className="bi bi-funnel"></i>
-            Filtros Avanzados
+            <i className="bi bi-funnel"></i> Filtros Avanzados
           </button>
         </div>
 
@@ -38,7 +231,13 @@ function Transacciones() {
           <table className="admin-table">
             <thead>
               <tr>
-                <th className="checkbox-cell"><input type="checkbox" /></th>
+                <th className="checkbox-cell">
+                  <input
+                    type="checkbox"
+                    checked={isAllSelected}
+                    onChange={handleSelectAll}
+                  />
+                </th>
                 <th>NOTA</th>
                 <th>TIPO PAGO</th>
                 <th>MONTO</th>
@@ -54,44 +253,46 @@ function Transacciones() {
                 <th>ACCIONES</th>
               </tr>
             </thead>
+
             <tbody>
-              {rows.map((item, index) => (
-                <tr key={index}>
-                  <td className="checkbox-cell"><input type="checkbox" /></td>
-                  <td>{item[0]}</td>
-                  <td><span className="status-pill status-neutral">{item[1]}</span></td>
-                  <td>{item[2]}</td>
-                  <td>{item[3]}</td>
-                  <td>{item[4]}</td>
-                  <td><span className={`status-pill ${item[5] === "Sí" ? "status-success" : "status-warning"}`}>{item[5]}</span></td>
-                  <td>{item[6]}</td>
-                  <td>{item[7]}</td>
-                  <td>{item[8]}</td>
-                  <td>{item[9]}</td>
-                  <td><span className={`status-pill ${item[10] === "Sí" ? "status-warning" : "status-success"}`}>{item[10]}</span></td>
-                  <td>{item[11]}</td>
-                  <td>
-                    <div className="action-icons">
-                      <i className="bi bi-pencil-square edit"></i>
-                      <i className="bi bi-trash delete"></i>
-                    </div>
-                  </td>
-                </tr>
+              {transacciones.map((item) => (
+                <TransactionRow
+                  key={item.id}
+                  item={item}
+                  isSelected={!!selectedRows[item.id]}
+                  onSelect={() => handleSelectRow(item.id)}
+                  onEdit={() => handleOpenEdit(item)}
+                />
               ))}
             </tbody>
           </table>
         </div>
 
         <div className="table-footer">
-          <span>Mostrando 3 registros</span>
+          <span>Mostrando {transacciones.length} registros</span>
+
           <div className="pagination-mini">
             <button disabled>Anterior</button>
             <button>Siguiente</button>
           </div>
         </div>
       </div>
+
+      <CreateTransactionModal onCreate={handleCreate} />
+      <EditTransactionModal
+        transaction={selectedTransaction}
+        onSave={handleSaveEdit}
+      />
+      <UpdateTransactionSuccessModal />
+      <DeleteTransactionsModal
+        selectedCount={selectedCount}
+        totalCount={transacciones.length}
+        onDelete={handleDeleteSelected}
+      />
+      <MarkPaidTransactionsModal
+        selectedCount={selectedCount}
+        onConfirm={handleMarkPaid}
+      />
     </Admin>
   );
 }
-
-export default Transacciones;
