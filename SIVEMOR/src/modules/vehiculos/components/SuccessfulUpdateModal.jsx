@@ -1,28 +1,27 @@
-import { useEffect } from "react";
+import Modal from "bootstrap/js/dist/modal";
 
 export default function SuccessfulUpdateModal() {
-  useEffect(() => {
+  const handleClose = () => {
     const modalElement = document.getElementById("successfulUpdateVehicleModal");
-
     if (!modalElement) return;
 
-    const handleHidden = () => {
-      document.body.classList.remove("modal-open");
+    const modalInstance = Modal.getOrCreateInstance(modalElement);
+    modalInstance.hide();
 
-      document.querySelectorAll(".modal-backdrop").forEach((backdrop) => {
-        backdrop.remove();
-      });
+    modalElement.addEventListener(
+      "hidden.bs.modal",
+      () => {
+        document.body.classList.remove("modal-open");
+        document.body.style.removeProperty("padding-right");
+        document.body.style.removeProperty("overflow");
 
-      document.body.style.removeProperty("padding-right");
-      document.body.style.removeProperty("overflow");
-    };
-
-    modalElement.addEventListener("hidden.bs.modal", handleHidden);
-
-    return () => {
-      modalElement.removeEventListener("hidden.bs.modal", handleHidden);
-    };
-  }, []);
+        document.querySelectorAll(".modal-backdrop").forEach((backdrop) => {
+          backdrop.remove();
+        });
+      },
+      { once: true }
+    );
+  };
 
   return (
     <div
@@ -53,7 +52,7 @@ export default function SuccessfulUpdateModal() {
             <button
               type="button"
               className="btn btn-primary"
-              data-bs-dismiss="modal"
+              onClick={handleClose}
             >
               Continuar
             </button>

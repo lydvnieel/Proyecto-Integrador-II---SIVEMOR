@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
+import Modal from "bootstrap/js/dist/modal";
 import Admin from "../../components/Admin";
 import CreateVehicleModal from "../vehiculos/components/CreateVehicleModal";
 import DeleteVehicleModal from "../vehiculos/components/DeleteVehicleModal";
 import DeleteAllModal from "../vehiculos/components/DeleteAllModal";
 import EditVehicleModal from "../vehiculos/components/EditVehicleModal";
-import SuccessfulDeleteModal from "../vehiculos/components/SuccesfulDeleteModal";
-import SuccessfulCreationModal from "../vehiculos/components/SuccessfulCreationModal"
-import SuccessfulUpdateModal from "../vehiculos/components/SuccessfulUpdateModal"
+import SuccessfulDeleteModal from "../vehiculos/components/SuccessfulDeleteModal";
+import SuccessfulCreationModal from "../vehiculos/components/SuccessfulCreationModal";
+import SuccessfulUpdateModal from "../vehiculos/components/SuccessfulUpdateModal";
 import VehicleRow from "../vehiculos/components/VehicleRow";
 import vehiclesData from "../../data/vehicles.json";
 
@@ -25,12 +26,46 @@ export default function Vehiculos() {
     localStorage.setItem("vehicles", JSON.stringify(vehicles));
   }, [vehicles]);
 
+  const cleanupModalArtifacts = () => {
+    document.body.classList.remove("modal-open");
+    document.body.style.removeProperty("padding-right");
+    document.body.style.removeProperty("overflow");
+
+    document.querySelectorAll(".modal-backdrop").forEach((backdrop) => {
+      backdrop.remove();
+    });
+  };
+
+  const showDeleteSuccessModal = (message, sourceModalId) => {
+    setDeleteMessage(message);
+
+    const sourceModalElement = document.getElementById(sourceModalId);
+    const successModalElement = document.getElementById(
+      "successfulDeleteVehicleModal"
+    );
+
+    if (!sourceModalElement || !successModalElement) return;
+
+    const sourceModalInstance = Modal.getOrCreateInstance(sourceModalElement);
+    const successModalInstance = Modal.getOrCreateInstance(successModalElement);
+
+    sourceModalElement.addEventListener(
+      "hidden.bs.modal",
+      () => {
+        cleanupModalArtifacts();
+        successModalInstance.show();
+      },
+      { once: true }
+    );
+
+    sourceModalInstance.hide();
+  };
+
   const handleSelectAll = () => {
     const allSelected =
       vehicles.length > 0 && vehicles.every((_, i) => selectedRows[i]);
 
     const newSelected = {};
-
     vehicles.forEach((_, i) => {
       newSelected[i] = !allSelected;
     });
@@ -59,99 +94,80 @@ export default function Vehiculos() {
     setCurrentIndex(index);
   };
 
-  const openSuccessDeleteModal = () => {
-  const successModalElement = document.getElementById("successfulDeleteVehicleModal");
-
-  if (successModalElement) {
-    const successModalInstance =
-      window.bootstrap?.Modal.getOrCreateInstance(successModalElement);
-
-    successModalInstance?.show();
-  }
-};
-
   const handleDeleteOne = () => {
-  if (currentIndex === null) return;
+    if (currentIndex === null) return;
 
-  const deletedPlate = currentVehicle?.placa || "el vehículo";
+    const deletedPlate = currentVehicle?.placa || "el vehículo";
 
-  const updatedVehicles = vehicles.filter((_, index) => index !== currentIndex);
-  setVehicles(updatedVehicles);
+    const updatedVehicles = vehicles.filter((_, index) => index !== currentIndex);
+    setVehicles(updatedVehicles);
 
-  const updatedSelectedRows = {};
-  updatedVehicles.forEach((_, newIndex) => {
-    const oldIndex = newIndex >= currentIndex ? newIndex + 1 : newIndex;
-    if (selectedRows[oldIndex]) {
-      updatedSelectedRows[newIndex] = true;
-    }
-  });
+    const updatedSelectedRows = {};
+    updatedVehicles.forEach((_, newIndex) => {
+      const oldIndex = newIndex >= currentIndex ? newIndex + 1 : newIndex;
+      if (selectedRows[oldIndex]) {
+        updatedSelectedRows[newIndex] = true;
+      }
+    });
 
-  setSelectedRows(updatedSelectedRows);
-  setCurrentVehicle(null);
-  setCurrentIndex(null);
+    setSelectedRows(updatedSelectedRows);
+    setCurrentVehicle(null);
+    setCurrentIndex(null);
 
-  setDeleteMessage(`Se eliminó con éxito el vehículo ${deletedPlate}.`);
-
-  setTimeout(() => {
-    openSuccessDeleteModal();
-  }, 250)
-};
-
-  const handleDeleteSelected = () => {
-  const count = Object.values(selectedRows).filter(Boolean).length;
-
-  const updatedVehicles = vehicles.filter((_, index) => !selectedRows[index]);
-
-  setVehicles(updatedVehicles);
-  setSelectedRows({});
-  setCurrentVehicle(null);
-  setCurrentIndex(null);
-
-  setDeleteMessage(
-    count === 1
-      ? "Se eliminó con éxito 1 vehículo seleccionado."
-      : `Se eliminaron con éxito ${count} vehículos seleccionados.`
-  );
-
-  setTimeout(() => {
-    openSuccessDeleteModal();
-  }, 250);
-};;
-
-  const handleDeleteAll = () => {
-  const total = vehicles.length;
-
-  setVehicles([]);
-  setSelectedRows({});
-  setCurrentVehicle(null);
-  setCurrentIndex(null);
-
-  setDeleteMessage(
-    total === 1
-      ? "Se eliminó con éxito 1 vehículo."
-      : `Se eliminaron con éxito ${total} vehículos.`
-  );
-
-  setTimeout(() => {
-    openSuccessDeleteModal();
-  }, 250);
-};
-
-  const handleUpdateVehicle = (updatedVehicle) => {
-  if (currentIndex === null) return;
-
-  const updatedVehicles = [...vehicles];
-
-  updatedVehicles[currentIndex] = {
-    ...updatedVehicles[currentIndex], 
-    placa: updatedVehicle.placa,
-    serie: updatedVehicle.serie,
-    tipo: updatedVehicle.tipo,
+    showDeleteSuccessModal(
+      `Se eliminó con éxito el vehículo ${deletedPlate}.`,
+      "deleteVehicleModal"
+    );
   };
 
-  setVehicles(updatedVehicles);
-  setCurrentVehicle(updatedVehicles[currentIndex]);
-};
+  const handleDeleteSelected = () => {
+    const count = Object.values(selectedRows).filter(Boolean).length;
+
+    const updatedVehicles = vehicles.filter((_, index) => !selectedRows[index]);
+
+    setVehicles(updatedVehicles);
+    setSelectedRows({});
+    setCurrentVehicle(null);
+    setCurrentIndex(null);
+
+    showDeleteSuccessModal(
+      count === 1
+        ? "Se eliminó con éxito 1 vehículo seleccionado."
+        : `Se eliminaron con éxito ${count} vehículos seleccionados.`,
+      "deleteVehicleModal"
+    );
+  };
+
+  const handleDeleteAll = () => {
+    const total = vehicles.length;
+
+    setVehicles([]);
+    setSelectedRows({});
+    setCurrentVehicle(null);
+    setCurrentIndex(null);
+
+    showDeleteSuccessModal(
+      total === 1
+        ? "Se eliminó con éxito 1 vehículo."
+        : `Se eliminaron con éxito ${total} vehículos.`,
+      "deleteAllVehicleModal"
+    );
+  };
+
+  const handleUpdateVehicle = (updatedVehicle) => {
+    if (currentIndex === null) return;
+
+    const updatedVehicles = [...vehicles];
+    updatedVehicles[currentIndex] = {
+      ...updatedVehicles[currentIndex],
+      placa: updatedVehicle.placa,
+      serie: updatedVehicle.serie,
+      tipo: updatedVehicle.tipo,
+    };
+
+    setVehicles(updatedVehicles);
+    setCurrentVehicle(updatedVehicles[currentIndex]);
+  };
 
   const handleCreateVehicle = (newVehicle) => {
     setVehicles((prev) => [...prev, newVehicle]);
@@ -167,7 +183,9 @@ export default function Vehiculos() {
       <div className="page-header">
         <div>
           <h2 className="page-heading">Gestión de Vehículos</h2>
-          <p className="page-title">Administración y control de parque vehicular</p>
+          <p className="page-title">
+            Administración y control de parque vehicular
+          </p>
         </div>
 
         <div className={selectedCount > 0 ? "selection-toolbar" : "d-flex gap-2"}>
@@ -182,30 +200,40 @@ export default function Vehiculos() {
             </button>
           ) : (
             <>
-              {selectedCount > 0 && (<>
-          {selectedCount === vehicles.length ? (
+              {selectedCount === vehicles.length ? (
+                <button
+                  className="btn btn-danger"
+                  type="button"
+                  data-bs-toggle="modal"
+                  data-bs-target="#deleteAllVehicleModal"
+                >
+                  <i className="bi bi-trash"></i> ¡BORRAR TODO!
+                </button>
+              ) : (
+                <button
+                  className="btn btn-danger"
+                  type="button"
+                  data-bs-toggle="modal"
+                  data-bs-target="#deleteVehicleModal"
+                  onClick={() => {
+                    setCurrentVehicle(null);
+                    setCurrentIndex(null);
+                  }}
+                >
+                  <i className="bi bi-trash"></i>
+                  {selectedCount === 1
+                    ? " Borrar seleccionado"
+                    : ` Borrar (${selectedCount}) seleccionados`}
+                </button>
+              )}
 
-            <button className="btn btn-danger" type="button" data-bs-toggle="modal" data-bs-target="#deleteAllVehicleModal">
-              <i className="bi bi-trash"></i> ¡BORRAR TODO!</button>
-            ) : (
-            <button className="btn btn-danger" type="button" data-bs-toggle="modal" data-bs-target="#deleteVehicleModal"
-              onClick={() => {
-                setCurrentVehicle(null);
-                setCurrentIndex(null);
-              }}
-            >
-              <i className="bi bi-trash"></i>
-              {selectedCount === 1
-                ? " Borrar seleccionado"
-                : ` Borrar (${selectedCount}) seleccionados`}
-            </button>
-          )}
-
-          <button className="btn btn-outline-secondary" onClick={handleCancelSelection}type="button">
-            <i className="bi bi-x-lg"></i>&nbsp;Cancelar</button>
-        </>
-      )}
-
+              <button
+                className="btn btn-outline-secondary"
+                onClick={handleCancelSelection}
+                type="button"
+              >
+                <i className="bi bi-x-lg"></i>&nbsp;Cancelar
+              </button>
             </>
           )}
         </div>
@@ -260,23 +288,19 @@ export default function Vehiculos() {
       </div>
 
       <CreateVehicleModal onSave={handleCreateVehicle} />
-
       <DeleteAllModal
         totalCount={vehicles.length}
         onConfirmDelete={handleDeleteAll}
       />
-
       <DeleteVehicleModal
         vehicle={currentVehicle}
         selectedCount={selectedCount}
         onConfirmDelete={currentVehicle ? handleDeleteOne : handleDeleteSelected}
       />
-
       <EditVehicleModal
         vehicle={currentVehicle}
         onSave={handleUpdateVehicle}
       />
-
       <SuccessfulUpdateModal />
       <SuccessfulCreationModal />
       <SuccessfulDeleteModal message={deleteMessage} />

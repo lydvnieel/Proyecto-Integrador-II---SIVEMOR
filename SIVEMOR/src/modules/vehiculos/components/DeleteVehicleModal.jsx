@@ -51,7 +51,6 @@ export default function DeleteVehicleModal({
             <button
               type="button"
               className="btn btn-danger mt-3"
-              data-bs-dismiss="modal"
               onClick={onConfirmDelete}
             >
               Eliminar

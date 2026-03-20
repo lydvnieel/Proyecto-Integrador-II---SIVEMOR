@@ -1,7 +1,7 @@
 import { useState } from "react";
 import Modal from "bootstrap/js/dist/modal";
 
-export default function CrearVehiculoModal({ onSave }) {
+export default function CreateVehicleModal({ onSave }) {
   const [formData, setFormData] = useState({
     placa: "",
     serie: "",
@@ -12,6 +12,17 @@ export default function CrearVehiculoModal({ onSave }) {
 
   const [error, setError] = useState("");
 
+  const resetForm = () => {
+    setFormData({
+      placa: "",
+      serie: "",
+      tipo: "",
+      cedis: "",
+      region: "",
+    });
+    setError("");
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
 
@@ -20,57 +31,50 @@ export default function CrearVehiculoModal({ onSave }) {
       [name]: value,
     }));
 
-    if (error) {
-      setError("");
-    }
+    if (error) setError("");
   };
 
   const handleCreate = () => {
-    const placa = formData.placa.trim();
-    const serie = formData.serie.trim();
-    const tipo = formData.tipo.trim();
-    const cedis = formData.cedis.trim();
-    const region = formData.region.trim();
+    const cleanedData = {
+      placa: formData.placa.trim(),
+      serie: formData.serie.trim(),
+      tipo: formData.tipo.trim(),
+      cedis: formData.cedis.trim(),
+      region: formData.region.trim(),
+    };
 
-    if (!placa || !serie || !tipo || !cedis || !region) {
+    if (
+      !cleanedData.placa ||
+      !cleanedData.serie ||
+      !cleanedData.tipo ||
+      !cleanedData.cedis ||
+      !cleanedData.region
+    ) {
       setError("Faltan campos por llenar");
       return;
     }
 
-    onSave({
-      placa,
-      serie,
-      tipo,
-      cedis,
-      region,
-    });
+    onSave(cleanedData);
 
     const createModalElement = document.getElementById("createVehicleModal");
+    const successModalElement = document.getElementById(
+      "successfulCreateVehicleModal"
+    );
+
+    if (!createModalElement || !successModalElement) return;
+
     const createModalInstance = Modal.getOrCreateInstance(createModalElement);
+    const successModalInstance = Modal.getOrCreateInstance(successModalElement);
 
-    const handleHidden = () => {
-      createModalElement.removeEventListener("hidden.bs.modal", handleHidden);
-
-      setFormData({
-        placa: "",
-        serie: "",
-        tipo: "",
-        cedis: "",
-        region: "",
-      });
-
-      const successModalElement = document.getElementById(
-        "successfulCreateVehicleModal"
-      );
-
-      if (successModalElement) {
-        const successModalInstance =
-          Modal.getOrCreateInstance(successModalElement);
+    createModalElement.addEventListener(
+      "hidden.bs.modal",
+      () => {
+        resetForm();
         successModalInstance.show();
-      }
-    };
+      },
+      { once: true }
+    );
 
-    createModalElement.addEventListener("hidden.bs.modal", handleHidden);
     createModalInstance.hide();
   };
 
@@ -87,7 +91,9 @@ export default function CrearVehiculoModal({ onSave }) {
       <div className="modal-dialog modal-dialog-centered">
         <div className="modal-content border-0 rounded-3">
           <div className="modal-body">
-            <h4 id="createVehicleModalLabel">Nuevo vehículo</h4>
+            <h4 id="createVehicleModalLabel">
+              <strong>Nuevo vehículo</strong>
+            </h4>
 
             {error && (
               <div className="alert alert-danger mt-3 mb-0" role="alert">
@@ -205,13 +211,13 @@ export default function CrearVehiculoModal({ onSave }) {
                 type="button"
                 className="btn btn-primary mt-3"
                 onClick={handleCreate}
-            >
+              >
                 Crear vehículo
-            </button>
+              </button>
             </div>
+          </div>
         </div>
-        </div>
+      </div>
     </div>
-    </div>
-);
+  );
 }

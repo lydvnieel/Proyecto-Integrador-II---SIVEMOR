@@ -1,13 +1,27 @@
 import Modal from "bootstrap/js/dist/modal";
 
 export default function SuccessfulDeleteModal({ message }) {
-  const handleContinue = () => {
-    const successModalElement = document.getElementById("successfulDeleteVehicleModal");
+  const handleClose = () => {
+    const modalElement = document.getElementById("successfulDeleteVehicleModal");
+    if (!modalElement) return;
 
-    if (successModalElement) {
-      const successModalInstance = Modal.getOrCreateInstance(successModalElement);
-      successModalInstance.hide();
-    }
+    const modalInstance = Modal.getOrCreateInstance(modalElement);
+
+    modalElement.addEventListener(
+      "hidden.bs.modal",
+      () => {
+        document.body.classList.remove("modal-open");
+        document.body.style.removeProperty("padding-right");
+        document.body.style.removeProperty("overflow");
+
+        document.querySelectorAll(".modal-backdrop").forEach((backdrop) => {
+          backdrop.remove();
+        });
+      },
+      { once: true }
+    );
+
+    modalInstance.hide();
   };
 
   return (
@@ -36,7 +50,7 @@ export default function SuccessfulDeleteModal({ message }) {
             <button
               type="button"
               className="btn btn-primary mt-3"
-              onClick={handleContinue}
+              onClick={handleClose}
             >
               Continuar
             </button>
