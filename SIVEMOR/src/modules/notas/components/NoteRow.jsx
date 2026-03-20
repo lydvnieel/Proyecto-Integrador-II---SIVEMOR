@@ -1,4 +1,10 @@
-export default function NoteRow({ note, isSelected, onSelect, onEdit }) {
+export default function NoteRow({
+  note,
+  isSelected,
+  onSelect,
+  onEditClick,
+  onDeleteClick,
+}) {
   return (
     <tr>
       <td className="checkbox-cell">
@@ -17,20 +23,25 @@ export default function NoteRow({ note, isSelected, onSelect, onEdit }) {
       </td>
       <td>{note.reviso}</td>
       <td>{note.atendio}</td>
-      <td>
-        <em>{note.comentario}</em>
-      </td>
+      <td>{note.comentario}</td>
       <td>
         <button
+          type="button"
           className="icon-btn"
           data-bs-toggle="modal"
           data-bs-target="#editNoteModal"
-          onClick={onEdit}
+          onClick={onEditClick}
         >
           <i className="bi bi-pencil-square"></i>
         </button>
 
-        <button className="icon-btn text-danger">
+        <button
+          type="button"
+          className="icon-btn text-danger"
+          data-bs-toggle="modal"
+          data-bs-target="#deleteNotesModal"
+          onClick={onDeleteClick}
+        >
           <i className="bi bi-trash"></i>
         </button>
       </td>

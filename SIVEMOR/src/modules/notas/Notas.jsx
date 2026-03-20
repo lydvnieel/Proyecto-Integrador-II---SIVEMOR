@@ -1,53 +1,73 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import Modal from "bootstrap/js/dist/modal";
 import Admin from "../../components/Admin";
 import NoteRow from "./components/NoteRow";
 import CreateNoteModal from "./components/CreateNoteModal";
 import EditNoteModal from "./components/EditNoteModal";
-import UpdateSuccessModal from "./components/UpdateSuccessModal";
 import DeleteNotesModal from "./components/DeleteNotesModal";
-import MarkPaidModal from "./components/MarkPaidModal";
+import DeleteAllNotesModal from "./components/DeleteAllNotesModal";
+import CreateSuccessModal from "./components/CreateSuccessModal";
+import DeleteSuccessModal from "./components/DeleteSuccessModal";
+import notasData from "../../data/notas.json";
 
-function Notas() {
-  const [notas, setNotas] = useState([
-    {
-      id: 1,
-      nota: "N-1001",
-      cliente: "Transportes del Norte SA de CV",
-      verificaciones: 2,
-      verificentro: "Pepsi",
-      metodo: "Efectivo",
-      anticipo: "-",
-      pagado: "Pagado",
-      pagadoClass: "status-success",
-      reviso: "Ana Gómez",
-      atendio: "Ana Gómez",
-      comentario: "Todo en orden",
-    },
-    {
-      id: 2,
-      nota: "N-1002",
-      cliente: "Logística Express",
-      verificaciones: 5,
-      verificentro: "Pepsi2",
-      metodo: "Tarjeta",
-      anticipo: "1",
-      pagado: "Pendiente",
-      pagadoClass: "status-warning",
-      reviso: "Ana Gómez",
-      atendio: "Ana Gómez",
-      comentario: "Pendiente factura",
-    },
-  ]);
+export default function Notas() {
+  const [notas, setNotas] = useState(() => {
+    const savedNotas = localStorage.getItem("notas");
+    return savedNotas ? JSON.parse(savedNotas) : notasData;
+  });
 
   const [selectedRows, setSelectedRows] = useState({});
-  const [selectedNote, setSelectedNote] = useState(null);
+  const [currentNote, setCurrentNote] = useState(null);
+  const [currentId, setCurrentId] = useState(null);
+  const [deleteMessage, setDeleteMessage] = useState("");
+  const [createMessage, setCreateMessage] = useState("");
+
+  useEffect(() => {
+    localStorage.setItem("notas", JSON.stringify(notas));
+  }, [notas]);
+
+  const cleanupModalArtifacts = () => {
+    document.body.classList.remove("modal-open");
+    document.body.style.removeProperty("padding-right");
+    document.body.style.removeProperty("overflow");
+
+    document.querySelectorAll(".modal-backdrop").forEach((backdrop) => {
+      backdrop.remove();
+    });
+  };
+
+  const showDeleteSuccessModal = (message, sourceModalId) => {
+    setDeleteMessage(message);
+
+    const sourceModalElement = document.getElementById(sourceModalId);
+    const successModalElement = document.getElementById(
+      "successfulDeleteNoteModal"
+    );
+
+    if (!sourceModalElement || !successModalElement) return;
+
+    const sourceModalInstance = Modal.getOrCreateInstance(sourceModalElement);
+    const successModalInstance = Modal.getOrCreateInstance(successModalElement);
+
+    sourceModalElement.addEventListener(
+      "hidden.bs.modal",
+      () => {
+        cleanupModalArtifacts();
+        successModalInstance.show();
+      },
+      { once: true }
+    );
+
+    sourceModalInstance.hide();
+  };
 
   const handleSelectAll = () => {
-    const allSelected = notas.every((nota) => selectedRows[nota.id]);
-    const newSelected = {};
+    const allSelected =
+      notas.length > 0 && notas.every((note) => selectedRows[note.id]);
 
-    notas.forEach((nota) => {
-      newSelected[nota.id] = !allSelected;
+    const newSelected = {};
+    notas.forEach((note) => {
+      newSelected[note.id] = !allSelected;
     });
 
     setSelectedRows(newSelected);
@@ -64,24 +84,57 @@ function Notas() {
     setSelectedRows({});
   };
 
-  const handleOpenEdit = (note) => {
-    setSelectedNote(note);
+  const handleOpenDeleteOne = (note) => {
+    setCurrentNote(note);
+    setCurrentId(note.id);
   };
 
-  const handleSaveEdit = (updatedNote) => {
-    setNotas((prev) =>
-      prev.map((nota) => (nota.id === updatedNote.id ? updatedNote : nota))
-    );
+  const handleOpenEdit = (note) => {
+    setCurrentNote(note);
+    setCurrentId(note.id);
   };
 
   const handleCreateNote = (newNote) => {
-    setNotas((prev) => [
-      ...prev,
-      {
-        ...newNote,
-        id: Date.now(),
-      },
-    ]);
+    const createdNote = {
+      ...newNote,
+      id: Date.now(),
+    };
+
+    setNotas((prev) => [...prev, createdNote]);
+    setCreateMessage(`Se creó con éxito la nota ${createdNote.nota}.`);
+  };
+
+  const handleUpdateNote = (updatedNote) => {
+    if (currentId === null) return;
+
+    const updatedNotes = notas.map((note) =>
+      note.id === currentId ? { ...note, ...updatedNote } : note
+    );
+
+    setNotas(updatedNotes);
+    setCurrentNote(updatedNotes.find((note) => note.id === currentId) || null);
+  };
+
+  const handleDeleteOne = () => {
+    if (currentId === null) return;
+
+    const deletedNote = currentNote?.nota || "la nota";
+
+    setNotas((prev) => prev.filter((note) => note.id !== currentId));
+
+    setSelectedRows((prev) => {
+      const updated = { ...prev };
+      delete updated[currentId];
+      return updated;
+    });
+
+    setCurrentNote(null);
+    setCurrentId(null);
+
+    showDeleteSuccessModal(
+      `Se eliminó con éxito la nota ${deletedNote}.`,
+      "deleteNotesModal"
+    );
   };
 
   const handleDeleteSelected = () => {
@@ -89,32 +142,39 @@ function Notas() {
       .filter((id) => selectedRows[id])
       .map(Number);
 
-    setNotas((prev) => prev.filter((nota) => !idsToDelete.includes(nota.id)));
+    const count = idsToDelete.length;
+
+    setNotas((prev) => prev.filter((note) => !idsToDelete.includes(note.id)));
     setSelectedRows({});
+    setCurrentNote(null);
+    setCurrentId(null);
+
+    showDeleteSuccessModal(
+      count === 1
+        ? "Se eliminó con éxito 1 nota seleccionada."
+        : `Se eliminaron con éxito ${count} notas seleccionadas.`,
+      "deleteNotesModal"
+    );
   };
 
-  const handleMarkPaid = () => {
-    const idsToUpdate = Object.keys(selectedRows)
-      .filter((id) => selectedRows[id])
-      .map(Number);
+  const handleDeleteAll = () => {
+    const total = notas.length;
 
-    setNotas((prev) =>
-      prev.map((nota) =>
-        idsToUpdate.includes(nota.id)
-          ? {
-              ...nota,
-              pagado: "Pagado",
-              pagadoClass: "status-success",
-            }
-          : nota
-      )
-    );
-
+    setNotas([]);
     setSelectedRows({});
+    setCurrentNote(null);
+    setCurrentId(null);
+
+    showDeleteSuccessModal(
+      total === 1
+        ? "Se eliminó con éxito 1 nota."
+        : `Se eliminaron con éxito ${total} notas.`,
+      "deleteAllNotesModal"
+    );
   };
 
   const isAllSelected =
-    notas.length > 0 && notas.every((nota) => selectedRows[nota.id]);
+    notas.length > 0 && notas.every((note) => selectedRows[note.id]);
 
   const selectedCount = Object.values(selectedRows).filter(Boolean).length;
 
@@ -132,51 +192,45 @@ function Notas() {
               className="primary-btn"
               data-bs-toggle="modal"
               data-bs-target="#createNoteModal"
+              type="button"
             >
-              <i className="bi bi-plus-lg"></i>
-              &nbsp;Nueva nota
+              <i className="bi bi-plus-lg"></i>&nbsp;Nueva nota
             </button>
           ) : (
             <>
-              {isAllSelected && (
-                <div className="selection-info">
-                  <i className="bi bi-info-circle"></i>
-                  ¡Seleccionaste todo!
-                </div>
+              {selectedCount === notas.length ? (
+                <button
+                  className="btn btn-danger"
+                  type="button"
+                  data-bs-toggle="modal"
+                  data-bs-target="#deleteAllNotesModal"
+                >
+                  <i className="bi bi-trash"></i> ¡BORRAR TODO!
+                </button>
+              ) : (
+                <button
+                  className="btn btn-danger"
+                  type="button"
+                  data-bs-toggle="modal"
+                  data-bs-target="#deleteNotesModal"
+                  onClick={() => {
+                    setCurrentNote(null);
+                    setCurrentId(null);
+                  }}
+                >
+                  <i className="bi bi-trash"></i>
+                  {selectedCount === 1
+                    ? " Borrar seleccionada"
+                    : ` Borrar (${selectedCount}) seleccionadas`}
+                </button>
               )}
 
               <button
-                className="selection-paid"
-                data-bs-toggle="modal"
-                data-bs-target="#markPaidModal"
-              >
-                <i className="bi bi-check-circle"></i>
-                {selectedCount === notas.length
-                  ? "Marcar TODO Pagado"
-                  : selectedCount === 1
-                  ? "Marcar 1 nota pagada"
-                  : `Marcar ${selectedCount} notas pagadas`}
-              </button>
-
-              <button
-                className="selection-delete"
-                data-bs-toggle="modal"
-                data-bs-target="#deleteNotesModal"
-              >
-                <i className="bi bi-trash"></i>
-                {selectedCount === notas.length
-                  ? "¡BORRAR TODO!"
-                  : selectedCount === 1
-                  ? "Borrar 1 nota"
-                  : `Borrar (${selectedCount})`}
-              </button>
-
-              <button
-                className="selection-cancel"
+                className="btn btn-outline-secondary"
                 onClick={handleCancelSelection}
+                type="button"
               >
-                <i className="bi bi-x-lg"></i>
-                Cancelar
+                <i className="bi bi-x-lg"></i>&nbsp;Cancelar
               </button>
             </>
           )}
@@ -189,12 +243,12 @@ function Notas() {
             <i className="bi bi-search"></i>
             <input
               type="text"
-              placeholder="Buscar por nota, cliente, verificentro, método de pago, estado..."
+              placeholder="Buscar por nota, cliente, verificentro..."
             />
           </div>
 
-          <button className="outline-btn">
-            <i className="bi bi-funnel"></i> Filtros Avanzados
+          <button className="outline-btn" type="button">
+            <i className="bi bi-funnel"></i> Filtros
           </button>
         </div>
 
@@ -213,23 +267,25 @@ function Notas() {
                 <th>CLIENTE</th>
                 <th>NUM. VERIFICACIONES</th>
                 <th>VERIFICENTRO</th>
-                <th>METODO DE PAGO</th>
+                <th>MÉTODO DE PAGO</th>
                 <th>ANTICIPO</th>
                 <th>PAGADO</th>
-                <th>REVISO</th>
+                <th>REVISÓ</th>
                 <th>ATENDIÓ</th>
                 <th>COMENTARIO</th>
                 <th>ACCIONES</th>
               </tr>
             </thead>
+
             <tbody>
-              {notas.map((item) => (
+              {notas.map((note) => (
                 <NoteRow
-                  key={item.id}
-                  note={item}
-                  isSelected={!!selectedRows[item.id]}
-                  onSelect={() => handleSelectRow(item.id)}
-                  onEdit={() => handleOpenEdit(item)}
+                  key={note.id}
+                  note={note}
+                  isSelected={!!selectedRows[note.id]}
+                  onSelect={() => handleSelectRow(note.id)}
+                  onEditClick={() => handleOpenEdit(note)}
+                  onDeleteClick={() => handleOpenDeleteOne(note)}
                 />
               ))}
             </tbody>
@@ -238,18 +294,18 @@ function Notas() {
       </div>
 
       <CreateNoteModal onCreate={handleCreateNote} />
-      <EditNoteModal note={selectedNote} onSave={handleSaveEdit} />
-      <UpdateSuccessModal />
+      <EditNoteModal note={currentNote} onSave={handleUpdateNote} />
       <DeleteNotesModal
+        note={currentNote}
         selectedCount={selectedCount}
-        onDelete={handleDeleteSelected}
+        onConfirmDelete={currentNote ? handleDeleteOne : handleDeleteSelected}
       />
-      <MarkPaidModal
-        selectedCount={selectedCount}
-        onConfirm={handleMarkPaid}
+      <DeleteAllNotesModal
+        totalCount={notas.length}
+        onConfirmDelete={handleDeleteAll}
       />
+      <CreateSuccessModal message={createMessage} />
+      <DeleteSuccessModal message={deleteMessage} />
     </Admin>
   );
 }
-
-export default Notas;

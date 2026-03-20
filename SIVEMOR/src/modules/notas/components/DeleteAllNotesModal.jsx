@@ -1,16 +1,10 @@
-export default function DeleteNotesModal({
-  note,
-  selectedCount,
-  onConfirmDelete,
-}) {
-  const isMultipleDelete = !note && selectedCount > 0;
-
+export default function DeleteAllNotesModal({ totalCount, onConfirmDelete }) {
   return (
     <div
       className="modal fade"
-      id="deleteNotesModal"
+      id="deleteAllNotesModal"
       tabIndex={-1}
-      aria-labelledby="deleteNotesModalLabel"
+      aria-labelledby="deleteAllNotesModalLabel"
       aria-hidden="true"
       data-bs-backdrop="static"
       data-bs-keyboard="false"
@@ -18,23 +12,15 @@ export default function DeleteNotesModal({
       <div className="modal-dialog modal-dialog-centered">
         <div className="modal-content border-0 rounded-3">
           <div className="modal-header">
-            <h4 className="modal-title" id="deleteNotesModalLabel">
+            <h4 className="modal-title" id="deleteAllNotesModalLabel">
               <strong>Confirmar eliminación</strong>
             </h4>
           </div>
 
           <div className="modal-body">
-            {isMultipleDelete ? (
-              <>
-                ¿Estás seguro de que deseas eliminar{" "}
-                <strong>{selectedCount}</strong> nota(s) seleccionada(s)? Esta acción no se puede deshacer.
-              </>
-            ) : (
-              <>
-                ¿Estás seguro de que deseas eliminar la nota{" "}
-                <strong>{note?.nota}</strong>? Esta acción no se puede deshacer.
-              </>
-            )}
+            ¿Estás seguro de que deseas eliminar TODAS las notas? Esta acción no se puede deshacer.
+            <br />
+            <span className="text-danger">Total a eliminar: {totalCount}</span>
           </div>
 
           <div className="modal-footer text-end mt-3">
@@ -52,7 +38,7 @@ export default function DeleteNotesModal({
               className="btn btn-danger mt-3"
               onClick={onConfirmDelete}
             >
-              Eliminar
+              Eliminar TODO
             </button>
           </div>
         </div>
