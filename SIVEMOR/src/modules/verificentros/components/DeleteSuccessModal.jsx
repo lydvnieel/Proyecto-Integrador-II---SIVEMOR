@@ -1,8 +1,8 @@
 import Modal from "bootstrap/js/dist/modal";
 
-export default function CreateSuccessModal({ message }) {
+export default function DeleteSuccess({ message }) {
   const handleClose = () => {
-    const modalElement = document.getElementById("createVerificentroSuccessModal");
+    const modalElement = document.getElementById("deleteVerificentroSuccessModal");
     if (!modalElement) return;
 
     const modalInstance = Modal.getOrCreateInstance(modalElement);
@@ -27,7 +27,7 @@ export default function CreateSuccessModal({ message }) {
   return (
     <div
       className="modal fade"
-      id="createVerificentroSuccessModal"
+      id="deleteVerificentroSuccessModal"
       tabIndex="-1"
       aria-hidden="true"
       data-bs-backdrop="static"
@@ -36,11 +36,11 @@ export default function CreateSuccessModal({ message }) {
       <div className="modal-dialog modal-dialog-centered">
         <div className="modal-content">
           <div className="modal-header">
-            <h5 className="modal-title">¡Verificentro creado!</h5>
+            <h5 className="modal-title">¡Eliminación exitosa!</h5>
           </div>
 
           <div className="modal-body">
-            {message || "Se ha creado con éxito el verificentro."}
+            {message || "Se eliminó correctamente el verificentro."}
           </div>
 
           <div className="modal-footer">

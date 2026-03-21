@@ -1,59 +1,95 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import Modal from "bootstrap/js/dist/modal";
 import Admin from "../../components/Admin";
 import VerificentroRow from "./components/VerificentroRow";
 import CreateVerificentroModal from "./components/CreateVerificentroModal";
 import EditVerificentroModal from "./components/EditVerificentroModal";
-import CreateSuccessModal from "./components/CreateSuccessModal";
-import UpdateSuccessModal from "./components/UpdateSuccessModal";
 import DeleteVerificentroModal from "./components/DeleteVerificentroModal";
+import DeleteAllVerificentrosModal from "./components/DeleteAllVerificentrosModal";
+import CreateSuccessModal from "./components/CreateSuccessModal";
+import DeleteSuccessModal from "./components/DeleteSuccessModal";
+import EditSuccessModal from "./components/EditSuccessModal";
+import verificentrosData from "../../data/verificentros.json";
 
 export default function Verificentros() {
-  const [verificentros, setVerificentros] = useState([
-    {
-      id: 1,
-      nombre: "Verificentro Norte",
-      clave: "VER-001",
-      direccion: "Av. Revolución 123, Col. Centro",
-      region: "Norte",
-      responsable: "Carlos Mendoza",
-      telefonoPrincipal: "81-1234-5678",
-      telefonoAlternativo: "81-8765-4321",
-      correo: "carlos@verificentro.com",
-      horario: "Lunes a Viernes: 8:00 AM - 6:00 PM, Sábados: 9:00 AM - 2:00 PM",
-    },
-    {
-      id: 2,
-      nombre: "Verificentro Sur",
-      clave: "VER-002",
-      direccion: "Calle Morelos 456, Col. Sur",
-      region: "Sur",
-      responsable: "María López",
-      telefonoPrincipal: "81-4321-9876",
-      telefonoAlternativo: "81-1122-3344",
-      correo: "maria@verificentro.com",
-      horario: "Lunes a Viernes: 8:00 AM - 6:00 PM, Sábados: 9:00 AM - 2:00 PM",
-    },
-    {
-      id: 3,
-      nombre: "Verificentro Este",
-      clave: "VER-003",
-      direccion: "Blvd. Las Torres 789, Col. Este",
-      region: "Este",
-      responsable: "Juan Pérez",
-      telefonoPrincipal: "81-7788-9900",
-      telefonoAlternativo: "81-4455-6677",
-      correo: "juan@verificentro.com",
-      horario: "Lunes a Viernes: 8:00 AM - 6:00 PM, Sábados: 9:00 AM - 2:00 PM",
-    },
-  ]);
+  const [verificentros, setVerificentros] = useState(() => {
+    const saved = localStorage.getItem("verificentros");
+    return saved ? JSON.parse(saved) : verificentrosData;
+  });
 
   const [selectedRows, setSelectedRows] = useState({});
-  const [selectedVerificentro, setSelectedVerificentro] = useState(null);
+  const [currentItem, setCurrentItem] = useState(null);
+  const [currentId, setCurrentId] = useState(null);
+  const [deleteMessage, setDeleteMessage] = useState("");
+  const [editMessage, setEditMessage] = useState("");
+  const [createMessage, setCreateMessage] = useState("");
+
+  useEffect(() => {
+    localStorage.setItem("verificentros", JSON.stringify(verificentros));
+  }, [verificentros]);
+
+  const cleanupModalArtifacts = () => {
+    document.body.classList.remove("modal-open");
+    document.body.style.removeProperty("padding-right");
+    document.body.style.removeProperty("overflow");
+
+    document.querySelectorAll(".modal-backdrop").forEach((backdrop) => {
+      backdrop.remove();
+    });
+  };
+
+  const showDeleteSuccessModal = (message, sourceId) => {
+    setDeleteMessage(message);
+
+    const source = document.getElementById(sourceId);
+    const success = document.getElementById("deleteVerificentroSuccessModal");
+
+    if (!source || !success) return;
+
+    const sourceInstance = Modal.getOrCreateInstance(source);
+    const successInstance = Modal.getOrCreateInstance(success);
+
+    source.addEventListener(
+      "hidden.bs.modal",
+      () => {
+        cleanupModalArtifacts();
+        successInstance.show();
+      },
+      { once: true }
+    );
+
+    sourceInstance.hide();
+  };
+
+  const showEditSuccessModal = (message, sourceId) => {
+    setEditMessage(message);
+
+    const source = document.getElementById(sourceId);
+    const success = document.getElementById("editVerificentroSuccessModal");
+
+    if (!source || !success) return;
+
+    const sourceInstance = Modal.getOrCreateInstance(source);
+    const successInstance = Modal.getOrCreateInstance(success);
+
+    source.addEventListener(
+      "hidden.bs.modal",
+      () => {
+        cleanupModalArtifacts();
+        successInstance.show();
+      },
+      { once: true }
+    );
+
+    sourceInstance.hide();
+  };
 
   const handleSelectAll = () => {
-    const allSelected = verificentros.every((item) => selectedRows[item.id]);
-    const newSelected = {};
+    const allSelected =
+      verificentros.length > 0 &&
+      verificentros.every((item) => selectedRows[item.id]);
 
+    const newSelected = {};
     verificentros.forEach((item) => {
       newSelected[item.id] = !allSelected;
     });
@@ -73,22 +109,59 @@ export default function Verificentros() {
   };
 
   const handleOpenEdit = (item) => {
-    setSelectedVerificentro(item);
+    setCurrentItem(item);
+    setCurrentId(item.id);
+  };
+
+  const handleOpenDeleteOne = (item) => {
+    setCurrentItem(item);
+    setCurrentId(item.id);
   };
 
   const handleCreate = (newItem) => {
-    setVerificentros((prev) => [
-      ...prev,
-      {
-        ...newItem,
-        id: Date.now(),
-      },
-    ]);
+    const createdItem = {
+      ...newItem,
+      id: Date.now(),
+    };
+
+    setVerificentros((prev) => [...prev, createdItem]);
+    setCreateMessage(`Se creó con éxito el verificentro ${createdItem.nombre}.`);
   };
 
   const handleSaveEdit = (updatedItem) => {
+    if (currentId === null) return;
+
     setVerificentros((prev) =>
-      prev.map((item) => (item.id === updatedItem.id ? updatedItem : item))
+      prev.map((item) =>
+        item.id === currentId ? { ...item, ...updatedItem } : item
+      )
+    );
+
+    showEditSuccessModal(
+      "Se actualizó el verificentro correctamente.",
+      "editVerificentroModal"
+    );
+  };
+
+  const handleDeleteOne = () => {
+    if (currentId === null) return;
+
+    const deletedName = currentItem?.nombre || "el verificentro";
+
+    setVerificentros((prev) => prev.filter((item) => item.id !== currentId));
+
+    setSelectedRows((prev) => {
+      const updated = { ...prev };
+      delete updated[currentId];
+      return updated;
+    });
+
+    setCurrentItem(null);
+    setCurrentId(null);
+
+    showDeleteSuccessModal(
+      `Se eliminó con éxito ${deletedName}.`,
+      "deleteVerificentroModal"
     );
   };
 
@@ -97,11 +170,38 @@ export default function Verificentros() {
       .filter((id) => selectedRows[id])
       .map(Number);
 
+    const count = idsToDelete.length;
+
     setVerificentros((prev) =>
       prev.filter((item) => !idsToDelete.includes(item.id))
     );
 
     setSelectedRows({});
+    setCurrentItem(null);
+    setCurrentId(null);
+
+    showDeleteSuccessModal(
+      count === 1
+        ? "Se eliminó con éxito 1 verificentro."
+        : `Se eliminaron con éxito ${count} verificentros.`,
+      "deleteVerificentroModal"
+    );
+  };
+
+  const handleDeleteAll = () => {
+    const total = verificentros.length;
+
+    setVerificentros([]);
+    setSelectedRows({});
+    setCurrentItem(null);
+    setCurrentId(null);
+
+    showDeleteSuccessModal(
+      total === 1
+        ? "Se eliminó con éxito 1 verificentro."
+        : `Se eliminaron con éxito ${total} verificentros.`,
+      "deleteAllVerificentroModal"
+    );
   };
 
   const isAllSelected =
@@ -123,7 +223,7 @@ export default function Verificentros() {
         <div className={selectedCount > 0 ? "selection-toolbar" : "d-flex gap-2"}>
           {selectedCount === 0 ? (
             <>
-              <button className="outline-btn">
+              <button className="outline-btn" type="button">
                 <i className="bi bi-funnel"></i> Filtros Avanzados
               </button>
 
@@ -131,6 +231,7 @@ export default function Verificentros() {
                 className="primary-btn"
                 data-bs-toggle="modal"
                 data-bs-target="#createVerificentroModal"
+                type="button"
               >
                 <i className="bi bi-plus-lg"></i>&nbsp;Nuevo Verificentro
               </button>
@@ -144,22 +245,38 @@ export default function Verificentros() {
                 </div>
               )}
 
-              <button
-                className="selection-delete"
-                data-bs-toggle="modal"
-                data-bs-target="#deleteVerificentroModal"
-              >
-                <i className="bi bi-trash"></i>
-                {selectedCount === verificentros.length
-                  ? "¡BORRAR TODO!"
-                  : selectedCount === 1
-                  ? "Borrar Seleccionada"
-                  : `Borrar (${selectedCount})`}
-              </button>
+              {selectedCount === verificentros.length ? (
+                <button
+                  className="selection-delete"
+                  data-bs-toggle="modal"
+                  data-bs-target="#deleteAllVerificentroModal"
+                  type="button"
+                >
+                  <i className="bi bi-trash"></i>
+                  ¡BORRAR TODO!
+                </button>
+              ) : (
+                <button
+                  className="selection-delete"
+                  data-bs-toggle="modal"
+                  data-bs-target="#deleteVerificentroModal"
+                  type="button"
+                  onClick={() => {
+                    setCurrentItem(null);
+                    setCurrentId(null);
+                  }}
+                >
+                  <i className="bi bi-trash"></i>
+                  {selectedCount === 1
+                    ? " Borrar seleccionado"
+                    : ` Borrar (${selectedCount})`}
+                </button>
+              )}
 
               <button
                 className="selection-cancel"
                 onClick={handleCancelSelection}
+                type="button"
               >
                 <i className="bi bi-x-lg"></i>
                 Cancelar
@@ -179,7 +296,7 @@ export default function Verificentros() {
             />
           </div>
 
-          <button className="outline-btn">
+          <button className="outline-btn" type="button">
             <i className="bi bi-funnel"></i> Filtros Avanzados
           </button>
         </div>
@@ -213,6 +330,7 @@ export default function Verificentros() {
                   isSelected={!!selectedRows[item.id]}
                   onSelect={() => handleSelectRow(item.id)}
                   onEdit={() => handleOpenEdit(item)}
+                  onDelete={() => handleOpenDeleteOne(item)}
                 />
               ))}
             </tbody>
@@ -232,17 +350,23 @@ export default function Verificentros() {
       </div>
 
       <CreateVerificentroModal onCreate={handleCreate} />
-      <EditVerificentroModal
-        item={selectedVerificentro}
-        onSave={handleSaveEdit}
-      />
-      <CreateSuccessModal />
-      <UpdateSuccessModal />
+      <EditVerificentroModal item={currentItem} onSave={handleSaveEdit} />
+
       <DeleteVerificentroModal
+        item={currentItem}
         selectedCount={selectedCount}
         totalCount={verificentros.length}
-        onDelete={handleDeleteSelected}
+        onDelete={currentItem ? handleDeleteOne : handleDeleteSelected}
       />
+
+      <DeleteAllVerificentrosModal
+        totalCount={verificentros.length}
+        onConfirmDelete={handleDeleteAll}
+      />
+
+      <CreateSuccessModal message={createMessage} />
+      <DeleteSuccessModal message={deleteMessage} />
+      <EditSuccessModal message={editMessage} />
     </Admin>
   );
 }

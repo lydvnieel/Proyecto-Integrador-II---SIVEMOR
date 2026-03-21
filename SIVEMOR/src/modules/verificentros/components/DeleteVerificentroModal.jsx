@@ -1,14 +1,20 @@
 export default function DeleteVerificentroModal({
+  item,
   selectedCount,
   totalCount,
   onDelete,
 }) {
+  const isDeleteOne = !!item;
+  const isDeleteAllSelected = selectedCount === totalCount && selectedCount > 0;
+
   return (
     <div
       className="modal fade"
       id="deleteVerificentroModal"
       tabIndex="-1"
       aria-hidden="true"
+      data-bs-backdrop="static"
+      data-bs-keyboard="false"
     >
       <div className="modal-dialog modal-dialog-centered">
         <div className="modal-content">
@@ -22,7 +28,12 @@ export default function DeleteVerificentroModal({
           </div>
 
           <div className="modal-body">
-            {selectedCount === totalCount ? (
+            {isDeleteOne ? (
+              <>
+                ¿Estás seguro de que deseas eliminar el verificentro{" "}
+                <strong>{item?.nombre}</strong>? Esta acción no se puede deshacer.
+              </>
+            ) : isDeleteAllSelected ? (
               <>
                 ¿Estás seguro de que deseas eliminar <strong>TODOS</strong> los
                 verificentros seleccionados? Esta acción no se puede deshacer.
@@ -50,7 +61,6 @@ export default function DeleteVerificentroModal({
             <button
               type="button"
               className="btn btn-danger"
-              data-bs-dismiss="modal"
               onClick={onDelete}
             >
               Eliminar

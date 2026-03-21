@@ -3,6 +3,7 @@ export default function VerificentroRow({
   isSelected,
   onSelect,
   onEdit,
+  onDelete,
 }) {
   return (
     <tr>
@@ -23,11 +24,18 @@ export default function VerificentroRow({
           data-bs-toggle="modal"
           data-bs-target="#editVerificentroModal"
           onClick={onEdit}
+          type="button"
         >
           <i className="bi bi-pencil-square"></i>
         </button>
 
-        <button className="icon-btn text-danger">
+        <button
+          className="icon-btn text-danger"
+          data-bs-toggle="modal"
+          data-bs-target="#deleteVerificentroModal"
+          onClick={onDelete}
+          type="button"
+        >
           <i className="bi bi-trash"></i>
         </button>
       </td>
