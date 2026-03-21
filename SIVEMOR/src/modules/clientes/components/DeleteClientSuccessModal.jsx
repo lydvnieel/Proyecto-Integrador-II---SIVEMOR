@@ -1,8 +1,8 @@
 import Modal from "bootstrap/js/dist/modal";
 
-export default function UpdateClientSuccessModal({ message }) {
+export default function DeleteClientSuccessModal({ message }) {
   const handleClose = () => {
-    const modalElement = document.getElementById("updateClientSuccessModal");
+    const modalElement = document.getElementById("deleteClientSuccessModal");
     if (!modalElement) return;
 
     const modalInstance = Modal.getOrCreateInstance(modalElement);
@@ -12,7 +12,7 @@ export default function UpdateClientSuccessModal({ message }) {
   return (
     <div
       className="modal fade"
-      id="updateClientSuccessModal"
+      id="deleteClientSuccessModal"
       tabIndex="-1"
       aria-hidden="true"
       data-bs-backdrop="static"
@@ -21,11 +21,11 @@ export default function UpdateClientSuccessModal({ message }) {
       <div className="modal-dialog modal-dialog-centered">
         <div className="modal-content">
           <div className="modal-header">
-            <h5 className="modal-title">¡Actualización exitosa!</h5>
+            <h5 className="modal-title">¡Eliminación exitosa!</h5>
           </div>
 
           <div className="modal-body">
-            {message || "Se actualizó correctamente la información del cliente."}
+            {message || "Se eliminó correctamente el cliente."}
           </div>
 
           <div className="modal-footer">

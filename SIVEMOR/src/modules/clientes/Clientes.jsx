@@ -1,57 +1,100 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import Modal from "bootstrap/js/dist/modal";
 import Admin from "../../components/Admin";
 import ClientRow from "./components/ClientRow";
 import CreateClientModal from "./components/CreateClientModal";
-import EditClientModal from "./components/EditClientModal";
 import CreateClientSuccessModal from "./components/CreateClientSuccessModal";
-import UpdateClientSuccessModal from "./components/UpdateClientSuccessModal";
 import DeleteClientsModal from "./components/DeleteClientsModal";
+import DeleteAllClientsModal from "./components/DeleteAllClientsModal";
+import DeleteClientSuccessModal from "./components/DeleteClientSuccessModal";
+import EditClientModal from "./components/EditClientModal";
+import UpdateClientSuccessModal from "./components/UpdateClientSuccessModal";
+import clientesData from "../../data/clientes.json";
 
 export default function Clientes() {
-  const [clientes, setClientes] = useState([
-    {
-      id: 1,
-      razonSocial: "Transportes del Norte SA de CV",
-      correo: "contacto@transportesnorte.com.mx",
-      telefonoPrincipal: "81-1234-5678",
-      telefonoAlternativo: "81-8765-4321",
-      gestor: "María García López",
-    },
-    {
-      id: 2,
-      razonSocial: "Logística Occidente SC",
-      correo: "info@logisticaoccidente.com",
-      telefonoPrincipal: "33-2345-6789",
-      telefonoAlternativo: "33-9876-5432",
-      gestor: "Carlos Méndez Ruiz",
-    },
-    {
-      id: 3,
-      razonSocial: "Distribuidora Central SA",
-      correo: "ventas@distribuidoracentral.mx",
-      telefonoPrincipal: "55-3456-7890",
-      telefonoAlternativo: "55-0987-6543",
-      gestor: "Roberto Silva Hernández",
-    },
-    {
-      id: 4,
-      razonSocial: "Grupo Transportista del Bajío SA de CV",
-      correo: "admin@grupotransportistabajio.com",
-      telefonoPrincipal: "44-4567-8901",
-      telefonoAlternativo: "",
-      gestor: "Ana Martínez Torres",
-    },
-  ]);
+  const [clientes, setClientes] = useState(() => {
+    const saved = localStorage.getItem("clientes");
+    return saved ? JSON.parse(saved) : clientesData;
+  });
 
   const [selectedRows, setSelectedRows] = useState({});
-  const [selectedClient, setSelectedClient] = useState(null);
+  const [currentClient, setCurrentClient] = useState(null);
+  const [currentId, setCurrentId] = useState(null);
+  const [deleteMessage, setDeleteMessage] = useState("");
+  const [createMessage, setCreateMessage] = useState("");
+  const [updateMessage, setUpdateMessage] = useState("");
+
+  useEffect(() => {
+    localStorage.setItem("clientes", JSON.stringify(clientes));
+  }, [clientes]);
+
+  const cleanupModalArtifacts = () => {
+    document.body.classList.remove("modal-open");
+    document.body.style.removeProperty("padding-right");
+    document.body.style.removeProperty("overflow");
+
+    document.querySelectorAll(".modal-backdrop").forEach((backdrop) => {
+      backdrop.remove();
+    });
+  };
+
+  const openModal = (modalId) => {
+    const modalElement = document.getElementById(modalId);
+    if (!modalElement) return;
+
+    cleanupModalArtifacts();
+
+    const modalInstance = Modal.getOrCreateInstance(modalElement);
+    modalInstance.show();
+  };
+
+  const hideModal = (modalId, callback) => {
+    const modalElement = document.getElementById(modalId);
+    if (!modalElement) return;
+
+    const modalInstance = Modal.getOrCreateInstance(modalElement);
+
+    modalElement.addEventListener(
+      "hidden.bs.modal",
+      () => {
+        cleanupModalArtifacts();
+        if (callback) callback();
+      },
+      { once: true }
+    );
+
+    modalInstance.hide();
+  };
+
+  const showCreateSuccessModal = (message) => {
+    setCreateMessage(message);
+    hideModal("createClientModal", () => {
+      openModal("createClientSuccessModal");
+    });
+  };
+
+  const showUpdateSuccessModal = (message) => {
+    setUpdateMessage(message);
+    hideModal("editClientModal", () => {
+      openModal("updateClientSuccessModal");
+    });
+  };
+
+  const showDeleteSuccessModal = (message, sourceId) => {
+    setDeleteMessage(message);
+    hideModal(sourceId, () => {
+      openModal("deleteClientSuccessModal");
+    });
+  };
 
   const handleSelectAll = () => {
-    const allSelected = clientes.every((item) => selectedRows[item.id]);
-    const newSelected = {};
+    const allSelected =
+      clientes.length > 0 &&
+      clientes.every((client) => selectedRows[client.id]);
 
-    clientes.forEach((item) => {
-      newSelected[item.id] = !allSelected;
+    const newSelected = {};
+    clientes.forEach((client) => {
+      newSelected[client.id] = !allSelected;
     });
 
     setSelectedRows(newSelected);
@@ -68,23 +111,89 @@ export default function Clientes() {
     setSelectedRows({});
   };
 
+  const handleOpenCreate = () => {
+    openModal("createClientModal");
+  };
+
   const handleOpenEdit = (client) => {
-    setSelectedClient(client);
+    setCurrentClient(client);
+    setCurrentId(client.id);
+
+    setTimeout(() => {
+      openModal("editClientModal");
+    }, 0);
+  };
+
+  const handleOpenDeleteOne = (client) => {
+    setCurrentClient(client);
+    setCurrentId(client.id);
+
+    setTimeout(() => {
+      openModal("deleteClientModal");
+    }, 0);
+  };
+
+  const handleOpenDeleteSelected = () => {
+    setCurrentClient(null);
+    setCurrentId(null);
+    openModal("deleteClientModal");
+  };
+
+  const handleOpenDeleteAll = () => {
+    openModal("deleteAllClientsModal");
   };
 
   const handleCreate = (newClient) => {
-    setClientes((prev) => [
-      ...prev,
-      {
-        ...newClient,
-        id: Date.now(),
-      },
-    ]);
+    const createdClient = {
+      id: Date.now(),
+      nombre: newClient.razonSocial,
+      rfc: "SIN RFC",
+      telefono: newClient.telefonoPrincipal,
+      correo: newClient.correo,
+      direccion: newClient.gestor,
+      telefonoAlternativo: newClient.telefonoAlternativo,
+    };
+
+    setClientes((prev) => [...prev, createdClient]);
+
+    showCreateSuccessModal(
+      `Se creó con éxito el cliente ${createdClient.nombre}.`
+    );
   };
 
   const handleSaveEdit = (updatedClient) => {
+    if (currentId === null) return;
+
     setClientes((prev) =>
-      prev.map((item) => (item.id === updatedClient.id ? updatedClient : item))
+      prev.map((client) =>
+        client.id === currentId ? { ...client, ...updatedClient } : client
+      )
+    );
+
+    showUpdateSuccessModal(
+      "Se actualizó correctamente la información del cliente."
+    );
+  };
+
+  const handleDeleteOne = () => {
+    if (currentId === null) return;
+
+    const deletedName = currentClient?.nombre || "el cliente";
+
+    setClientes((prev) => prev.filter((client) => client.id !== currentId));
+
+    setSelectedRows((prev) => {
+      const updated = { ...prev };
+      delete updated[currentId];
+      return updated;
+    });
+
+    setCurrentClient(null);
+    setCurrentId(null);
+
+    showDeleteSuccessModal(
+      `Se eliminó con éxito ${deletedName}.`,
+      "deleteClientModal"
     );
   };
 
@@ -93,12 +202,43 @@ export default function Clientes() {
       .filter((id) => selectedRows[id])
       .map(Number);
 
-    setClientes((prev) => prev.filter((item) => !idsToDelete.includes(item.id)));
+    const count = idsToDelete.length;
+
+    setClientes((prev) =>
+      prev.filter((client) => !idsToDelete.includes(client.id))
+    );
+
     setSelectedRows({});
+    setCurrentClient(null);
+    setCurrentId(null);
+
+    showDeleteSuccessModal(
+      count === 1
+        ? "Se eliminó con éxito 1 cliente."
+        : `Se eliminaron con éxito ${count} clientes.`,
+      "deleteClientModal"
+    );
+  };
+
+  const handleDeleteAll = () => {
+    const total = clientes.length;
+
+    setClientes([]);
+    setSelectedRows({});
+    setCurrentClient(null);
+    setCurrentId(null);
+
+    showDeleteSuccessModal(
+      total === 1
+        ? "Se eliminó con éxito 1 cliente."
+        : `Se eliminaron con éxito ${total} clientes.`,
+      "deleteAllClientsModal"
+    );
   };
 
   const isAllSelected =
-    clientes.length > 0 && clientes.every((item) => selectedRows[item.id]);
+    clientes.length > 0 &&
+    clientes.every((client) => selectedRows[client.id]);
 
   const selectedCount = Object.values(selectedRows).filter(Boolean).length;
 
@@ -107,43 +247,47 @@ export default function Clientes() {
       <div className="page-header">
         <div>
           <h2 className="page-heading">Gestión de Clientes</h2>
-          <p className="page-title">Administración de empresas y contactos</p>
+          <p className="page-title">Administración y control de clientes</p>
         </div>
 
-        <div className={selectedCount > 0 ? "selection-toolbar" : ""}>
+        <div className={selectedCount > 0 ? "selection-toolbar" : "d-flex gap-2"}>
           {selectedCount === 0 ? (
-            <button
-              className="primary-btn"
-              data-bs-toggle="modal"
-              data-bs-target="#createClientModal"
-            >
+            <button className="primary-btn" onClick={handleOpenCreate} type="button">
               <i className="bi bi-plus-lg"></i>&nbsp;Nuevo Cliente
             </button>
           ) : (
             <>
-              {isAllSelected && (
+            {isAllSelected && (
                 <div className="selection-info">
                   <i className="bi bi-info-circle"></i>
                   ¡Seleccionaste todo!
                 </div>
               )}
-
-              <button
-                className="selection-delete"
-                data-bs-toggle="modal"
-                data-bs-target="#deleteClientsModal"
-              >
-                <i className="bi bi-trash"></i>
-                {selectedCount === clientes.length
-                  ? "¡BORRAR TODO!"
-                  : selectedCount === 1
-                  ? "Borrar seleccionado"
-                  : `Borrar (${selectedCount})`}
-              </button>
+              {selectedCount === clientes.length ? (
+                <button
+                  className="selection-delete"
+                  onClick={handleOpenDeleteAll}
+                  type="button"
+                >
+                  <i className="bi bi-trash"></i> ¡BORRAR TODO!
+                </button>
+              ) : (
+                <button
+                  className="selection-delete"
+                  onClick={handleOpenDeleteSelected}
+                  type="button"
+                >
+                  <i className="bi bi-trash"></i>
+                  {selectedCount === 1
+                    ? " Borrar seleccionado"
+                    : ` Borrar (${selectedCount})`}
+                </button>
+              )}
 
               <button
                 className="selection-cancel"
                 onClick={handleCancelSelection}
+                type="button"
               >
                 <i className="bi bi-x-lg"></i>
                 Cancelar
@@ -159,12 +303,12 @@ export default function Clientes() {
             <i className="bi bi-search"></i>
             <input
               type="text"
-              placeholder="Buscar por razón social, email, gestor..."
+              placeholder="Buscar por nombre, RFC o correo..."
             />
           </div>
 
-          <button className="outline-btn">
-            <i className="bi bi-funnel"></i> Filtros Avanzados
+          <button className="outline-btn" type="button">
+            <i className="bi bi-funnel"></i> Filtros
           </button>
         </div>
 
@@ -179,42 +323,58 @@ export default function Clientes() {
                     onChange={handleSelectAll}
                   />
                 </th>
-                <th>RAZÓN SOCIAL</th>
-                <th>CORREO</th>
+                <th>NOMBRE</th>
+                <th>RFC</th>
                 <th>TELÉFONO</th>
-                <th>GESTOR</th>
+                <th>CORREO</th>
+                <th>DIRECCIÓN</th>
                 <th>ACCIONES</th>
               </tr>
             </thead>
 
             <tbody>
-              {clientes.map((item) => (
+              {clientes.map((client) => (
                 <ClientRow
-                  key={item.id}
-                  item={item}
-                  isSelected={!!selectedRows[item.id]}
-                  onSelect={() => handleSelectRow(item.id)}
-                  onEdit={() => handleOpenEdit(item)}
+                  key={client.id}
+                  client={client}
+                  isSelected={!!selectedRows[client.id]}
+                  onSelect={() => handleSelectRow(client.id)}
+                  onEdit={() => handleOpenEdit(client)}
+                  onDelete={() => handleOpenDeleteOne(client)}
                 />
               ))}
             </tbody>
           </table>
         </div>
+        <div className="d-flex justify-content-between align-items-center mt-3">
+          <small>Mostrando {clientes.length} registros</small>
 
-        <div className="mt-3">
-          <small>Mostrando {clientes.length} clientes activos</small>
+          <div className="d-flex gap-2">
+            <button className="btn btn-light" disabled>
+              Anterior
+            </button>
+            <button className="btn btn-light">Siguiente</button>
+          </div>
         </div>
       </div>
 
       <CreateClientModal onCreate={handleCreate} />
-      <EditClientModal client={selectedClient} onSave={handleSaveEdit} />
-      <CreateClientSuccessModal />
-      <UpdateClientSuccessModal />
+      <EditClientModal client={currentClient} onSave={handleSaveEdit} />
+
       <DeleteClientsModal
+        client={currentClient}
         selectedCount={selectedCount}
-        totalCount={clientes.length}
-        onDelete={handleDeleteSelected}
+        onConfirmDelete={currentClient ? handleDeleteOne : handleDeleteSelected}
       />
+
+      <DeleteAllClientsModal
+        totalCount={clientes.length}
+        onConfirmDelete={handleDeleteAll}
+      />
+
+      <CreateClientSuccessModal message={createMessage} />
+      <UpdateClientSuccessModal message={updateMessage} />
+      <DeleteClientSuccessModal message={deleteMessage} />
     </Admin>
   );
 }
