@@ -41,7 +41,7 @@ export default function Notas() {
 
     const sourceModalElement = document.getElementById(sourceModalId);
     const successModalElement = document.getElementById(
-      "successfulDeleteNoteModal"
+      "successfulDeleteNoteModal",
     );
 
     if (!sourceModalElement || !successModalElement) return;
@@ -55,7 +55,7 @@ export default function Notas() {
         cleanupModalArtifacts();
         successModalInstance.show();
       },
-      { once: true }
+      { once: true },
     );
 
     sourceModalInstance.hide();
@@ -103,12 +103,32 @@ export default function Notas() {
     setNotas((prev) => [...prev, createdNote]);
     setCreateMessage(`Se creó con éxito la nota ${createdNote.nota}.`);
   };
+  
+  const handleMarkPaid = () => {
+  const idsToUpdate = Object.keys(selectedRows)
+    .filter((id) => selectedRows[id])
+    .map(Number);
+
+  setNotas((prev) =>
+    prev.map((note) =>
+      idsToUpdate.includes(note.id)
+        ? {
+            ...note,
+            pagado: "Pagado",
+            pagadoClass: "status-success",
+          }
+        : note
+    )
+  );
+
+  setSelectedRows({});
+};
 
   const handleUpdateNote = (updatedNote) => {
     if (currentId === null) return;
 
     const updatedNotes = notas.map((note) =>
-      note.id === currentId ? { ...note, ...updatedNote } : note
+      note.id === currentId ? { ...note, ...updatedNote } : note,
     );
 
     setNotas(updatedNotes);
@@ -133,7 +153,7 @@ export default function Notas() {
 
     showDeleteSuccessModal(
       `Se eliminó con éxito la nota ${deletedNote}.`,
-      "deleteNotesModal"
+      "deleteNotesModal",
     );
   };
 
@@ -153,7 +173,7 @@ export default function Notas() {
       count === 1
         ? "Se eliminó con éxito 1 nota seleccionada."
         : `Se eliminaron con éxito ${count} notas seleccionadas.`,
-      "deleteNotesModal"
+      "deleteNotesModal",
     );
   };
 
@@ -169,7 +189,7 @@ export default function Notas() {
       total === 1
         ? "Se eliminó con éxito 1 nota."
         : `Se eliminaron con éxito ${total} notas.`,
-      "deleteAllNotesModal"
+      "deleteAllNotesModal",
     );
   };
 
@@ -183,10 +203,14 @@ export default function Notas() {
       <div className="page-header">
         <div>
           <h2 className="page-heading">Resumen de Notas</h2>
-          <p className="page-title">Gestión y seguimiento de notas de servicio</p>
+          <p className="page-title">
+            Gestión y seguimiento de notas de servicio
+          </p>
         </div>
 
-        <div className={selectedCount > 0 ? "selection-toolbar" : "d-flex gap-2"}>
+        <div
+          className={selectedCount > 0 ? "selection-toolbar" : "d-flex gap-2"}
+        >
           {selectedCount === 0 ? (
             <button
               className="primary-btn"
@@ -198,6 +222,23 @@ export default function Notas() {
             </button>
           ) : (
             <>
+            {isAllSelected && (
+                <div className="selection-info">
+                  <i className="bi bi-info-circle"></i>
+                  ¡Seleccionaste todo!
+                </div>
+              )}
+              <button
+                className="selection-paid"
+                type="button"
+                onClick={handleMarkPaid}
+              >
+                <i className="bi bi-check-circle"></i>
+                {selectedCount === 1
+                  ? " Marcar 1 nota pagada"
+                  : ` Marcar ${selectedCount} notas pagadas`}
+              </button>
+
               {selectedCount === notas.length ? (
                 <button
                   className="btn btn-danger"
@@ -290,6 +331,16 @@ export default function Notas() {
               ))}
             </tbody>
           </table>
+        </div>
+        <div className="d-flex justify-content-between align-items-center mt-3">
+          <small>Mostrando {notas.length} registros</small>
+
+          <div className="d-flex gap-2">
+            <button className="btn btn-light" disabled>
+              Anterior
+            </button>
+            <button className="btn btn-light">Siguiente</button>
+          </div>
         </div>
       </div>
 

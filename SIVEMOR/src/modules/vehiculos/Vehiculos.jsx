@@ -200,6 +200,12 @@ export default function Vehiculos() {
             </button>
           ) : (
             <>
+            {isAllSelected && (
+                <div className="selection-info">
+                  <i className="bi bi-info-circle"></i>
+                  ¡Seleccionaste todo!
+                </div>
+              )}
               {selectedCount === vehicles.length ? (
                 <button
                   className="btn btn-danger"
@@ -284,6 +290,16 @@ export default function Vehiculos() {
               ))}
             </tbody>
           </table>
+        </div>
+        <div className="d-flex justify-content-between align-items-center mt-3">
+          <small>Mostrando {vehicles.length} registros</small>
+
+          <div className="d-flex gap-2">
+            <button className="btn btn-light" disabled>
+              Anterior
+            </button>
+            <button className="btn btn-light">Siguiente</button>
+          </div>
         </div>
       </div>
 

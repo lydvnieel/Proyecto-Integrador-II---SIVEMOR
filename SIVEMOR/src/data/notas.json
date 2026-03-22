@@ -1,0 +1,30 @@
+[
+  {
+    "id": 1,
+    "nota": "N-1001",
+    "cliente": "Transportes del Norte SA de CV",
+    "verificaciones": 2,
+    "verificentro": "Pepsi",
+    "metodo": "Efectivo",
+    "anticipo": "-",
+    "pagado": "Pagado",
+    "pagadoClass": "status-success",
+    "reviso": "Ana Gómez",
+    "atendio": "Ana Gómez",
+    "comentario": "Todo en orden"
+  },
+  {
+    "id": 2,
+    "nota": "N-1002",
+    "cliente": "Logística Express",
+    "verificaciones": 5,
+    "verificentro": "Pepsi2",
+    "metodo": "Tarjeta",
+    "anticipo": "1",
+    "pagado": "Pendiente",
+    "pagadoClass": "status-warning",
+    "reviso": "Ana Gómez",
+    "atendio": "Ana Gómez",
+    "comentario": "Pendiente factura"
+  }
+]

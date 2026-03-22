@@ -18,7 +18,7 @@ export default function DeleteAllNotesModal({ totalCount, onConfirmDelete }) {
           </div>
 
           <div className="modal-body">
-            ¿Estás seguro de que deseas eliminar TODAS las notas? Esta acción no se puede deshacer.
+            ¿Estás seguro de que deseas eliminar <strong>NOTAS</strong> las notas? Esta acción no se puede deshacer.
             <br />
             <span className="text-danger">Total a eliminar: {totalCount}</span>
           </div>

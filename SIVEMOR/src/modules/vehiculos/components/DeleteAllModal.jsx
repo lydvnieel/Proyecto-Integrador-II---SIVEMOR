@@ -18,7 +18,7 @@ export default function DeleteAllModal({ totalCount, onConfirmDelete }) {
           </div>
 
           <div className="modal-body">
-            ¿Estás seguro de que deseas eliminar todos los vehículos? Esta acción no se puede deshacer.
+            ¿Estás seguro de que deseas eliminar TODOS los vehículos? Esta acción no se puede deshacer.
             <br />
             <span className="text-danger">Total a eliminar: {totalCount}</span>
           </div>

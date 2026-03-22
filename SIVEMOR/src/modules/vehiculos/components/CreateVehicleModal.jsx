@@ -207,12 +207,9 @@ export default function CreateVehicleModal({ onSave }) {
                 Cancelar
               </button>
 
-              <button
-                type="button"
-                className="btn btn-primary mt-3"
-                onClick={handleCreate}
-              >
-                Crear vehículo
+              <button type="button" className="btn btn-primary mt-3" onClick={handleCreate}>
+                              <i className="bi bi-file-earmark-plus"></i>&nbsp;Crear Vehículo
+
               </button>
             </div>
           </div>
