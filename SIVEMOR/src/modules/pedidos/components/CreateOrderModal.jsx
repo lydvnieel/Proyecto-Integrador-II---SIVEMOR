@@ -1,82 +1,53 @@
 import { useEffect, useState } from "react";
 import Modal from "bootstrap/js/dist/modal";
 
-export default function EditOrderModal({ order, onSave }) {
-  const [formData, setFormData] = useState({
-    id: null,
-    nota: "",
-    fechaEnvio: "",
-    numeroGuia: "",
-    recibio: "",
-    foto: "",
-    estatusEnvio: "PENDIENTE",
-    estatusClass: "status-warning",
-    comentario: "",
-  });
+const initialForm = {
+  nota: "",
+  fechaEnvio: "",
+  numeroGuia: "",
+  recibio: "",
+  foto: "",
+  estatusEnvio: "PENDIENTE",
+  estatusClass: "status-warning",
+  comentario: "",
+};
 
-  const [originalData, setOriginalData] = useState({
-    id: null,
-    nota: "",
-    fechaEnvio: "",
-    numeroGuia: "",
-    recibio: "",
-    foto: "",
-    estatusEnvio: "PENDIENTE",
-    estatusClass: "status-warning",
-    comentario: "",
-  });
-
+export default function CreateOrderModal({ onCreate }) {
+  const [formData, setFormData] = useState(initialForm);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (order) {
-      const orderData = {
-        id: order.id,
-        nota: order.nota || "",
-        fechaEnvio: order.fechaEnvio || "",
-        numeroGuia: order.numeroGuia || "",
-        recibio: order.recibio || "",
-        foto: order.foto || "",
-        estatusEnvio: order.estatusEnvio || "PENDIENTE",
-        estatusClass: order.estatusClass || "status-warning",
-        comentario: order.comentario || "",
-      };
+    const modalElement = document.getElementById("createOrderModal");
+    if (!modalElement) return;
 
-      setFormData(orderData);
-      setOriginalData(orderData);
+    const handleHidden = () => {
+      setFormData(initialForm);
       setError("");
-    }
-  }, [order]);
+    };
+
+    modalElement.addEventListener("hidden.bs.modal", handleHidden);
+    return () => {
+      modalElement.removeEventListener("hidden.bs.modal", handleHidden);
+    };
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    let updated = {
+    let updatedData = {
       ...formData,
       [name]: value,
     };
 
     if (name === "estatusEnvio") {
-      if (value === "ENTREGADO") updated.estatusClass = "status-success";
-      else if (value === "PENDIENTE") updated.estatusClass = "status-warning";
-      else updated.estatusClass = "status-neutral";
+      if (value === "ENTREGADO") updatedData.estatusClass = "status-success";
+      else if (value === "PENDIENTE") updatedData.estatusClass = "status-warning";
+      else updatedData.estatusClass = "status-neutral";
     }
 
-    setFormData(updated);
+    setFormData(updatedData);
 
     if (error) setError("");
-  };
-
-  const isSameData = () => {
-    return (
-      formData.nota.trim() === originalData.nota.trim() &&
-      formData.fechaEnvio.trim() === originalData.fechaEnvio.trim() &&
-      formData.numeroGuia.trim() === originalData.numeroGuia.trim() &&
-      formData.recibio.trim() === originalData.recibio.trim() &&
-      formData.foto.trim() === originalData.foto.trim() &&
-      formData.estatusEnvio === originalData.estatusEnvio &&
-      formData.comentario.trim() === originalData.comentario.trim()
-    );
   };
 
   const handleSubmit = (e) => {
@@ -102,31 +73,25 @@ export default function EditOrderModal({ order, onSave }) {
       return;
     }
 
-    if (isSameData()) {
-      setError("No se realizaron cambios en el pedido.");
-      return;
-    }
-
     if (!cleanedData.recibio) cleanedData.recibio = "-";
     if (!cleanedData.foto) cleanedData.foto = "Sin foto";
 
-    onSave(cleanedData);
+    setError("");
+    onCreate(cleanedData);
   };
 
   const handleClose = () => {
-    const modalElement = document.getElementById("editOrderModal");
+    const modalElement = document.getElementById("createOrderModal");
     if (!modalElement) return;
 
     const modalInstance = Modal.getOrCreateInstance(modalElement);
     modalInstance.hide();
   };
 
-  if (!order) return null;
-
   return (
     <div
       className="modal fade"
-      id="editOrderModal"
+      id="createOrderModal"
       tabIndex="-1"
       aria-hidden="true"
       data-bs-backdrop="static"
@@ -136,7 +101,7 @@ export default function EditOrderModal({ order, onSave }) {
         <div className="modal-content">
           <form onSubmit={handleSubmit}>
             <div className="modal-header">
-              <h5 className="modal-title">Editar Pedido</h5>
+              <h5 className="modal-title">Nuevo Pedido</h5>
               <button
                 type="button"
                 className="btn-close"
@@ -159,6 +124,7 @@ export default function EditOrderModal({ order, onSave }) {
                   name="nota"
                   value={formData.nota}
                   onChange={handleChange}
+                  placeholder="Ej. N-1004"
                 />
               </div>
 
@@ -181,6 +147,7 @@ export default function EditOrderModal({ order, onSave }) {
                   name="numeroGuia"
                   value={formData.numeroGuia}
                   onChange={handleChange}
+                  placeholder="Ej. GU-20260216-001"
                 />
               </div>
 
@@ -192,6 +159,7 @@ export default function EditOrderModal({ order, onSave }) {
                   name="recibio"
                   value={formData.recibio}
                   onChange={handleChange}
+                  placeholder="Ej. Carlos Mendoza"
                 />
               </div>
 
@@ -203,6 +171,7 @@ export default function EditOrderModal({ order, onSave }) {
                   name="foto"
                   value={formData.foto}
                   onChange={handleChange}
+                  placeholder="Ej. evidencia-004.jpg"
                 />
               </div>
 
@@ -228,6 +197,7 @@ export default function EditOrderModal({ order, onSave }) {
                   name="comentario"
                   value={formData.comentario}
                   onChange={handleChange}
+                  placeholder="Ingresa un comentario opcional"
                 ></textarea>
               </div>
             </div>
@@ -238,7 +208,7 @@ export default function EditOrderModal({ order, onSave }) {
               </button>
 
               <button type="submit" className="btn btn-primary">
-                Guardar cambios
+                Crear pedido
               </button>
             </div>
           </form>

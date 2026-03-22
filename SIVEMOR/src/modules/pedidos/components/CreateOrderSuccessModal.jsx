@@ -1,8 +1,8 @@
 import Modal from "bootstrap/js/dist/modal";
 
-export default function UpdateOrderSuccessModal({ message }) {
+export default function CreateOrderSuccessModal({ message }) {
   const handleClose = () => {
-    const modalElement = document.getElementById("updateOrderSuccessModal");
+    const modalElement = document.getElementById("createOrderSuccessModal");
     if (!modalElement) return;
 
     const modalInstance = Modal.getOrCreateInstance(modalElement);
@@ -12,7 +12,7 @@ export default function UpdateOrderSuccessModal({ message }) {
   return (
     <div
       className="modal fade"
-      id="updateOrderSuccessModal"
+      id="createOrderSuccessModal"
       tabIndex="-1"
       aria-hidden="true"
       data-bs-backdrop="static"
@@ -21,11 +21,11 @@ export default function UpdateOrderSuccessModal({ message }) {
       <div className="modal-dialog modal-dialog-centered">
         <div className="modal-content">
           <div className="modal-header">
-            <h5 className="modal-title">¡Actualización exitosa!</h5>
+            <h5 className="modal-title">¡Pedido creado!</h5>
           </div>
 
           <div className="modal-body">
-            {message || "Se ha modificado con éxito la información del pedido."}
+            {message || "Se creó correctamente el pedido."}
           </div>
 
           <div className="modal-footer">
