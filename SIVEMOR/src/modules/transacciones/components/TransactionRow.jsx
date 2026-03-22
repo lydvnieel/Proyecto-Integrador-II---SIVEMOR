@@ -1,4 +1,10 @@
-export default function TransactionRow({ item, isSelected, onSelect, onEdit }) {
+export default function TransactionRow({
+  item,
+  isSelected,
+  onSelect,
+  onEdit,
+  onDelete,
+}) {
   return (
     <tr>
       <td className="checkbox-cell">
@@ -35,16 +41,11 @@ export default function TransactionRow({ item, isSelected, onSelect, onEdit }) {
       <td>{item.comentario}</td>
 
       <td>
-        <button
-          className="icon-btn"
-          data-bs-toggle="modal"
-          data-bs-target="#editTransactionModal"
-          onClick={onEdit}
-        >
+        <button className="icon-btn" onClick={onEdit} type="button">
           <i className="bi bi-pencil-square"></i>
         </button>
 
-        <button className="icon-btn text-danger">
+        <button className="icon-btn text-danger" onClick={onDelete} type="button">
           <i className="bi bi-trash"></i>
         </button>
       </td>

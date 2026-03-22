@@ -1,18 +1,33 @@
 import Modal from "bootstrap/js/dist/modal";
 
-export default function UpdateTransactionSuccessModal({ message }) {
+export default function CreateTransactionSuccessModal({ message }) {
   const handleClose = () => {
-    const modalElement = document.getElementById("updateTransactionSuccessModal");
+    const modalElement = document.getElementById("createTransactionSuccessModal");
     if (!modalElement) return;
 
     const modalInstance = Modal.getOrCreateInstance(modalElement);
+
+    modalElement.addEventListener(
+      "hidden.bs.modal",
+      () => {
+        document.body.classList.remove("modal-open");
+        document.body.style.removeProperty("padding-right");
+        document.body.style.removeProperty("overflow");
+
+        document.querySelectorAll(".modal-backdrop").forEach((backdrop) => {
+          backdrop.remove();
+        });
+      },
+      { once: true }
+    );
+
     modalInstance.hide();
   };
 
   return (
     <div
       className="modal fade"
-      id="updateTransactionSuccessModal"
+      id="createTransactionSuccessModal"
       tabIndex="-1"
       aria-hidden="true"
       data-bs-backdrop="static"
@@ -21,11 +36,11 @@ export default function UpdateTransactionSuccessModal({ message }) {
       <div className="modal-dialog modal-dialog-centered">
         <div className="modal-content">
           <div className="modal-header">
-            <h5 className="modal-title">¡Actualización exitosa!</h5>
+            <h5 className="modal-title">¡Transacción creada!</h5>
           </div>
 
           <div className="modal-body">
-            {message || "Se ha modificado con éxito la información de la transacción."}
+            {message || "Se creó correctamente la transacción."}
           </div>
 
           <div className="modal-footer">

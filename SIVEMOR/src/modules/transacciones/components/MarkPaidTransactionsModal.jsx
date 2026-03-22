@@ -1,22 +1,34 @@
+import Modal from "bootstrap/js/dist/modal";
+
 export default function MarkPaidTransactionsModal({
   selectedCount,
   onConfirm,
 }) {
+  const handleClose = () => {
+    const modalElement = document.getElementById("markPaidTransactionsModal");
+    if (!modalElement) return;
+
+    const modalInstance = Modal.getOrCreateInstance(modalElement);
+    modalInstance.hide();
+  };
+
   return (
     <div
       className="modal fade"
       id="markPaidTransactionsModal"
       tabIndex="-1"
       aria-hidden="true"
+      data-bs-backdrop="static"
+      data-bs-keyboard="false"
     >
       <div className="modal-dialog modal-dialog-centered">
         <div className="modal-content">
           <div className="modal-header">
-            <h5 className="modal-title">Confirmar Pago Masivo</h5>
+            <h5 className="modal-title">Confirmar pago masivo</h5>
             <button
               type="button"
               className="btn-close"
-              data-bs-dismiss="modal"
+              onClick={handleClose}
             ></button>
           </div>
 
@@ -30,7 +42,7 @@ export default function MarkPaidTransactionsModal({
             <button
               type="button"
               className="btn btn-light"
-              data-bs-dismiss="modal"
+              onClick={handleClose}
             >
               Cancelar
             </button>
@@ -38,7 +50,6 @@ export default function MarkPaidTransactionsModal({
             <button
               type="button"
               className="btn btn-success"
-              data-bs-dismiss="modal"
               onClick={onConfirm}
             >
               Marcar como pagado

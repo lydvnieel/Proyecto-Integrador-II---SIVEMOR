@@ -1,8 +1,8 @@
 import Modal from "bootstrap/js/dist/modal";
 
-export default function UpdateTransactionSuccessModal({ message }) {
+export default function DeleteTransactionSuccessModal({ message }) {
   const handleClose = () => {
-    const modalElement = document.getElementById("updateTransactionSuccessModal");
+    const modalElement = document.getElementById("deleteTransactionSuccessModal");
     if (!modalElement) return;
 
     const modalInstance = Modal.getOrCreateInstance(modalElement);
@@ -12,7 +12,7 @@ export default function UpdateTransactionSuccessModal({ message }) {
   return (
     <div
       className="modal fade"
-      id="updateTransactionSuccessModal"
+      id="deleteTransactionSuccessModal"
       tabIndex="-1"
       aria-hidden="true"
       data-bs-backdrop="static"
@@ -21,11 +21,11 @@ export default function UpdateTransactionSuccessModal({ message }) {
       <div className="modal-dialog modal-dialog-centered">
         <div className="modal-content">
           <div className="modal-header">
-            <h5 className="modal-title">¡Actualización exitosa!</h5>
+            <h5 className="modal-title">¡Eliminación exitosa!</h5>
           </div>
 
           <div className="modal-body">
-            {message || "Se ha modificado con éxito la información de la transacción."}
+            {message || "Se eliminó correctamente la transacción."}
           </div>
 
           <div className="modal-footer">

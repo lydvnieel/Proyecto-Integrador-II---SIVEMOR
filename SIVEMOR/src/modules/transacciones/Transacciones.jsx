@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import Modal from "bootstrap/js/dist/modal";
 import Admin from "../../components/Admin";
 import TransactionRow from "./components/TransactionRow";
 import CreateTransactionModal from "./components/CreateTransactionModal";
@@ -6,69 +7,92 @@ import EditTransactionModal from "./components/EditTransactionModal";
 import UpdateTransactionSuccessModal from "./components/UpdateTransactionSuccessModal";
 import DeleteTransactionsModal from "./components/DeleteTransactionsModal";
 import MarkPaidTransactionsModal from "./components/MarkPaidTransactionsModal";
+import CreateTransactionSuccessModal from "./components/CreateTransactionSuccessModal";
+import DeleteTransactionSuccessModal from "./components/DeleteTransactionSuccessModal";
+import DeleteAllTransactionsModal from "./components/DeleteAllTransactionsModal";
+import transaccionesData from "../../data/transacciones.json";
 
 export default function Transacciones() {
-  const [transacciones, setTransacciones] = useState([
-    {
-      id: 1,
-      nota: "N-1001",
-      tipoPago: "TRANSFERENCIA",
-      monto: "$1,200",
-      cuentaDeposito: "BBVA-1234",
-      factura: "F-900",
-      pagado: "Sí",
-      pagadoClass: "status-success",
-      fechaPedido: "2026-02-15",
-      cotizacion: "C-500",
-      reviso: "Carlos Mendoza",
-      atendio: "Ana García",
-      pendiente: "No",
-      pendienteClass: "status-success",
-      comentario: "Pago completo verificado",
-    },
-    {
-      id: 2,
-      nota: "N-1002",
-      tipoPago: "EFECTIVO",
-      monto: "$800",
-      cuentaDeposito: "-",
-      factura: "F-901",
-      pagado: "No",
-      pagadoClass: "status-warning",
-      fechaPedido: "2026-02-16",
-      cotizacion: "C-501",
-      reviso: "María López",
-      atendio: "Juan Pérez",
-      pendiente: "Sí",
-      pendienteClass: "status-warning",
-      comentario: "Pendiente de validación",
-    },
-    {
-      id: 3,
-      nota: "N-1001",
-      tipoPago: "DEPOSITO",
-      monto: "$500",
-      cuentaDeposito: "Santander-5678",
-      factura: "F-902",
-      pagado: "Sí",
-      pagadoClass: "status-success",
-      fechaPedido: "2026-02-17",
-      cotizacion: "C-500",
-      reviso: "Carlos Mendoza",
-      atendio: "Ana García",
-      pendiente: "No",
-      pendienteClass: "status-success",
-      comentario: "Segundo pago de la nota N-1001",
-    },
-  ]);
+  const [transacciones, setTransacciones] = useState(() => {
+    const saved = localStorage.getItem("transacciones");
+    return saved ? JSON.parse(saved) : transaccionesData;
+  });
 
   const [selectedRows, setSelectedRows] = useState({});
   const [selectedTransaction, setSelectedTransaction] = useState(null);
+  const [selectedId, setSelectedId] = useState(null);
+  const [createMessage, setCreateMessage] = useState("");
+  const [updateMessage, setUpdateMessage] = useState("");
+  const [deleteMessage, setDeleteMessage] = useState("");
+
+  useEffect(() => {
+    localStorage.setItem("transacciones", JSON.stringify(transacciones));
+  }, [transacciones]);
+
+  const cleanupModalArtifacts = () => {
+    document.body.classList.remove("modal-open");
+    document.body.style.removeProperty("padding-right");
+    document.body.style.removeProperty("overflow");
+
+    document.querySelectorAll(".modal-backdrop").forEach((backdrop) => {
+      backdrop.remove();
+    });
+  };
+
+  const openModal = (modalId) => {
+    const modalElement = document.getElementById(modalId);
+    if (!modalElement) return;
+
+    cleanupModalArtifacts();
+    const modalInstance = Modal.getOrCreateInstance(modalElement);
+    modalInstance.show();
+  };
+
+  const hideModal = (modalId, callback) => {
+    const modalElement = document.getElementById(modalId);
+    if (!modalElement) return;
+
+    const modalInstance = Modal.getOrCreateInstance(modalElement);
+
+    modalElement.addEventListener(
+      "hidden.bs.modal",
+      () => {
+        cleanupModalArtifacts();
+        if (callback) callback();
+      },
+      { once: true }
+    );
+
+    modalInstance.hide();
+  };
+
+  const showCreateSuccessModal = (message) => {
+    setCreateMessage(message);
+    hideModal("createTransactionModal", () => {
+      openModal("createTransactionSuccessModal");
+    });
+  };
+
+  const showUpdateSuccessModal = (message) => {
+    setUpdateMessage(message);
+    hideModal("editTransactionModal", () => {
+      openModal("updateTransactionSuccessModal");
+    });
+  };
+
+  const showDeleteSuccessModal = (message, sourceModalId) => {
+    setDeleteMessage(message);
+    hideModal(sourceModalId, () => {
+      openModal("deleteTransactionSuccessModal");
+    });
+  };
 
   const handleSelectAll = () => {
-    const allSelected = transacciones.every((item) => selectedRows[item.id]);
-    const newSelected = {};
+    const allSelected =
+      transacciones.length > 0 &&
+      transacciones.every((item) => selectedRows[item.id]);
 
+    const newSelected = {};
     transacciones.forEach((item) => {
       newSelected[item.id] = !allSelected;
     });
@@ -89,23 +113,85 @@ export default function Transacciones() {
 
   const handleOpenEdit = (item) => {
     setSelectedTransaction(item);
+    setSelectedId(item.id);
+
+    setTimeout(() => {
+      openModal("editTransactionModal");
+    }, 0);
+  };
+
+  const handleOpenDeleteOne = (item) => {
+    setSelectedRows({});
+    setSelectedTransaction(item);
+    setSelectedId(item.id);
+
+    setTimeout(() => {
+      openModal("deleteTransactionsModal");
+    }, 0);
+  };
+
+  const handleOpenDeleteSelected = () => {
+    setSelectedTransaction(null);
+    setSelectedId(null);
+    openModal("deleteTransactionsModal");
+  };
+
+  const handleOpenDeleteAll = () => {
+    setSelectedTransaction(null);
+    setSelectedId(null);
+    openModal("deleteAllTransactionsModal");
+  };
+
+  const handleOpenMarkPaid = () => {
+    openModal("markPaidTransactionsModal");
   };
 
   const handleCreate = (newTransaction) => {
-    setTransacciones((prev) => [
-      ...prev,
-      {
-        ...newTransaction,
-        id: Date.now(),
-      },
-    ]);
+    const createdTransaction = {
+      ...newTransaction,
+      id: Date.now(),
+    };
+
+    setTransacciones((prev) => [...prev, createdTransaction]);
+
+    showCreateSuccessModal(
+      `Se creó correctamente la transacción ${createdTransaction.factura}.`
+    );
   };
 
   const handleSaveEdit = (updatedTransaction) => {
+    if (selectedId === null) return;
+
     setTransacciones((prev) =>
       prev.map((item) =>
-        item.id === updatedTransaction.id ? updatedTransaction : item
+        item.id === selectedId ? { ...item, ...updatedTransaction } : item
       )
+    );
+
+    showUpdateSuccessModal(
+      "Se actualizó correctamente la información de la transacción."
+    );
+  };
+
+  const handleDeleteOne = () => {
+    if (selectedId === null) return;
+
+    const deletedName = selectedTransaction?.factura || "la transacción";
+
+    setTransacciones((prev) => prev.filter((item) => item.id !== selectedId));
+
+    setSelectedRows((prev) => {
+      const updated = { ...prev };
+      delete updated[selectedId];
+      return updated;
+    });
+
+    setSelectedTransaction(null);
+    setSelectedId(null);
+
+    showDeleteSuccessModal(
+      `Se eliminó con éxito ${deletedName}.`,
+      "deleteTransactionsModal"
     );
   };
 
@@ -114,16 +200,46 @@ export default function Transacciones() {
       .filter((id) => selectedRows[id])
       .map(Number);
 
+    const count = idsToDelete.length;
+
     setTransacciones((prev) =>
       prev.filter((item) => !idsToDelete.includes(item.id))
     );
+
     setSelectedRows({});
+    setSelectedTransaction(null);
+    setSelectedId(null);
+
+    showDeleteSuccessModal(
+      count === 1
+        ? "Se eliminó con éxito 1 transacción."
+        : `Se eliminaron con éxito ${count} transacciones.`,
+      "deleteTransactionsModal"
+    );
+  };
+
+  const handleDeleteAll = () => {
+    const total = transacciones.length;
+
+    setTransacciones([]);
+    setSelectedRows({});
+    setSelectedTransaction(null);
+    setSelectedId(null);
+
+    showDeleteSuccessModal(
+      total === 1
+        ? "Se eliminó con éxito 1 transacción."
+        : `Se eliminaron con éxito ${total} transacciones.`,
+      "deleteAllTransactionsModal"
+    );
   };
 
   const handleMarkPaid = () => {
     const idsToUpdate = Object.keys(selectedRows)
       .filter((id) => selectedRows[id])
       .map(Number);
+
+    const count = idsToUpdate.length;
 
     setTransacciones((prev) =>
       prev.map((item) =>
@@ -140,6 +256,12 @@ export default function Transacciones() {
     );
 
     setSelectedRows({});
+
+    hideModal("markPaidTransactionsModal", () => {
+      cleanupModalArtifacts();
+    });
+
+    if (count === 0) return;
   };
 
   const isAllSelected =
@@ -162,8 +284,8 @@ export default function Transacciones() {
           {selectedCount === 0 ? (
             <button
               className="primary-btn"
-              data-bs-toggle="modal"
-              data-bs-target="#createTransactionModal"
+              onClick={() => openModal("createTransactionModal")}
+              type="button"
             >
               <i className="bi bi-plus-lg"></i>&nbsp;Nueva transacción
             </button>
@@ -178,31 +300,38 @@ export default function Transacciones() {
 
               <button
                 className="selection-paid"
-                data-bs-toggle="modal"
-                data-bs-target="#markPaidTransactionsModal"
+                onClick={handleOpenMarkPaid}
+                type="button"
               >
                 <i className="bi bi-check-circle"></i>
-                {selectedCount === 1
-                  ? "Marcar como Pagado"
-                  : "Marcar como Pagado"}
+                Marcar como Pagado
               </button>
 
-              <button
-                className="selection-delete"
-                data-bs-toggle="modal"
-                data-bs-target="#deleteTransactionsModal"
-              >
-                <i className="bi bi-trash"></i>
-                {selectedCount === transacciones.length
-                  ? "¡BORRAR TODO!"
-                  : selectedCount === 1
-                  ? "Borrar Seleccionada"
-                  : "Borrar Seleccionadas"}
-              </button>
+              {selectedCount === transacciones.length ? (
+                <button
+                  className="selection-delete"
+                  onClick={handleOpenDeleteAll}
+                  type="button"
+                >
+                  <i className="bi bi-trash"></i> ¡BORRAR TODO!
+                </button>
+              ) : (
+                <button
+                  className="selection-delete"
+                  onClick={handleOpenDeleteSelected}
+                  type="button"
+                >
+                  <i className="bi bi-trash"></i>
+                  {selectedCount === 1
+                    ? " Borrar Seleccionada"
+                    : " Borrar Seleccionadas"}
+                </button>
+              )}
 
               <button
                 className="selection-cancel"
                 onClick={handleCancelSelection}
+                type="button"
               >
                 <i className="bi bi-x-lg"></i>
                 Cancelar
@@ -222,7 +351,7 @@ export default function Transacciones() {
             />
           </div>
 
-          <button className="outline-btn">
+          <button className="outline-btn" type="button">
             <i className="bi bi-funnel"></i> Filtros Avanzados
           </button>
         </div>
@@ -262,6 +391,7 @@ export default function Transacciones() {
                   isSelected={!!selectedRows[item.id]}
                   onSelect={() => handleSelectRow(item.id)}
                   onEdit={() => handleOpenEdit(item)}
+                  onDelete={() => handleOpenDeleteOne(item)}
                 />
               ))}
             </tbody>
@@ -283,16 +413,28 @@ export default function Transacciones() {
         transaction={selectedTransaction}
         onSave={handleSaveEdit}
       />
-      <UpdateTransactionSuccessModal />
+
       <DeleteTransactionsModal
+        transaction={selectedTransaction}
         selectedCount={selectedCount}
-        totalCount={transacciones.length}
-        onDelete={handleDeleteSelected}
+        onConfirmDelete={
+          selectedTransaction ? handleDeleteOne : handleDeleteSelected
+        }
       />
+
+      <DeleteAllTransactionsModal
+        totalCount={transacciones.length}
+        onConfirmDelete={handleDeleteAll}
+      />
+
       <MarkPaidTransactionsModal
         selectedCount={selectedCount}
         onConfirm={handleMarkPaid}
       />
+
+      <CreateTransactionSuccessModal message={createMessage} />
+      <UpdateTransactionSuccessModal message={updateMessage} />
+      <DeleteTransactionSuccessModal message={deleteMessage} />
     </Admin>
   );
 }
