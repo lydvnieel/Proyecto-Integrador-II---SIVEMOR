@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import Modal from "bootstrap/js/dist/modal";
 import Admin from "../../components/Admin";
 import CedisRow from "./components/CedisRow";
 import CreateCedisModal from "./components/CreateCedisModal";
@@ -6,45 +7,91 @@ import EditCedisModal from "./components/EditCedisModal";
 import CreateCedisSuccessModal from "./components/CreateCedisSuccessModal";
 import UpdateCedisSuccessModal from "./components/UpdateCedisSuccessModal";
 import DeleteCedisModal from "./components/DeleteCedisModal";
+import DeleteCedisSuccessModal from "./components/DeleteCedisSuccessModal.jsx";
+import DeleteAllCedis from "./components/DeleteAllCedis";
+import cedisData from "../../data/cedis.json";
 
 export default function Cedis() {
-  const [cedisList, setCedisList] = useState([
-    {
-      id: 1,
-      nombre: "CEDIS Monterrey Norte",
-      direccion: "Av. Constitución 1234, Monterrey, N.L.",
-      encargado: "Carlos Méndez",
-      correo: "carlos.mendez@empresa.com",
-      telefonoPrincipal: "81-1234-5678",
-      telefonoAlternativo: "81-8765-4321",
-    },
-    {
-      id: 2,
-      nombre: "CEDIS Guadalajara Sur",
-      direccion: "Periférico Sur 5678, Guadalajara, JAL.",
-      encargado: "María González",
-      correo: "maria.gonzalez@empresa.com",
-      telefonoPrincipal: "33-2345-6789",
-      telefonoAlternativo: "33-9876-5432",
-    },
-    {
-      id: 3,
-      nombre: "CEDIS CDMX Centro",
-      direccion: "Calzada Ignacio Zaragoza 9876, CDMX",
-      encargado: "Roberto Silva",
-      correo: "roberto.silva@empresa.com",
-      telefonoPrincipal: "55-3456-7890",
-      telefonoAlternativo: "55-0987-6543",
-    },
-  ]);
+  const [cedisList, setCedisList] = useState(() => {
+    const savedCedis = localStorage.getItem("cedis");
+    return savedCedis ? JSON.parse(savedCedis) : cedisData;
+  });
 
   const [selectedRows, setSelectedRows] = useState({});
   const [selectedCedis, setSelectedCedis] = useState(null);
+  const [selectedId, setSelectedId] = useState(null);
+  const [createMessage, setCreateMessage] = useState("");
+  const [updateMessage, setUpdateMessage] = useState("");
+  const [deleteMessage, setDeleteMessage] = useState("");
+
+  useEffect(() => {
+    localStorage.setItem("cedis", JSON.stringify(cedisList));
+  }, [cedisList]);
+
+  const cleanupModalArtifacts = () => {
+    document.body.classList.remove("modal-open");
+    document.body.style.removeProperty("padding-right");
+    document.body.style.removeProperty("overflow");
+
+    document.querySelectorAll(".modal-backdrop").forEach((backdrop) => {
+      backdrop.remove();
+    });
+  };
+
+  const openModal = (modalId) => {
+    const modalElement = document.getElementById(modalId);
+    if (!modalElement) return;
+
+    cleanupModalArtifacts();
+    const modalInstance = Modal.getOrCreateInstance(modalElement);
+    modalInstance.show();
+  };
+
+  const hideModal = (modalId, callback) => {
+    const modalElement = document.getElementById(modalId);
+    if (!modalElement) return;
+
+    const modalInstance = Modal.getOrCreateInstance(modalElement);
+
+    modalElement.addEventListener(
+      "hidden.bs.modal",
+      () => {
+        cleanupModalArtifacts();
+        if (callback) callback();
+      },
+      { once: true }
+    );
+
+    modalInstance.hide();
+  };
+
+  const showCreateSuccessModal = (message) => {
+    setCreateMessage(message);
+    hideModal("createCedisModal", () => {
+      openModal("createCedisSuccessModal");
+    });
+  };
+
+  const showUpdateSuccessModal = (message) => {
+    setUpdateMessage(message);
+    hideModal("editCedisModal", () => {
+      openModal("updateCedisSuccessModal");
+    });
+  };
+
+  const showDeleteSuccessModal = (message, sourceModalId) => {
+    setDeleteMessage(message);
+    hideModal(sourceModalId, () => {
+      openModal("deleteCedisSuccessModal");
+    });
+  };
 
   const handleSelectAll = () => {
-    const allSelected = cedisList.every((item) => selectedRows[item.id]);
-    const newSelected = {};
+    const allSelected =
+      cedisList.length > 0 &&
+      cedisList.every((item) => selectedRows[item.id]);
 
+    const newSelected = {};
     cedisList.forEach((item) => {
       newSelected[item.id] = !allSelected;
     });
@@ -63,24 +110,86 @@ export default function Cedis() {
     setSelectedRows({});
   };
 
-  const handleOpenEdit = (item) => {
-    setSelectedCedis(item);
+  const handleOpenEdit = (cedis) => {
+    setSelectedCedis(cedis);
+    setSelectedId(cedis.id);
+
+    setTimeout(() => {
+      openModal("editCedisModal");
+    }, 0);
+  };
+
+  const handleOpenDeleteOne = (cedis) => {
+  setSelectedRows({});
+  setSelectedCedis(cedis);
+  setSelectedId(cedis.id);
+
+  setTimeout(() => {
+    openModal("deleteCedisModal");
+  }, 0);
+};
+
+  const handleOpenDeleteSelected = () => {
+    setSelectedCedis(null);
+    setSelectedId(null);
+    openModal("deleteCedisModal");
+  };
+
+  const handleOpenDeleteAll = () => {
+    setSelectedCedis(null);
+    setSelectedId(null);
+    openModal("deleteAllCedisModal");
   };
 
   const handleCreate = (newCedis) => {
-    setCedisList((prev) => [
-      ...prev,
-      {
-        ...newCedis,
-        id: Date.now(),
-      },
-    ]);
+    const createdCedis = {
+      id: Date.now(),
+      nombre: newCedis.nombre,
+      direccion: newCedis.direccion,
+      encargado: newCedis.encargado,
+      correo: newCedis.correo,
+      telefonoPrincipal: newCedis.telefonoPrincipal,
+      telefonoAlternativo: newCedis.telefonoAlternativo,
+    };
+
+    setCedisList((prev) => [...prev, createdCedis]);
+
+    showCreateSuccessModal(
+      `Se creó con éxito el CEDIS ${createdCedis.nombre}.`
+    );
   };
 
   const handleSaveEdit = (updatedCedis) => {
+    if (selectedId === null) return;
+
     setCedisList((prev) =>
-      prev.map((item) => (item.id === updatedCedis.id ? updatedCedis : item))
+      prev.map((item) =>
+        item.id === selectedId ? { ...item, ...updatedCedis } : item
+      )
     );
+
+    showUpdateSuccessModal(
+      "Se actualizó correctamente la información del CEDIS."
+    );
+  };
+
+  const handleDeleteOne = () => {
+    if (selectedId === null) return;
+
+    const deletedName = selectedCedis?.nombre || "el CEDIS";
+
+    setCedisList((prev) => prev.filter((item) => item.id !== selectedId));
+
+    setSelectedRows((prev) => {
+      const updated = { ...prev };
+      delete updated[selectedId];
+      return updated;
+    });
+
+    setSelectedCedis(null);
+    setSelectedId(null);
+
+    showDeleteSuccessModal(`Se eliminó con éxito ${deletedName}.`, "deleteCedisModal");
   };
 
   const handleDeleteSelected = () => {
@@ -88,12 +197,43 @@ export default function Cedis() {
       .filter((id) => selectedRows[id])
       .map(Number);
 
-    setCedisList((prev) => prev.filter((item) => !idsToDelete.includes(item.id)));
+    const count = idsToDelete.length;
+
+    setCedisList((prev) =>
+      prev.filter((item) => !idsToDelete.includes(item.id))
+    );
+
     setSelectedRows({});
+    setSelectedCedis(null);
+    setSelectedId(null);
+
+    showDeleteSuccessModal(
+      count === 1
+        ? "Se eliminó con éxito 1 CEDIS."
+        : `Se eliminaron con éxito ${count} CEDIS.`,
+      "deleteCedisModal"
+    );
+  };
+
+  const handleDeleteAll = () => {
+    const total = cedisList.length;
+
+    setCedisList([]);
+    setSelectedRows({});
+    setSelectedCedis(null);
+    setSelectedId(null);
+
+    showDeleteSuccessModal(
+      total === 1
+        ? "Se eliminó con éxito 1 CEDIS."
+        : `Se eliminaron con éxito ${total} CEDIS.`,
+      "deleteAllCedisModal"
+    );
   };
 
   const isAllSelected =
-    cedisList.length > 0 && cedisList.every((item) => selectedRows[item.id]);
+    cedisList.length > 0 &&
+    cedisList.every((item) => selectedRows[item.id]);
 
   const selectedCount = Object.values(selectedRows).filter(Boolean).length;
 
@@ -102,43 +242,52 @@ export default function Cedis() {
       <div className="page-header">
         <div>
           <h2 className="page-heading">Gestión de CEDIS</h2>
-          <p className="page-title">Centros de Distribución por región y cliente</p>
+          <p className="page-title">Administración y control de CEDIS</p>
         </div>
 
-        <div className={selectedCount > 0 ? "selection-toolbar" : ""}>
+        <div className={selectedCount > 0 ? "selection-toolbar" : "d-flex gap-2"}>
           {selectedCount === 0 ? (
             <button
               className="primary-btn"
-              data-bs-toggle="modal"
-              data-bs-target="#createCedisModal"
+              onClick={() => openModal("createCedisModal")}
+              type="button"
             >
               <i className="bi bi-plus-lg"></i>&nbsp;Nuevo CEDIS
             </button>
           ) : (
+            
             <>
-              {isAllSelected && (
+            {isAllSelected && (
                 <div className="selection-info">
                   <i className="bi bi-info-circle"></i>
                   ¡Seleccionaste todo!
                 </div>
               )}
-
-              <button
-                className="selection-delete"
-                data-bs-toggle="modal"
-                data-bs-target="#deleteCedisModal"
-              >
-                <i className="bi bi-trash"></i>
-                {selectedCount === cedisList.length
-                  ? "¡BORRAR TODO!"
-                  : selectedCount === 1
-                  ? "Borrar seleccionado"
-                  : `Borrar (${selectedCount})`}
-              </button>
+              {selectedCount === cedisList.length ? (
+                <button
+                  className="selection-delete"
+                  onClick={handleOpenDeleteAll}
+                  type="button"
+                >
+                  <i className="bi bi-trash"></i> ¡BORRAR TODO!
+                </button>
+              ) : (
+                <button
+                  className="selection-delete"
+                  onClick={handleOpenDeleteSelected}
+                  type="button"
+                >
+                  <i className="bi bi-trash"></i>
+                  {selectedCount === 1
+                    ? " Borrar seleccionado"
+                    : ` Borrar (${selectedCount})`}
+                </button>
+              )}
 
               <button
                 className="selection-cancel"
                 onClick={handleCancelSelection}
+                type="button"
               >
                 <i className="bi bi-x-lg"></i>
                 Cancelar
@@ -154,12 +303,12 @@ export default function Cedis() {
             <i className="bi bi-search"></i>
             <input
               type="text"
-              placeholder="Buscar por nombre, dirección, encargado..."
+              placeholder="Buscar por nombre, dirección o encargado..."
             />
           </div>
 
-          <button className="outline-btn">
-            <i className="bi bi-funnel"></i> Filtros Avanzados
+          <button className="outline-btn" type="button">
+            <i className="bi bi-funnel"></i> Filtros
           </button>
         </div>
 
@@ -178,7 +327,7 @@ export default function Cedis() {
                 <th>DIRECCIÓN</th>
                 <th>ENCARGADO</th>
                 <th>CORREO</th>
-                <th>TELÉFONO</th>
+                <th>TELÉFONOS</th>
                 <th>ACCIONES</th>
               </tr>
             </thead>
@@ -191,26 +340,41 @@ export default function Cedis() {
                   isSelected={!!selectedRows[item.id]}
                   onSelect={() => handleSelectRow(item.id)}
                   onEdit={() => handleOpenEdit(item)}
+                  onDelete={() => handleOpenDeleteOne(item)}
                 />
               ))}
             </tbody>
           </table>
         </div>
+        <div className="d-flex justify-content-between align-items-center mt-3">
+          <small>Mostrando {cedisList.length} registros</small>
 
-        <div className="mt-3">
-          <small>Mostrando {cedisList.length} CEDIS activos</small>
+          <div className="d-flex gap-2">
+            <button className="btn btn-light" disabled>
+              Anterior
+            </button>
+            <button className="btn btn-light">Siguiente</button>
+          </div>
         </div>
       </div>
 
       <CreateCedisModal onCreate={handleCreate} />
       <EditCedisModal cedis={selectedCedis} onSave={handleSaveEdit} />
-      <CreateCedisSuccessModal />
-      <UpdateCedisSuccessModal />
+
       <DeleteCedisModal
+        cedis={selectedCedis}
         selectedCount={selectedCount}
-        totalCount={cedisList.length}
-        onDelete={handleDeleteSelected}
+        onConfirmDelete={selectedCedis ? handleDeleteOne : handleDeleteSelected}
       />
+
+      <DeleteAllCedis
+        totalCount={cedisList.length}
+        onConfirmDelete={handleDeleteAll}
+      />
+
+      <CreateCedisSuccessModal message={createMessage} />
+      <UpdateCedisSuccessModal message={updateMessage} />
+      <DeleteCedisSuccessModal message={deleteMessage} />
     </Admin>
   );
 }

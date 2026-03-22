@@ -1,4 +1,10 @@
-export default function CedisRow({ item, isSelected, onSelect, onEdit }) {
+export default function CedisRow({
+  item,
+  isSelected,
+  onSelect,
+  onEdit,
+  onDelete,
+}) {
   return (
     <tr>
       <td className="checkbox-cell">
@@ -36,12 +42,14 @@ export default function CedisRow({ item, isSelected, onSelect, onEdit }) {
       <td>
         <div className="d-flex flex-column">
           <span>
-            <i className="bi bi-telephone text-secondary"></i>&nbsp;{item.telefonoPrincipal}
+            <i className="bi bi-telephone text-secondary"></i>
+            &nbsp;{item.telefonoPrincipal}
           </span>
 
           {item.telefonoAlternativo && (
             <span className="text-muted">
-              <i className="bi bi-telephone text-secondary"></i>&nbsp;{item.telefonoAlternativo}
+              <i className="bi bi-telephone text-secondary"></i>
+              &nbsp;{item.telefonoAlternativo}
             </span>
           )}
         </div>
@@ -50,14 +58,17 @@ export default function CedisRow({ item, isSelected, onSelect, onEdit }) {
       <td>
         <button
           className="icon-btn"
-          data-bs-toggle="modal"
-          data-bs-target="#editCedisModal"
           onClick={onEdit}
+          type="button"
         >
           <i className="bi bi-pencil-square"></i>
         </button>
 
-        <button className="icon-btn text-danger">
+        <button
+          className="icon-btn text-danger"
+          onClick={onDelete}
+          type="button"
+        >
           <i className="bi bi-trash"></i>
         </button>
       </td>

@@ -1,8 +1,8 @@
 import Modal from "bootstrap/js/dist/modal";
 
-export default function UpdateCedisSuccessModal({ message }) {
+export default function DeleteCedisSuccessModal({ message }) {
   const handleClose = () => {
-    const modalElement = document.getElementById("updateCedisSuccessModal");
+    const modalElement = document.getElementById("deleteCedisSuccessModal");
     if (!modalElement) return;
 
     const modalInstance = Modal.getOrCreateInstance(modalElement);
@@ -27,7 +27,7 @@ export default function UpdateCedisSuccessModal({ message }) {
   return (
     <div
       className="modal fade"
-      id="updateCedisSuccessModal"
+      id="deleteCedisSuccessModal"
       tabIndex="-1"
       aria-hidden="true"
       data-bs-backdrop="static"
@@ -36,11 +36,11 @@ export default function UpdateCedisSuccessModal({ message }) {
       <div className="modal-dialog modal-dialog-centered">
         <div className="modal-content">
           <div className="modal-header">
-            <h5 className="modal-title">¡Actualización exitosa!</h5>
+            <h5 className="modal-title">¡CEDIS eliminado!</h5>
           </div>
 
           <div className="modal-body">
-            {message || "Se ha modificado con éxito la información del CEDIS."}
+            {message || "Se ha eliminado con éxito el CEDIS."}
           </div>
 
           <div className="modal-footer">

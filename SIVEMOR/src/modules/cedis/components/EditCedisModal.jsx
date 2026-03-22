@@ -1,11 +1,41 @@
 import { useEffect, useState } from "react";
+import Modal from "bootstrap/js/dist/modal";
 
 export default function EditCedisModal({ cedis, onSave }) {
-  const [formData, setFormData] = useState(cedis || {});
+  const [formData, setFormData] = useState({
+    nombre: "",
+    direccion: "",
+    encargado: "",
+    correo: "",
+    telefonoPrincipal: "",
+    telefonoAlternativo: "",
+  });
+
+  const [originalData, setOriginalData] = useState({
+    nombre: "",
+    direccion: "",
+    encargado: "",
+    correo: "",
+    telefonoPrincipal: "",
+    telefonoAlternativo: "",
+  });
+
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (cedis) {
-      setFormData(cedis);
+      const cedisData = {
+        nombre: cedis.nombre || "",
+        direccion: cedis.direccion || "",
+        encargado: cedis.encargado || "",
+        correo: cedis.correo || "",
+        telefonoPrincipal: cedis.telefonoPrincipal || "",
+        telefonoAlternativo: cedis.telefonoAlternativo || "",
+      };
+
+      setFormData(cedisData);
+      setOriginalData(cedisData);
+      setError("");
     }
   }, [cedis]);
 
@@ -16,35 +46,105 @@ export default function EditCedisModal({ cedis, onSave }) {
       ...prev,
       [name]: value,
     }));
+
+    if (error) setError("");
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSave(formData);
+  const isSameData = () => {
+    return (
+      formData.nombre.trim() === originalData.nombre.trim() &&
+      formData.direccion.trim() === originalData.direccion.trim() &&
+      formData.encargado.trim() === originalData.encargado.trim() &&
+      formData.correo.trim() === originalData.correo.trim() &&
+      formData.telefonoPrincipal.trim() === originalData.telefonoPrincipal.trim() &&
+      formData.telefonoAlternativo.trim() === originalData.telefonoAlternativo.trim()
+    );
+  };
+
+  const handleSave = () => {
+    const cleanedData = {
+      nombre: formData.nombre.trim(),
+      direccion: formData.direccion.trim(),
+      encargado: formData.encargado.trim(),
+      correo: formData.correo.trim(),
+      telefonoPrincipal: formData.telefonoPrincipal.trim(),
+      telefonoAlternativo: formData.telefonoAlternativo.trim(),
+    };
+
+    if (
+      !cleanedData.nombre ||
+      !cleanedData.direccion ||
+      !cleanedData.encargado ||
+      !cleanedData.correo ||
+      !cleanedData.telefonoPrincipal
+    ) {
+      setError("Faltan campos por llenar");
+      return;
+    }
+
+    if (isSameData()) {
+      setError("No se realizaron cambios en el CEDIS");
+      return;
+    }
+
+    onSave(cleanedData);
+    setError("");
+
+    const editModalElement = document.getElementById("editCedisModal");
+    const successModalElement = document.getElementById(
+      "updateCedisSuccessModal"
+    );
+
+    if (!editModalElement || !successModalElement) return;
+
+    const editModalInstance = Modal.getOrCreateInstance(editModalElement);
+    const successModalInstance = Modal.getOrCreateInstance(successModalElement);
+
+    editModalElement.addEventListener(
+      "hidden.bs.modal",
+      () => {
+        successModalInstance.show();
+      },
+      { once: true }
+    );
+
+    editModalInstance.hide();
   };
 
   if (!cedis) return null;
 
   return (
-    <div className="modal fade" id="editCedisModal" tabIndex="-1" aria-hidden="true">
+    <div
+      className="modal fade"
+      id="editCedisModal"
+      tabIndex="-1"
+      aria-hidden="true"
+      data-bs-backdrop="static"
+      data-bs-keyboard="false"
+    >
       <div className="modal-dialog modal-dialog-centered">
         <div className="modal-content">
-          <form onSubmit={handleSubmit}>
-            <div className="modal-header">
-              <h5 className="modal-title">Editar CEDIS</h5>
-              <button type="button" className="btn-close" data-bs-dismiss="modal"></button>
-            </div>
+          <div className="modal-header">
+            <h5 className="modal-title">Editar CEDIS</h5>
+            <button type="button" className="btn-close" data-bs-dismiss="modal"></button>
+          </div>
 
-            <div className="modal-body">
+          <div className="modal-body">
+            {error && (
+              <div className="alert alert-danger mt-3 mb-0" role="alert">
+                {error}
+              </div>
+            )}
+
+            <form onSubmit={(e) => e.preventDefault()}>
               <div className="mb-3">
                 <label className="form-label">Nombre del CEDIS *</label>
                 <input
                   type="text"
                   className="form-control"
                   name="nombre"
-                  value={formData.nombre || ""}
+                  value={formData.nombre}
                   onChange={handleChange}
-                  placeholder="Ej: CEDIS Monterrey Norte"
                 />
               </div>
 
@@ -54,9 +154,8 @@ export default function EditCedisModal({ cedis, onSave }) {
                   className="form-control"
                   rows="2"
                   name="direccion"
-                  value={formData.direccion || ""}
+                  value={formData.direccion}
                   onChange={handleChange}
-                  placeholder="Calle, número, colonia, ciudad, estado"
                 ></textarea>
               </div>
 
@@ -66,9 +165,8 @@ export default function EditCedisModal({ cedis, onSave }) {
                   type="text"
                   className="form-control"
                   name="encargado"
-                  value={formData.encargado || ""}
+                  value={formData.encargado}
                   onChange={handleChange}
-                  placeholder="Nombre completo"
                 />
               </div>
 
@@ -78,9 +176,8 @@ export default function EditCedisModal({ cedis, onSave }) {
                   type="email"
                   className="form-control"
                   name="correo"
-                  value={formData.correo || ""}
+                  value={formData.correo}
                   onChange={handleChange}
-                  placeholder="contacto@empresa.com"
                 />
               </div>
 
@@ -91,9 +188,8 @@ export default function EditCedisModal({ cedis, onSave }) {
                     type="text"
                     className="form-control"
                     name="telefonoPrincipal"
-                    value={formData.telefonoPrincipal || ""}
+                    value={formData.telefonoPrincipal}
                     onChange={handleChange}
-                    placeholder="81-1234-5678"
                   />
                 </div>
 
@@ -103,30 +199,23 @@ export default function EditCedisModal({ cedis, onSave }) {
                     type="text"
                     className="form-control"
                     name="telefonoAlternativo"
-                    value={formData.telefonoAlternativo || ""}
+                    value={formData.telefonoAlternativo}
                     onChange={handleChange}
-                    placeholder="81-8765-4321"
                   />
                 </div>
               </div>
-            </div>
+            </form>
+          </div>
 
-            <div className="modal-footer">
-              <button type="button" className="btn btn-light" data-bs-dismiss="modal">
-                Cancelar
-              </button>
+          <div className="modal-footer">
+            <button type="button" className="btn btn-light" data-bs-dismiss="modal">
+              Cancelar
+            </button>
 
-              <button
-                type="submit"
-                className="btn btn-primary"
-                data-bs-dismiss="modal"
-                data-bs-toggle="modal"
-                data-bs-target="#updateCedisSuccessModal"
-              >
-                Guardar cambios
-              </button>
-            </div>
-          </form>
+            <button type="button" className="btn btn-primary" onClick={handleSave}>
+              Guardar cambios
+            </button>
+          </div>
         </div>
       </div>
     </div>

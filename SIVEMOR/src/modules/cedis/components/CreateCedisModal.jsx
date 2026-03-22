@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Modal from "bootstrap/js/dist/modal";
 
 export default function CreateCedisModal({ onCreate }) {
   const [formData, setFormData] = useState({
@@ -10,19 +11,9 @@ export default function CreateCedisModal({ onCreate }) {
     telefonoAlternativo: "",
   });
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
+  const [error, setError] = useState("");
 
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onCreate(formData);
-
+  const resetForm = () => {
     setFormData({
       nombre: "",
       direccion: "",
@@ -31,19 +22,89 @@ export default function CreateCedisModal({ onCreate }) {
       telefonoPrincipal: "",
       telefonoAlternativo: "",
     });
+    setError("");
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+
+    if (error) setError("");
+  };
+
+  const handleCreate = () => {
+    const cleanedData = {
+      nombre: formData.nombre.trim(),
+      direccion: formData.direccion.trim(),
+      encargado: formData.encargado.trim(),
+      correo: formData.correo.trim(),
+      telefonoPrincipal: formData.telefonoPrincipal.trim(),
+      telefonoAlternativo: formData.telefonoAlternativo.trim(),
+    };
+
+    if (
+      !cleanedData.nombre ||
+      !cleanedData.direccion ||
+      !cleanedData.encargado ||
+      !cleanedData.correo ||
+      !cleanedData.telefonoPrincipal
+    ) {
+      setError("Faltan campos por llenar");
+      return;
+    }
+
+    onCreate(cleanedData);
+
+    const createModalElement = document.getElementById("createCedisModal");
+    const successModalElement = document.getElementById(
+      "createCedisSuccessModal"
+    );
+
+    if (!createModalElement || !successModalElement) return;
+
+    const createModalInstance = Modal.getOrCreateInstance(createModalElement);
+    const successModalInstance = Modal.getOrCreateInstance(successModalElement);
+
+    createModalElement.addEventListener(
+      "hidden.bs.modal",
+      () => {
+        resetForm();
+        successModalInstance.show();
+      },
+      { once: true }
+    );
+
+    createModalInstance.hide();
   };
 
   return (
-    <div className="modal fade" id="createCedisModal" tabIndex="-1" aria-hidden="true">
+    <div
+      className="modal fade"
+      id="createCedisModal"
+      tabIndex="-1"
+      aria-hidden="true"
+      data-bs-backdrop="static"
+      data-bs-keyboard="false"
+    >
       <div className="modal-dialog modal-dialog-centered">
         <div className="modal-content">
-          <form onSubmit={handleSubmit}>
-            <div className="modal-header">
-              <h5 className="modal-title">Nuevo CEDIS</h5>
-              <button type="button" className="btn-close" data-bs-dismiss="modal"></button>
-            </div>
+          <div className="modal-header">
+            <h5 className="modal-title">Nuevo CEDIS</h5>
+            <button type="button" className="btn-close" data-bs-dismiss="modal"></button>
+          </div>
 
-            <div className="modal-body">
+          <div className="modal-body">
+            {error && (
+              <div className="alert alert-danger mt-3 mb-0" role="alert">
+                {error}
+              </div>
+            )}
+
+            <form onSubmit={(e) => e.preventDefault()}>
               <div className="mb-3">
                 <label className="form-label">Nombre del CEDIS *</label>
                 <input
@@ -117,24 +178,18 @@ export default function CreateCedisModal({ onCreate }) {
                   />
                 </div>
               </div>
-            </div>
+            </form>
+          </div>
 
-            <div className="modal-footer">
-              <button type="button" className="btn btn-light" data-bs-dismiss="modal">
-                Cancelar
-              </button>
+          <div className="modal-footer">
+            <button type="button" className="btn btn-light" data-bs-dismiss="modal">
+              Cancelar
+            </button>
 
-              <button
-                type="submit"
-                className="btn btn-primary"
-                data-bs-dismiss="modal"
-                data-bs-toggle="modal"
-                data-bs-target="#createCedisSuccessModal"
-              >
-                <i className="bi bi-file-earmark-plus"></i>&nbsp;Crear CEDIS
-              </button>
-            </div>
-          </form>
+            <button type="button" className="btn btn-primary" onClick={handleCreate}>
+              <i className="bi bi-file-earmark-plus"></i>&nbsp;Crear CEDIS
+            </button>
+          </div>
         </div>
       </div>
     </div>
