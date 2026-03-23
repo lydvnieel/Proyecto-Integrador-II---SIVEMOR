@@ -156,21 +156,7 @@ export default function Verificaciones() {
         <div className={selectedCount > 0 ? "selection-toolbar" : "d-flex gap-2"}>
           {selectedCount === 0 ? (
             <>
-              <button
-                className="outline-btn"
-                data-bs-toggle="modal"
-                data-bs-target="#createCostModal"
-              >
-                Consultar costos
-              </button>
 
-              <button
-                className="primary-btn"
-                data-bs-toggle="modal"
-                data-bs-target="#createCostModal"
-              >
-                <i className="bi bi-plus-lg"></i>&nbsp;Nuevo costo
-              </button>
 
               <button
                 className="primary-btn"
