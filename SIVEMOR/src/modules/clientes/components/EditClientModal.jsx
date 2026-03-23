@@ -20,6 +20,8 @@ export default function EditClientModal({ client, onSave }) {
 
   const [error, setError] = useState("");
 
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
   useEffect(() => {
     if (client) {
       const clientData = {
@@ -39,21 +41,27 @@ export default function EditClientModal({ client, onSave }) {
   const handleChange = (e) => {
     const { name, value } = e.target;
 
+    let newValue = value;
+
+    if (name === "telefono") {
+      newValue = value.replace(/\D/g, "");
+    }
+
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: newValue,
     }));
 
     if (error) setError("");
   };
 
-  const isSameData = () => {
+  const isSameData = (cleanedData) => {
     return (
-      formData.nombre.trim() === originalData.nombre.trim() &&
-      formData.rfc.trim() === originalData.rfc.trim() &&
-      formData.telefono.trim() === originalData.telefono.trim() &&
-      formData.correo.trim() === originalData.correo.trim() &&
-      formData.direccion.trim() === originalData.direccion.trim()
+      cleanedData.nombre === originalData.nombre.trim() &&
+      cleanedData.rfc === originalData.rfc.trim() &&
+      cleanedData.telefono === originalData.telefono.trim() &&
+      cleanedData.correo === originalData.correo.trim() &&
+      cleanedData.direccion === originalData.direccion.trim()
     );
   };
 
@@ -79,7 +87,17 @@ export default function EditClientModal({ client, onSave }) {
       return;
     }
 
-    if (isSameData()) {
+    if (cleanedData.correo && !emailRegex.test(cleanedData.correo)) {
+      setError("El correo electrónico no tiene un formato válido.");
+      return;
+    }
+
+    if (!/^\d+$/.test(cleanedData.telefono)) {
+      setError("El teléfono solo debe contener números.");
+      return;
+    }
+
+    if (isSameData(cleanedData)) {
       setError("No se realizaron cambios en el cliente.");
       return;
     }
@@ -155,13 +173,14 @@ export default function EditClientModal({ client, onSave }) {
                   name="telefono"
                   value={formData.telefono}
                   onChange={handleChange}
+                  inputMode="numeric"
                 />
               </div>
 
               <div className="mb-3">
                 <label className="form-label">CORREO *</label>
                 <input
-                  type="email"
+                  type="text"
                   className="form-control"
                   name="correo"
                   value={formData.correo}

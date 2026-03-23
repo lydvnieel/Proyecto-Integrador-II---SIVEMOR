@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Modal from "bootstrap/js/dist/modal";
 import Admin from "../../components/Admin";
 import ClientRow from "./components/ClientRow";
@@ -23,6 +23,8 @@ export default function Clientes() {
   const [deleteMessage, setDeleteMessage] = useState("");
   const [createMessage, setCreateMessage] = useState("");
   const [updateMessage, setUpdateMessage] = useState("");
+  const [searchRazonSocial, setSearchRazonSocial] = useState("");
+  const [searchGestor, setSearchGestor] = useState("");
 
   useEffect(() => {
     localStorage.setItem("clientes", JSON.stringify(clientes));
@@ -87,13 +89,31 @@ export default function Clientes() {
     });
   };
 
+  const filteredClientes = useMemo(() => {
+    return clientes.filter((client) => {
+      const razonSocial = (client.nombre || "").toLowerCase();
+      const gestor = (client.direccion || "").toLowerCase();
+
+      const matchesRazonSocial = razonSocial.includes(
+        searchRazonSocial.trim().toLowerCase()
+      );
+
+      const matchesGestor = gestor.includes(
+        searchGestor.trim().toLowerCase()
+      );
+
+      return matchesRazonSocial && matchesGestor;
+    });
+  }, [clientes, searchRazonSocial, searchGestor]);
+
   const handleSelectAll = () => {
     const allSelected =
-      clientes.length > 0 &&
-      clientes.every((client) => selectedRows[client.id]);
+      filteredClientes.length > 0 &&
+      filteredClientes.every((client) => selectedRows[client.id]);
 
-    const newSelected = {};
-    clientes.forEach((client) => {
+    const newSelected = { ...selectedRows };
+
+    filteredClientes.forEach((client) => {
       newSelected[client.id] = !allSelected;
     });
 
@@ -236,11 +256,18 @@ export default function Clientes() {
     );
   };
 
+  const clearFilters = () => {
+    setSearchRazonSocial("");
+    setSearchGestor("");
+  };
+
   const isAllSelected =
-    clientes.length > 0 &&
-    clientes.every((client) => selectedRows[client.id]);
+    filteredClientes.length > 0 &&
+    filteredClientes.every((client) => selectedRows[client.id]);
 
   const selectedCount = Object.values(selectedRows).filter(Boolean).length;
+  const hasActiveFilters =
+    searchRazonSocial.trim() !== "" || searchGestor.trim() !== "";
 
   return (
     <Admin>
@@ -252,17 +279,20 @@ export default function Clientes() {
 
         <div className={selectedCount > 0 ? "selection-toolbar" : "d-flex gap-2"}>
           {selectedCount === 0 ? (
-            <button className="primary-btn" onClick={handleOpenCreate} type="button">
-              <i className="bi bi-plus-lg"></i>&nbsp;Nuevo Cliente
-            </button>
+            <>
+              <button className="primary-btn" onClick={handleOpenCreate} type="button">
+                <i className="bi bi-plus-lg"></i>&nbsp;Nuevo Cliente
+              </button>
+            </>
           ) : (
             <>
-            {isAllSelected && (
+              {isAllSelected && (
                 <div className="selection-info">
                   <i className="bi bi-info-circle"></i>
                   ¡Seleccionaste todo!
                 </div>
               )}
+
               {selectedCount === clientes.length ? (
                 <button
                   className="selection-delete"
@@ -298,18 +328,25 @@ export default function Clientes() {
       </div>
 
       <div className="panel-card">
-        <div className="toolbar-row">
+        <div className="toolbar-row flex-wrap gap-2">
           <div className="search-box">
             <i className="bi bi-search"></i>
             <input
               type="text"
-              placeholder="Buscar por nombre, RFC o correo..."
+              placeholder="Filtrar por razón social..."
+              value={searchRazonSocial}
+              onChange={(e) => setSearchRazonSocial(e.target.value)}
             />
           </div>
 
-          <button className="outline-btn" type="button">
-            <i className="bi bi-funnel"></i> Filtros
-          </button>
+          <input
+            type="text"
+            className="form-control"
+            style={{ maxWidth: "260px" }}
+            placeholder="Filtrar por gestor..."
+            value={searchGestor}
+            onChange={(e) => setSearchGestor(e.target.value)}
+          />
         </div>
 
         <div className="table-shell">
@@ -333,21 +370,31 @@ export default function Clientes() {
             </thead>
 
             <tbody>
-              {clientes.map((client) => (
-                <ClientRow
-                  key={client.id}
-                  client={client}
-                  isSelected={!!selectedRows[client.id]}
-                  onSelect={() => handleSelectRow(client.id)}
-                  onEdit={() => handleOpenEdit(client)}
-                  onDelete={() => handleOpenDeleteOne(client)}
-                />
-              ))}
+              {filteredClientes.length > 0 ? (
+                filteredClientes.map((client) => (
+                  <ClientRow
+                    key={client.id}
+                    client={client}
+                    isSelected={!!selectedRows[client.id]}
+                    onSelect={() => handleSelectRow(client.id)}
+                    onEdit={() => handleOpenEdit(client)}
+                    onDelete={() => handleOpenDeleteOne(client)}
+                  />
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="7" className="text-center py-4">
+                    No se encontraron clientes con los filtros aplicados.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
         <div className="d-flex justify-content-between align-items-center mt-3">
-          <small>Mostrando {clientes.length} registros</small>
+          <small>
+            Mostrando {filteredClientes.length} de {clientes.length} registros
+          </small>
 
           <div className="d-flex gap-2">
             <button className="btn btn-light" disabled>
