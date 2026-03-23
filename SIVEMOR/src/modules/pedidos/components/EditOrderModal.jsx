@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import Modal from "bootstrap/js/dist/modal";
 
+const STATUS_OPTIONS = ["PENDIENTE", "ENVIADO", "ENTREGADO", "INCIDENCIA"];
+
 export default function EditOrderModal({ order, onSave }) {
   const [formData, setFormData] = useState({
     id: null,
@@ -28,6 +30,12 @@ export default function EditOrderModal({ order, onSave }) {
 
   const [error, setError] = useState("");
 
+  const getStatusClass = (status) => {
+    if (status === "ENTREGADO") return "status-success";
+    if (status === "PENDIENTE") return "status-warning";
+    return "status-neutral";
+  };
+
   useEffect(() => {
     if (order) {
       const orderData = {
@@ -37,7 +45,7 @@ export default function EditOrderModal({ order, onSave }) {
         numeroGuia: order.numeroGuia || "",
         recibio: order.recibio || "",
         foto: order.foto || "",
-        estatusEnvio: order.estatusEnvio || "PENDIENTE",
+        estatusEnvio: (order.estatusEnvio || "PENDIENTE").toUpperCase(),
         estatusClass: order.estatusClass || "status-warning",
         comentario: order.comentario || "",
       };
@@ -51,15 +59,13 @@ export default function EditOrderModal({ order, onSave }) {
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    let updated = {
+    const updated = {
       ...formData,
       [name]: value,
     };
 
     if (name === "estatusEnvio") {
-      if (value === "ENTREGADO") updated.estatusClass = "status-success";
-      else if (value === "PENDIENTE") updated.estatusClass = "status-warning";
-      else updated.estatusClass = "status-neutral";
+      updated.estatusClass = getStatusClass(value);
     }
 
     setFormData(updated);
@@ -67,15 +73,15 @@ export default function EditOrderModal({ order, onSave }) {
     if (error) setError("");
   };
 
-  const isSameData = () => {
+  const isSameData = (cleanedData) => {
     return (
-      formData.nota.trim() === originalData.nota.trim() &&
-      formData.fechaEnvio.trim() === originalData.fechaEnvio.trim() &&
-      formData.numeroGuia.trim() === originalData.numeroGuia.trim() &&
-      formData.recibio.trim() === originalData.recibio.trim() &&
-      formData.foto.trim() === originalData.foto.trim() &&
-      formData.estatusEnvio === originalData.estatusEnvio &&
-      formData.comentario.trim() === originalData.comentario.trim()
+      cleanedData.nota === originalData.nota.trim() &&
+      cleanedData.fechaEnvio === originalData.fechaEnvio.trim() &&
+      cleanedData.numeroGuia === originalData.numeroGuia.trim() &&
+      cleanedData.recibio === originalData.recibio.trim() &&
+      cleanedData.foto === originalData.foto.trim() &&
+      cleanedData.estatusEnvio === originalData.estatusEnvio &&
+      cleanedData.comentario === originalData.comentario.trim()
     );
   };
 
@@ -89,6 +95,7 @@ export default function EditOrderModal({ order, onSave }) {
       numeroGuia: formData.numeroGuia.trim(),
       recibio: formData.recibio.trim(),
       foto: formData.foto.trim(),
+      estatusEnvio: formData.estatusEnvio.trim().toUpperCase(),
       comentario: formData.comentario.trim(),
     };
 
@@ -102,13 +109,22 @@ export default function EditOrderModal({ order, onSave }) {
       return;
     }
 
-    if (isSameData()) {
-      setError("No se realizaron cambios en el pedido.");
+    if (!STATUS_OPTIONS.includes(cleanedData.estatusEnvio)) {
+      setError(
+        "El estatus de envío no es válido. Valores permitidos: PENDIENTE, ENVIADO, ENTREGADO, INCIDENCIA."
+      );
       return;
     }
 
+    cleanedData.estatusClass = getStatusClass(cleanedData.estatusEnvio);
+
     if (!cleanedData.recibio) cleanedData.recibio = "-";
     if (!cleanedData.foto) cleanedData.foto = "Sin foto";
+
+    if (isSameData(cleanedData)) {
+      setError("No se realizaron cambios en el pedido.");
+      return;
+    }
 
     onSave(cleanedData);
   };
@@ -214,9 +230,11 @@ export default function EditOrderModal({ order, onSave }) {
                   value={formData.estatusEnvio}
                   onChange={handleChange}
                 >
-                  <option value="ENTREGADO">ENTREGADO</option>
-                  <option value="ENVIADO">ENVIADO</option>
-                  <option value="PENDIENTE">PENDIENTE</option>
+                  {STATUS_OPTIONS.map((status) => (
+                    <option key={status} value={status}>
+                      {status}
+                    </option>
+                  ))}
                 </select>
               </div>
 

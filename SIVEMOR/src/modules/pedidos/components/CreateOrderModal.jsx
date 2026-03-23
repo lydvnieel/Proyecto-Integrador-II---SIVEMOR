@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import Modal from "bootstrap/js/dist/modal";
 
+const STATUS_OPTIONS = ["PENDIENTE", "ENVIADO", "ENTREGADO", "INCIDENCIA"];
+
 const initialForm = {
   nota: "",
   fechaEnvio: "",
@@ -31,18 +33,22 @@ export default function CreateOrderModal({ onCreate }) {
     };
   }, []);
 
+  const getStatusClass = (status) => {
+    if (status === "ENTREGADO") return "status-success";
+    if (status === "PENDIENTE") return "status-warning";
+    return "status-neutral";
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    let updatedData = {
+    const updatedData = {
       ...formData,
       [name]: value,
     };
 
     if (name === "estatusEnvio") {
-      if (value === "ENTREGADO") updatedData.estatusClass = "status-success";
-      else if (value === "PENDIENTE") updatedData.estatusClass = "status-warning";
-      else updatedData.estatusClass = "status-neutral";
+      updatedData.estatusClass = getStatusClass(value);
     }
 
     setFormData(updatedData);
@@ -60,6 +66,7 @@ export default function CreateOrderModal({ onCreate }) {
       numeroGuia: formData.numeroGuia.trim(),
       recibio: formData.recibio.trim(),
       foto: formData.foto.trim(),
+      estatusEnvio: formData.estatusEnvio.trim().toUpperCase(),
       comentario: formData.comentario.trim(),
     };
 
@@ -72,6 +79,15 @@ export default function CreateOrderModal({ onCreate }) {
       setError("Faltan campos obligatorios por llenar.");
       return;
     }
+
+    if (!STATUS_OPTIONS.includes(cleanedData.estatusEnvio)) {
+      setError(
+        "El estatus de envío no es válido. Valores permitidos: PENDIENTE, ENVIADO, ENTREGADO, INCIDENCIA."
+      );
+      return;
+    }
+
+    cleanedData.estatusClass = getStatusClass(cleanedData.estatusEnvio);
 
     if (!cleanedData.recibio) cleanedData.recibio = "-";
     if (!cleanedData.foto) cleanedData.foto = "Sin foto";
@@ -183,9 +199,11 @@ export default function CreateOrderModal({ onCreate }) {
                   value={formData.estatusEnvio}
                   onChange={handleChange}
                 >
-                  <option value="ENTREGADO">ENTREGADO</option>
-                  <option value="ENVIADO">ENVIADO</option>
-                  <option value="PENDIENTE">PENDIENTE</option>
+                  {STATUS_OPTIONS.map((status) => (
+                    <option key={status} value={status}>
+                      {status}
+                    </option>
+                  ))}
                 </select>
               </div>
 
