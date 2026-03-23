@@ -54,10 +54,25 @@ export default function Reportes() {
       region: (formFilters.region || "").trim(),
       nota: (formFilters.nota || "").trim(),
       tipoVerificacion: (formFilters.tipoVerificacion || "").trim(),
-      estadoDictamen: (formFilters.estadoDictamen || "").trim(),
+      Dictamen: (formFilters.estadoDictamen || "").trim(),
       fechaInicio: formFilters.fechaInicio || "",
       fechaFin: formFilters.fechaFin || "",
     };
+
+    const parseDate = (dateString) => {
+  if (!dateString) return null;
+
+  if (dateString.includes("-")) {
+    return new Date(dateString);
+  }
+
+  if (dateString.includes("/")) {
+    const [day, month, year] = dateString.split("/");
+    return new Date(`${year}-${month}-${day}`);
+  }
+
+  return null;
+};
 
     if (currentFilters.tipo === "cliente" && !currentFilters.region) {
       setError("La región es obligatoria para el reporte por cliente.");
@@ -80,7 +95,13 @@ export default function Reportes() {
       const itemNota = String(item.nota || "").trim();
       const itemTipoVerificacion = String(item.tipoVerificacion || "").trim();
       const itemDictamen = normalizeText(item.dictamen);
-      const itemFecha = String(getEvaluationDate(item)).slice(0, 10);
+      
+      const itemFecha = parseDate(getEvaluationDate(item));
+      const fechaInicio = parseDate(currentFilters.fechaInicio);
+      const fechaFin = parseDate(currentFilters.fechaFin);
+
+      const matchFechaInicio = fechaInicio ? itemFecha >= fechaInicio : true;
+      const matchFechaFin = fechaFin ? itemFecha <= fechaFin : true;
 
       const matchRegion = currentFilters.region
         ? itemRegion.toLowerCase() === currentFilters.region.toLowerCase()
@@ -101,14 +122,6 @@ export default function Reportes() {
 
       const matchDictamen = currentFilters.estadoDictamen
         ? itemDictamen === normalizeText(currentFilters.estadoDictamen)
-        : true;
-
-      const matchFechaInicio = currentFilters.fechaInicio
-        ? itemFecha >= currentFilters.fechaInicio
-        : true;
-
-      const matchFechaFin = currentFilters.fechaFin
-        ? itemFecha <= currentFilters.fechaFin
         : true;
 
       return (
