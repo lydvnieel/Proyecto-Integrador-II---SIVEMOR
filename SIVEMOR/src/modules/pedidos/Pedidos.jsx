@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Modal from "bootstrap/js/dist/modal";
 import Admin from "../../components/Admin";
 import OrderRow from "./components/OrderRow";
@@ -11,6 +11,8 @@ import DeleteAllOrdersModal from "./components/DeleteAllOrdersModal";
 import DeleteOrderSuccessModal from "./components/DeleteOrderSuccessModal.jsx";
 import MarkDeliveredOrdersModal from "./components/MarkDeliveredOrdersModal";
 import pedidosData from "../../data/pedidos.json";
+
+const STATUS_OPTIONS = ["PENDIENTE", "ENVIADO", "ENTREGADO", "INCIDENCIA"];
 
 export default function Pedidos() {
   const [pedidos, setPedidos] = useState(() => {
@@ -25,9 +27,33 @@ export default function Pedidos() {
   const [updateMessage, setUpdateMessage] = useState("");
   const [deleteMessage, setDeleteMessage] = useState("");
 
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterEstatus, setFilterEstatus] = useState("");
+
   useEffect(() => {
     localStorage.setItem("pedidos", JSON.stringify(pedidos));
   }, [pedidos]);
+
+  const filteredPedidos = useMemo(() => {
+    const search = searchTerm.trim().toLowerCase();
+
+    return pedidos.filter((item) => {
+      const nota = String(item.nota || "").toLowerCase();
+      const fechaEnvio = String(item.fechaEnvio || "").toLowerCase();
+      const recibio = String(item.recibio || "").toLowerCase();
+      const estatusEnvio = String(item.estatusEnvio || "").toUpperCase();
+
+      const matchesSearch =
+        !search ||
+        nota.includes(search) ||
+        fechaEnvio.includes(search) ||
+        recibio.includes(search);
+
+      const matchesEstatus = filterEstatus ? estatusEnvio === filterEstatus : true;
+
+      return matchesSearch && matchesEstatus;
+    });
+  }, [pedidos, searchTerm, filterEstatus]);
 
   const cleanupModalArtifacts = () => {
     document.body.classList.remove("modal-open");
@@ -89,11 +115,11 @@ export default function Pedidos() {
 
   const handleSelectAll = () => {
     const allSelected =
-      pedidos.length > 0 &&
-      pedidos.every((item) => selectedRows[item.id]);
+      filteredPedidos.length > 0 &&
+      filteredPedidos.every((item) => selectedRows[item.id]);
 
-    const newSelected = {};
-    pedidos.forEach((item) => {
+    const newSelected = { ...selectedRows };
+    filteredPedidos.forEach((item) => {
       newSelected[item.id] = !allSelected;
     });
 
@@ -257,7 +283,8 @@ export default function Pedidos() {
   };
 
   const isAllSelected =
-    pedidos.length > 0 && pedidos.every((item) => selectedRows[item.id]);
+    filteredPedidos.length > 0 &&
+    filteredPedidos.every((item) => selectedRows[item.id]);
 
   const selectedCount = Object.values(selectedRows).filter(Boolean).length;
 
@@ -271,13 +298,15 @@ export default function Pedidos() {
 
         <div className={selectedCount > 0 ? "selection-toolbar" : ""}>
           {selectedCount === 0 ? (
-            <button
-              className="primary-btn"
-              onClick={() => openModal("createOrderModal")}
-              type="button"
-            >
-              <i className="bi bi-plus-lg"></i>&nbsp;Nuevo Pedido
-            </button>
+            <div className="d-flex gap-2">
+              <button
+                className="primary-btn"
+                onClick={() => openModal("createOrderModal")}
+                type="button"
+              >
+                <i className="bi bi-plus-lg"></i>&nbsp;Nuevo Pedido
+              </button>
+            </div>
           ) : (
             <>
               {isAllSelected ? (
@@ -301,7 +330,7 @@ export default function Pedidos() {
                 Marcar como Entregado
               </button>
 
-              {selectedCount === pedidos.length ? (
+              {selectedCount === filteredPedidos.length && filteredPedidos.length > 0 ? (
                 <button
                   className="selection-delete"
                   onClick={handleOpenDeleteAll}
@@ -337,18 +366,30 @@ export default function Pedidos() {
       </div>
 
       <div className="panel-card">
-        <div className="toolbar-row">
-          <div className="search-box">
+        <div className="toolbar-row d-flex align-items-center gap-2 flex-wrap">
+          <div className="search-box flex-grow-1">
             <i className="bi bi-search"></i>
             <input
               type="text"
-              placeholder="Buscar por nota, guía, receptor..."
+              placeholder="Buscar por número de nota, fecha o persona que recibió..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
 
-          <button className="outline-btn" type="button">
-            <i className="bi bi-funnel"></i> Filtros Avanzados
-          </button>
+          <select
+            className="form-select"
+            style={{ maxWidth: "220px", marginLeft: "auto" }}
+            value={filterEstatus}
+            onChange={(e) => setFilterEstatus(e.target.value)}
+          >
+            <option value="">Estado del envío</option>
+            {STATUS_OPTIONS.map((status) => (
+              <option key={status} value={status}>
+                {status}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="table-shell">
@@ -374,22 +415,30 @@ export default function Pedidos() {
             </thead>
 
             <tbody>
-              {pedidos.map((item) => (
-                <OrderRow
-                  key={item.id}
-                  item={item}
-                  isSelected={!!selectedRows[item.id]}
-                  onSelect={() => handleSelectRow(item.id)}
-                  onEdit={() => handleOpenEdit(item)}
-                  onDelete={() => handleOpenDeleteOne(item)}
-                />
-              ))}
+              {filteredPedidos.length > 0 ? (
+                filteredPedidos.map((item) => (
+                  <OrderRow
+                    key={item.id}
+                    item={item}
+                    isSelected={!!selectedRows[item.id]}
+                    onSelect={() => handleSelectRow(item.id)}
+                    onEdit={() => handleOpenEdit(item)}
+                    onDelete={() => handleOpenDeleteOne(item)}
+                  />
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="9" className="text-center py-4">
+                    No se encontraron pedidos con los filtros aplicados.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
 
         <div className="table-footer">
-          <span>Mostrando {pedidos.length} registros</span>
+          <span>Mostrando {filteredPedidos.length} de {pedidos.length} registros</span>
 
           <div className="pagination-mini">
             <button disabled>Anterior</button>
