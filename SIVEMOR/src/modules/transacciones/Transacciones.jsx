@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Modal from "bootstrap/js/dist/modal";
 import Admin from "../../components/Admin";
 import TransactionRow from "./components/TransactionRow";
@@ -24,10 +24,56 @@ export default function Transacciones() {
   const [createMessage, setCreateMessage] = useState("");
   const [updateMessage, setUpdateMessage] = useState("");
   const [deleteMessage, setDeleteMessage] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     localStorage.setItem("transacciones", JSON.stringify(transacciones));
   }, [transacciones]);
+
+  const filteredTransactions = useMemo(() => {
+    const search = searchTerm.trim().toLowerCase();
+
+    if (!search) return transacciones;
+
+    return transacciones.filter((item) => {
+      const cliente = String(
+        item.cliente ||
+          item.razonSocial ||
+          item.nombreCliente ||
+          ""
+      ).toLowerCase();
+
+      const tipoVerificacion = String(
+        item.tipoVerificacion ||
+          item.tipo_verificacion ||
+          item.verificacion ||
+          item.tipo ||
+          ""
+      ).toLowerCase();
+
+      const encargado = String(
+        item.encargado ||
+          item.responsable ||
+          ""
+      ).toLowerCase();
+
+      const empleado = String(
+        item.atendio ||
+          item.empleado ||
+          item.empleadoAtiende ||
+          item.empleadoCobra ||
+          item.atiendeYCobra ||
+          ""
+      ).toLowerCase();
+
+      return (
+        cliente.includes(search) ||
+        tipoVerificacion.includes(search) ||
+        encargado.includes(search) ||
+        empleado.includes(search)
+      );
+    });
+  }, [transacciones, searchTerm]);
 
   const cleanupModalArtifacts = () => {
     document.body.classList.remove("modal-open");
@@ -89,11 +135,11 @@ export default function Transacciones() {
 
   const handleSelectAll = () => {
     const allSelected =
-      transacciones.length > 0 &&
-      transacciones.every((item) => selectedRows[item.id]);
+      filteredTransactions.length > 0 &&
+      filteredTransactions.every((item) => selectedRows[item.id]);
 
-    const newSelected = {};
-    transacciones.forEach((item) => {
+    const newSelected = { ...selectedRows };
+    filteredTransactions.forEach((item) => {
       newSelected[item.id] = !allSelected;
     });
 
@@ -239,8 +285,6 @@ export default function Transacciones() {
       .filter((id) => selectedRows[id])
       .map(Number);
 
-    const count = idsToUpdate.length;
-
     setTransacciones((prev) =>
       prev.map((item) =>
         idsToUpdate.includes(item.id)
@@ -260,15 +304,18 @@ export default function Transacciones() {
     hideModal("markPaidTransactionsModal", () => {
       cleanupModalArtifacts();
     });
+  };
 
-    if (count === 0) return;
+  const clearSearch = () => {
+    setSearchTerm("");
   };
 
   const isAllSelected =
-    transacciones.length > 0 &&
-    transacciones.every((item) => selectedRows[item.id]);
+    filteredTransactions.length > 0 &&
+    filteredTransactions.every((item) => selectedRows[item.id]);
 
   const selectedCount = Object.values(selectedRows).filter(Boolean).length;
+  const hasActiveSearch = searchTerm.trim() !== "";
 
   return (
     <Admin>
@@ -280,15 +327,17 @@ export default function Transacciones() {
           </p>
         </div>
 
-        <div className={selectedCount > 0 ? "selection-toolbar" : ""}>
+        <div className={selectedCount > 0 ? "selection-toolbar" : "d-flex gap-2"}>
           {selectedCount === 0 ? (
-            <button
-              className="primary-btn"
-              onClick={() => openModal("createTransactionModal")}
-              type="button"
-            >
-              <i className="bi bi-plus-lg"></i>&nbsp;Nueva transacción
-            </button>
+            <>
+              <button
+                className="primary-btn"
+                onClick={() => openModal("createTransactionModal")}
+                type="button"
+              >
+                <i className="bi bi-plus-lg"></i>&nbsp;Nueva transacción
+              </button>
+            </>
           ) : (
             <>
               {isAllSelected && (
@@ -307,7 +356,8 @@ export default function Transacciones() {
                 Marcar como Pagado
               </button>
 
-              {selectedCount === transacciones.length ? (
+              {selectedCount === filteredTransactions.length &&
+              filteredTransactions.length > 0 ? (
                 <button
                   className="selection-delete"
                   onClick={handleOpenDeleteAll}
@@ -342,18 +392,16 @@ export default function Transacciones() {
       </div>
 
       <div className="panel-card">
-        <div className="toolbar-row">
+        <div className="toolbar-row flex-wrap gap-2">
           <div className="search-box">
             <i className="bi bi-search"></i>
             <input
               type="text"
-              placeholder="Buscar por nota, factura, empleado..."
+              placeholder="Buscar por cliente, tipo de verificación, encargado o empleado..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-
-          <button className="outline-btn" type="button">
-            <i className="bi bi-funnel"></i> Filtros Avanzados
-          </button>
         </div>
 
         <div className="table-shell">
@@ -384,22 +432,32 @@ export default function Transacciones() {
             </thead>
 
             <tbody>
-              {transacciones.map((item) => (
-                <TransactionRow
-                  key={item.id}
-                  item={item}
-                  isSelected={!!selectedRows[item.id]}
-                  onSelect={() => handleSelectRow(item.id)}
-                  onEdit={() => handleOpenEdit(item)}
-                  onDelete={() => handleOpenDeleteOne(item)}
-                />
-              ))}
+              {filteredTransactions.length > 0 ? (
+                filteredTransactions.map((item) => (
+                  <TransactionRow
+                    key={item.id}
+                    item={item}
+                    isSelected={!!selectedRows[item.id]}
+                    onSelect={() => handleSelectRow(item.id)}
+                    onEdit={() => handleOpenEdit(item)}
+                    onDelete={() => handleOpenDeleteOne(item)}
+                  />
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="14" className="text-center py-4">
+                    No se encontraron transacciones con la búsqueda aplicada.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
 
         <div className="table-footer">
-          <span>Mostrando {transacciones.length} registros</span>
+          <span>
+            Mostrando {filteredTransactions.length} de {transacciones.length} registros
+          </span>
 
           <div className="pagination-mini">
             <button disabled>Anterior</button>
