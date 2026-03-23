@@ -17,6 +17,8 @@ export default function CreateVerificentroModal({ onCreate }) {
   const [formData, setFormData] = useState(initialForm);
   const [error, setError] = useState("");
 
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
   const resetForm = () => {
     setFormData(initialForm);
     setError("");
@@ -25,9 +27,15 @@ export default function CreateVerificentroModal({ onCreate }) {
   const handleChange = (e) => {
     const { name, value } = e.target;
 
+    let newValue = value;
+
+    if (name === "telefonoPrincipal" || name === "telefonoAlternativo") {
+      newValue = value.replace(/\D/g, "");
+    }
+
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: newValue,
     }));
 
     if (error) setError("");
@@ -57,6 +65,24 @@ export default function CreateVerificentroModal({ onCreate }) {
       !cleanedData.horario
     ) {
       setError("Faltan campos obligatorios por llenar.");
+      return;
+    }
+
+    if (!/^\d+$/.test(cleanedData.telefonoPrincipal)) {
+      setError("El teléfono principal solo debe contener números.");
+      return;
+    }
+
+    if (
+      cleanedData.telefonoAlternativo &&
+      !/^\d+$/.test(cleanedData.telefonoAlternativo)
+    ) {
+      setError("El teléfono alternativo solo debe contener números.");
+      return;
+    }
+
+    if (cleanedData.correo && !emailRegex.test(cleanedData.correo)) {
+      setError("El correo electrónico no tiene un formato válido.");
       return;
     }
 
@@ -182,7 +208,8 @@ export default function CreateVerificentroModal({ onCreate }) {
                   name="telefonoPrincipal"
                   value={formData.telefonoPrincipal}
                   onChange={handleChange}
-                  placeholder="Ej 81-1234-5678"
+                  placeholder="Ej 8112345678"
+                  inputMode="numeric"
                 />
               </div>
 
@@ -194,7 +221,8 @@ export default function CreateVerificentroModal({ onCreate }) {
                   name="telefonoAlternativo"
                   value={formData.telefonoAlternativo}
                   onChange={handleChange}
-                  placeholder="Ej 81-8765-4321"
+                  placeholder="Ej 8187654321"
+                  inputMode="numeric"
                 />
               </div>
             </div>
@@ -202,7 +230,7 @@ export default function CreateVerificentroModal({ onCreate }) {
             <div className="mb-3">
               <label className="form-label">CORREO ELECTRÓNICO *</label>
               <input
-                type="email"
+                type="text"
                 className="form-control"
                 name="correo"
                 value={formData.correo}

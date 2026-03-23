@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Modal from "bootstrap/js/dist/modal";
 import Admin from "../../components/Admin";
 import VerificentroRow from "./components/VerificentroRow";
@@ -23,6 +23,8 @@ export default function Verificentros() {
   const [deleteMessage, setDeleteMessage] = useState("");
   const [editMessage, setEditMessage] = useState("");
   const [createMessage, setCreateMessage] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [regionFilter, setRegionFilter] = useState("");
 
   useEffect(() => {
     localStorage.setItem("verificentros", JSON.stringify(verificentros));
@@ -84,13 +86,32 @@ export default function Verificentros() {
     sourceInstance.hide();
   };
 
+  const filteredVerificentros = useMemo(() => {
+    return verificentros.filter((item) => {
+      const matchesName = item.nombre
+        .toLowerCase()
+        .includes(searchTerm.trim().toLowerCase());
+
+      const matchesRegion = regionFilter
+        ? item.region.toLowerCase() === regionFilter.toLowerCase()
+        : true;
+
+      return matchesName && matchesRegion;
+    });
+  }, [verificentros, searchTerm, regionFilter]);
+
+  const uniqueRegions = useMemo(() => {
+    return [...new Set(verificentros.map((item) => item.region).filter(Boolean))];
+  }, [verificentros]);
+
   const handleSelectAll = () => {
     const allSelected =
-      verificentros.length > 0 &&
-      verificentros.every((item) => selectedRows[item.id]);
+      filteredVerificentros.length > 0 &&
+      filteredVerificentros.every((item) => selectedRows[item.id]);
 
-    const newSelected = {};
-    verificentros.forEach((item) => {
+    const newSelected = { ...selectedRows };
+
+    filteredVerificentros.forEach((item) => {
       newSelected[item.id] = !allSelected;
     });
 
@@ -204,11 +225,17 @@ export default function Verificentros() {
     );
   };
 
+  const clearFilters = () => {
+    setSearchTerm("");
+    setRegionFilter("");
+  };
+
   const isAllSelected =
-    verificentros.length > 0 &&
-    verificentros.every((item) => selectedRows[item.id]);
+    filteredVerificentros.length > 0 &&
+    filteredVerificentros.every((item) => selectedRows[item.id]);
 
   const selectedCount = Object.values(selectedRows).filter(Boolean).length;
+  const hasActiveFilters = searchTerm.trim() !== "" || regionFilter !== "";
 
   return (
     <Admin>
@@ -223,10 +250,6 @@ export default function Verificentros() {
         <div className={selectedCount > 0 ? "selection-toolbar" : "d-flex gap-2"}>
           {selectedCount === 0 ? (
             <>
-              <button className="outline-btn" type="button">
-                <i className="bi bi-funnel"></i> Filtros Avanzados
-              </button>
-
               <button
                 className="primary-btn"
                 data-bs-toggle="modal"
@@ -238,7 +261,7 @@ export default function Verificentros() {
             </>
           ) : (
             <>
-              {isAllSelected && (
+              {isAllSelected && filteredVerificentros.length > 0 && (
                 <div className="selection-info">
                   <i className="bi bi-info-circle"></i>
                   ¡Seleccionaste todo!
@@ -287,18 +310,30 @@ export default function Verificentros() {
       </div>
 
       <div className="panel-card">
-        <div className="toolbar-row">
+        <div className="toolbar-row flex-wrap gap-2">
           <div className="search-box">
             <i className="bi bi-search"></i>
             <input
               type="text"
-              placeholder="Buscar por nombre, clave, responsable..."
+              placeholder="Buscar verificentro por nombre..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
 
-          <button className="outline-btn" type="button">
-            <i className="bi bi-funnel"></i> Filtros Avanzados
-          </button>
+          <select
+            className="form-select"
+            style={{ maxWidth: "220px" }}
+            value={regionFilter}
+            onChange={(e) => setRegionFilter(e.target.value)}
+          >
+            <option value="">Todas las regiones</option>
+            {uniqueRegions.map((region) => (
+              <option key={region} value={region}>
+                {region}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="table-shell">
@@ -323,22 +358,32 @@ export default function Verificentros() {
             </thead>
 
             <tbody>
-              {verificentros.map((item) => (
-                <VerificentroRow
-                  key={item.id}
-                  item={item}
-                  isSelected={!!selectedRows[item.id]}
-                  onSelect={() => handleSelectRow(item.id)}
-                  onEdit={() => handleOpenEdit(item)}
-                  onDelete={() => handleOpenDeleteOne(item)}
-                />
-              ))}
+              {filteredVerificentros.length > 0 ? (
+                filteredVerificentros.map((item) => (
+                  <VerificentroRow
+                    key={item.id}
+                    item={item}
+                    isSelected={!!selectedRows[item.id]}
+                    onSelect={() => handleSelectRow(item.id)}
+                    onEdit={() => handleOpenEdit(item)}
+                    onDelete={() => handleOpenDeleteOne(item)}
+                  />
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="8" className="text-center py-4">
+                    No se encontraron verificentros con los filtros aplicados.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
 
         <div className="d-flex justify-content-between align-items-center mt-3">
-          <small>Mostrando {verificentros.length} registros</small>
+          <small>
+            Mostrando {filteredVerificentros.length} de {verificentros.length} registros
+          </small>
 
           <div className="d-flex gap-2">
             <button className="btn btn-light" disabled>

@@ -27,6 +27,8 @@ export default function EditVerificentroModal({ item, onSave }) {
 
   const [error, setError] = useState("");
 
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
   useEffect(() => {
     if (item) {
       const verificentroData = {
@@ -50,26 +52,32 @@ export default function EditVerificentroModal({ item, onSave }) {
   const handleChange = (e) => {
     const { name, value } = e.target;
 
+    let newValue = value;
+
+    if (name === "telefonoPrincipal" || name === "telefonoAlternativo") {
+      newValue = value.replace(/\D/g, "");
+    }
+
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: newValue,
     }));
 
     if (error) setError("");
   };
 
-  const isSameData = () => {
+  const isSameData = (cleanedData) => {
     return (
-      formData.nombre.trim() === originalData.nombre.trim() &&
-      formData.clave.trim() === originalData.clave.trim() &&
-      formData.direccion.trim() === originalData.direccion.trim() &&
-      formData.region.trim() === originalData.region.trim() &&
-      formData.responsable.trim() === originalData.responsable.trim() &&
-      formData.telefonoPrincipal.trim() === originalData.telefonoPrincipal.trim() &&
-      formData.telefonoAlternativo.trim() ===
+      cleanedData.nombre === originalData.nombre.trim() &&
+      cleanedData.clave === originalData.clave.trim() &&
+      cleanedData.direccion === originalData.direccion.trim() &&
+      cleanedData.region === originalData.region.trim() &&
+      cleanedData.responsable === originalData.responsable.trim() &&
+      cleanedData.telefonoPrincipal === originalData.telefonoPrincipal.trim() &&
+      cleanedData.telefonoAlternativo ===
         originalData.telefonoAlternativo.trim() &&
-      formData.correo.trim() === originalData.correo.trim() &&
-      formData.horario.trim() === originalData.horario.trim()
+      cleanedData.correo === originalData.correo.trim() &&
+      cleanedData.horario === originalData.horario.trim()
     );
   };
 
@@ -102,7 +110,25 @@ export default function EditVerificentroModal({ item, onSave }) {
       return;
     }
 
-    if (isSameData()) {
+    if (!/^\d+$/.test(cleanedData.telefonoPrincipal)) {
+      setError("El teléfono principal solo debe contener números.");
+      return;
+    }
+
+    if (
+      cleanedData.telefonoAlternativo &&
+      !/^\d+$/.test(cleanedData.telefonoAlternativo)
+    ) {
+      setError("El teléfono alternativo solo debe contener números.");
+      return;
+    }
+
+    if (cleanedData.correo && !emailRegex.test(cleanedData.correo)) {
+      setError("El correo electrónico no tiene un formato válido.");
+      return;
+    }
+
+    if (isSameData(cleanedData)) {
       setError("No se realizaron cambios en el verificentro.");
       return;
     }
@@ -208,6 +234,7 @@ export default function EditVerificentroModal({ item, onSave }) {
                     name="telefonoPrincipal"
                     value={formData.telefonoPrincipal}
                     onChange={handleChange}
+                    inputMode="numeric"
                   />
                 </div>
 
@@ -219,6 +246,7 @@ export default function EditVerificentroModal({ item, onSave }) {
                     name="telefonoAlternativo"
                     value={formData.telefonoAlternativo}
                     onChange={handleChange}
+                    inputMode="numeric"
                   />
                 </div>
               </div>
@@ -226,7 +254,7 @@ export default function EditVerificentroModal({ item, onSave }) {
               <div className="mb-3">
                 <label className="form-label">CORREO ELECTRÓNICO *</label>
                 <input
-                  type="email"
+                  type="text"
                   className="form-control"
                   name="correo"
                   value={formData.correo}
