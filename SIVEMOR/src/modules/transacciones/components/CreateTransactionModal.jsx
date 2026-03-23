@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import Modal from "bootstrap/js/dist/modal";
 
+const PAYMENT_TYPES = ["EFECTIVO", "TARJETA", "DEPÓSITO", "TRANSFERENCIA"];
+
 const initialForm = {
   nota: "",
   tipoPago: "",
@@ -39,20 +41,34 @@ export default function CreateTransactionModal({ onCreate }) {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    let newValue = value;
 
-    let updatedData = {
+    if (name === "monto") {
+      newValue = value.replace(/[^0-9.]/g, "");
+
+      const parts = newValue.split(".");
+      if (parts.length > 2) {
+        newValue = `${parts[0]}.${parts.slice(1).join("")}`;
+      }
+    }
+
+    const updatedData = {
       ...formData,
-      [name]: value,
+      [name]: newValue,
     };
+
+    if (name === "tipoPago" && !["DEPÓSITO", "TRANSFERENCIA"].includes(newValue)) {
+      updatedData.cuentaDeposito = "";
+    }
 
     if (name === "pagado") {
       updatedData.pagadoClass =
-        value === "Sí" ? "status-success" : "status-warning";
+        newValue === "Sí" ? "status-success" : "status-warning";
     }
 
     if (name === "pendiente") {
       updatedData.pendienteClass =
-        value === "No" ? "status-success" : "status-warning";
+        newValue === "No" ? "status-success" : "status-warning";
     }
 
     setFormData(updatedData);
@@ -66,7 +82,7 @@ export default function CreateTransactionModal({ onCreate }) {
     const cleanedData = {
       ...formData,
       nota: formData.nota.trim(),
-      tipoPago: formData.tipoPago.trim(),
+      tipoPago: formData.tipoPago.trim().toUpperCase(),
       monto: formData.monto.trim(),
       cuentaDeposito: formData.cuentaDeposito.trim(),
       factura: formData.factura.trim(),
@@ -90,6 +106,29 @@ export default function CreateTransactionModal({ onCreate }) {
       setError("Faltan campos obligatorios por llenar.");
       return;
     }
+
+    if (!PAYMENT_TYPES.includes(cleanedData.tipoPago)) {
+      setError("El tipo de pago no es válido.");
+      return;
+    }
+
+    const montoNumber = Number(cleanedData.monto);
+    if (Number.isNaN(montoNumber) || montoNumber <= 0) {
+      setError("El monto debe ser un valor numérico positivo mayor que cero.");
+      return;
+    }
+
+    if (
+      ["DEPÓSITO", "TRANSFERENCIA"].includes(cleanedData.tipoPago) &&
+      !cleanedData.cuentaDeposito
+    ) {
+      setError(
+        "La cuenta de depósito es obligatoria cuando el tipo de pago es DEPÓSITO o TRANSFERENCIA."
+      );
+      return;
+    }
+
+    cleanedData.monto = montoNumber.toString();
 
     setError("");
     onCreate(cleanedData);
@@ -146,14 +185,19 @@ export default function CreateTransactionModal({ onCreate }) {
 
                 <div className="col-md-6 mb-3">
                   <label className="form-label">Tipo de pago *</label>
-                  <input
-                    type="text"
+                  <select
                     className="form-control"
                     name="tipoPago"
                     value={formData.tipoPago}
                     onChange={handleChange}
-                    placeholder="Ej. Transferencia"
-                  />
+                  >
+                    <option value="">Selecciona una opción</option>
+                    {PAYMENT_TYPES.map((type) => (
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
@@ -161,12 +205,14 @@ export default function CreateTransactionModal({ onCreate }) {
                 <div className="col-md-6 mb-3">
                   <label className="form-label">Monto *</label>
                   <input
-                    type="text"
+                    type="number"
                     className="form-control"
                     name="monto"
                     value={formData.monto}
                     onChange={handleChange}
-                    placeholder="Ej. $1,200"
+                    placeholder="Ej. 1200"
+                    min="0.01"
+                    step="0.01"
                   />
                 </div>
 
@@ -179,6 +225,9 @@ export default function CreateTransactionModal({ onCreate }) {
                     value={formData.cuentaDeposito}
                     onChange={handleChange}
                     placeholder="Ej. BBVA-1234"
+                    disabled={
+                      !["DEPÓSITO", "TRANSFERENCIA"].includes(formData.tipoPago)
+                    }
                   />
                 </div>
               </div>

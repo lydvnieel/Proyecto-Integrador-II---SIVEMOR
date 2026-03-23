@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import Modal from "bootstrap/js/dist/modal";
 
+const PAYMENT_TYPES = ["EFECTIVO", "TARJETA", "DEPÓSITO", "TRANSFERENCIA"];
+
 export default function EditTransactionModal({ transaction, onSave }) {
   const [formData, setFormData] = useState({
     id: null,
@@ -45,8 +47,8 @@ export default function EditTransactionModal({ transaction, onSave }) {
       const txData = {
         id: transaction.id,
         nota: transaction.nota || "",
-        tipoPago: transaction.tipoPago || "",
-        monto: transaction.monto || "",
+        tipoPago: (transaction.tipoPago || "").toUpperCase(),
+        monto: String(transaction.monto || ""),
         cuentaDeposito: transaction.cuentaDeposito || "",
         factura: transaction.factura || "",
         pagado: transaction.pagado || "No",
@@ -68,20 +70,34 @@ export default function EditTransactionModal({ transaction, onSave }) {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    let newValue = value;
 
-    let updatedData = {
+    if (name === "monto") {
+      newValue = value.replace(/[^0-9.]/g, "");
+
+      const parts = newValue.split(".");
+      if (parts.length > 2) {
+        newValue = `${parts[0]}.${parts.slice(1).join("")}`;
+      }
+    }
+
+    const updatedData = {
       ...formData,
-      [name]: value,
+      [name]: newValue,
     };
+
+    if (name === "tipoPago" && !["DEPÓSITO", "TRANSFERENCIA"].includes(newValue)) {
+      updatedData.cuentaDeposito = "";
+    }
 
     if (name === "pagado") {
       updatedData.pagadoClass =
-        value === "Sí" ? "status-success" : "status-warning";
+        newValue === "Sí" ? "status-success" : "status-warning";
     }
 
     if (name === "pendiente") {
       updatedData.pendienteClass =
-        value === "No" ? "status-success" : "status-warning";
+        newValue === "No" ? "status-success" : "status-warning";
     }
 
     setFormData(updatedData);
@@ -89,20 +105,20 @@ export default function EditTransactionModal({ transaction, onSave }) {
     if (error) setError("");
   };
 
-  const isSameData = () => {
+  const isSameData = (cleanedData) => {
     return (
-      formData.nota.trim() === originalData.nota.trim() &&
-      formData.tipoPago.trim() === originalData.tipoPago.trim() &&
-      formData.monto.trim() === originalData.monto.trim() &&
-      formData.cuentaDeposito.trim() === originalData.cuentaDeposito.trim() &&
-      formData.factura.trim() === originalData.factura.trim() &&
-      formData.pagado === originalData.pagado &&
-      formData.fechaPedido.trim() === originalData.fechaPedido.trim() &&
-      formData.cotizacion.trim() === originalData.cotizacion.trim() &&
-      formData.reviso.trim() === originalData.reviso.trim() &&
-      formData.atendio.trim() === originalData.atendio.trim() &&
-      formData.pendiente === originalData.pendiente &&
-      formData.comentario.trim() === originalData.comentario.trim()
+      cleanedData.nota === originalData.nota.trim() &&
+      cleanedData.tipoPago === originalData.tipoPago.trim().toUpperCase() &&
+      cleanedData.monto === String(originalData.monto).trim() &&
+      cleanedData.cuentaDeposito === originalData.cuentaDeposito.trim() &&
+      cleanedData.factura === originalData.factura.trim() &&
+      cleanedData.pagado === originalData.pagado &&
+      cleanedData.fechaPedido === originalData.fechaPedido.trim() &&
+      cleanedData.cotizacion === originalData.cotizacion.trim() &&
+      cleanedData.reviso === originalData.reviso.trim() &&
+      cleanedData.atendio === originalData.atendio.trim() &&
+      cleanedData.pendiente === originalData.pendiente &&
+      cleanedData.comentario === originalData.comentario.trim()
     );
   };
 
@@ -112,7 +128,7 @@ export default function EditTransactionModal({ transaction, onSave }) {
     const cleanedData = {
       ...formData,
       nota: formData.nota.trim(),
-      tipoPago: formData.tipoPago.trim(),
+      tipoPago: formData.tipoPago.trim().toUpperCase(),
       monto: formData.monto.trim(),
       cuentaDeposito: formData.cuentaDeposito.trim(),
       factura: formData.factura.trim(),
@@ -137,7 +153,30 @@ export default function EditTransactionModal({ transaction, onSave }) {
       return;
     }
 
-    if (isSameData()) {
+    if (!PAYMENT_TYPES.includes(cleanedData.tipoPago)) {
+      setError("El tipo de pago no es válido.");
+      return;
+    }
+
+    const montoNumber = Number(cleanedData.monto);
+    if (Number.isNaN(montoNumber) || montoNumber <= 0) {
+      setError("El monto debe ser un valor numérico positivo mayor que cero.");
+      return;
+    }
+
+    if (
+      ["DEPÓSITO", "TRANSFERENCIA"].includes(cleanedData.tipoPago) &&
+      !cleanedData.cuentaDeposito
+    ) {
+      setError(
+        "La cuenta de depósito es obligatoria cuando el tipo de pago es DEPÓSITO o TRANSFERENCIA."
+      );
+      return;
+    }
+
+    cleanedData.monto = montoNumber.toString();
+
+    if (isSameData(cleanedData)) {
       setError("No se realizaron cambios en la transacción.");
       return;
     }
@@ -197,13 +236,19 @@ export default function EditTransactionModal({ transaction, onSave }) {
 
                 <div className="col-md-6 mb-3">
                   <label className="form-label">Tipo de pago *</label>
-                  <input
-                    type="text"
+                  <select
                     className="form-control"
                     name="tipoPago"
                     value={formData.tipoPago}
                     onChange={handleChange}
-                  />
+                  >
+                    <option value="">Selecciona una opción</option>
+                    {PAYMENT_TYPES.map((type) => (
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
@@ -211,11 +256,13 @@ export default function EditTransactionModal({ transaction, onSave }) {
                 <div className="col-md-6 mb-3">
                   <label className="form-label">Monto *</label>
                   <input
-                    type="text"
+                    type="number"
                     className="form-control"
                     name="monto"
                     value={formData.monto}
                     onChange={handleChange}
+                    min="0.01"
+                    step="0.01"
                   />
                 </div>
 
@@ -227,6 +274,9 @@ export default function EditTransactionModal({ transaction, onSave }) {
                     name="cuentaDeposito"
                     value={formData.cuentaDeposito}
                     onChange={handleChange}
+                    disabled={
+                      !["DEPÓSITO", "TRANSFERENCIA"].includes(formData.tipoPago)
+                    }
                   />
                 </div>
               </div>
