@@ -16,11 +16,14 @@ export default function EditVehicleModal({ vehicle, onSave }) {
 
   const [error, setError] = useState("");
 
+  const placaRegex = /^[A-Z]{2,3}-\d{3}-[A-Z]{1,2}$/;
+  const serieRegex = /^[A-HJ-NPR-Z0-9]{17}$/;
+
   useEffect(() => {
     if (vehicle) {
       const vehicleData = {
-        placa: vehicle.placa || "",
-        serie: vehicle.serie || "",
+        placa: (vehicle.placa || "").toUpperCase(),
+        serie: (vehicle.serie || "").toUpperCase(),
         tipo: vehicle.tipo || "",
       };
 
@@ -33,26 +36,32 @@ export default function EditVehicleModal({ vehicle, onSave }) {
   const handleChange = (e) => {
     const { name, value } = e.target;
 
+    let newValue = value;
+
+    if (name === "placa" || name === "serie") {
+      newValue = value.toUpperCase();
+    }
+
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: newValue,
     }));
 
     if (error) setError("");
   };
 
-  const isSameData = () => {
+  const isSameData = (cleanedData) => {
     return (
-      formData.placa.trim() === originalData.placa.trim() &&
-      formData.serie.trim() === originalData.serie.trim() &&
-      formData.tipo.trim() === originalData.tipo.trim()
+      cleanedData.placa === originalData.placa.trim().toUpperCase() &&
+      cleanedData.serie === originalData.serie.trim().toUpperCase() &&
+      cleanedData.tipo === originalData.tipo.trim()
     );
   };
 
   const handleSave = () => {
     const cleanedData = {
-      placa: formData.placa.trim(),
-      serie: formData.serie.trim(),
+      placa: formData.placa.trim().toUpperCase(),
+      serie: formData.serie.trim().toUpperCase(),
       tipo: formData.tipo.trim(),
     };
 
@@ -61,7 +70,17 @@ export default function EditVehicleModal({ vehicle, onSave }) {
       return;
     }
 
-    if (isSameData()) {
+    if (!placaRegex.test(cleanedData.placa)) {
+      setError("La placa no tiene un formato válido. Ejemplo: ABC-123-A o AB-123-CD");
+      return;
+    }
+
+    if (!serieRegex.test(cleanedData.serie)) {
+      setError("La serie debe tener 17 caracteres alfanuméricos y no puede incluir I, O o Q");
+      return;
+    }
+
+    if (isSameData(cleanedData)) {
       setError("No se realizaron cambios en el vehículo");
       return;
     }
@@ -123,7 +142,7 @@ export default function EditVehicleModal({ vehicle, onSave }) {
                     className="form-control"
                     value={formData.placa}
                     onChange={handleChange}
-                    placeholder="AB-123-CD"
+                    placeholder="ABC-123-A"
                   />
                 </div>
               </div>
@@ -137,22 +156,47 @@ export default function EditVehicleModal({ vehicle, onSave }) {
                     className="form-control"
                     value={formData.serie}
                     onChange={handleChange}
-                    placeholder="XYZ987654321"
+                    placeholder="1HGCM82633A123456"
+                    maxLength={17}
                   />
                 </div>
               </div>
 
               <div className="row mb-3">
                 <div className="col">
-                  <label><small>Tipo</small></label>
-                  <input
-                    type="text"
-                    name="tipo"
-                    className="form-control"
-                    value={formData.tipo}
-                    onChange={handleChange}
-                    placeholder="Camión rabón / Camión rígido"
-                  />
+                  <label className="form-label"><small>Tipo</small></label>
+
+                  <div className="d-flex gap-4">
+                    <div className="form-check">
+                      <input
+                        className="form-check-input"
+                        type="radio"
+                        name="tipo"
+                        id="edit-rabon"
+                        value="Camión Rabón"
+                        checked={formData.tipo === "Camión Rabón"}
+                        onChange={handleChange}
+                      />
+                      <label className="form-check-label" htmlFor="edit-rabon">
+                        Camión Rabón
+                      </label>
+                    </div>
+
+                    <div className="form-check">
+                      <input
+                        className="form-check-input"
+                        type="radio"
+                        name="tipo"
+                        id="edit-rigido"
+                        value="Camión Rígido (4x2)"
+                        checked={formData.tipo === "Camión Rígido (4x2)"}
+                        onChange={handleChange}
+                      />
+                      <label className="form-check-label" htmlFor="edit-rigido">
+                        Camión Rígido (4x2)
+                      </label>
+                    </div>
+                  </div>
                 </div>
               </div>
             </form>

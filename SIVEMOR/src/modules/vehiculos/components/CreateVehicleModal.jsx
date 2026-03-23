@@ -23,12 +23,21 @@ export default function CreateVehicleModal({ onSave }) {
     setError("");
   };
 
+  const placaRegex = /^[A-Z]{2,3}-\d{3}-[A-Z]{1,2}$/;
+  const serieRegex = /^[A-HJ-NPR-Z0-9]{17}$/;
+
   const handleChange = (e) => {
     const { name, value } = e.target;
 
+    let newValue = value;
+
+    if (name === "placa" || name === "serie") {
+      newValue = value.toUpperCase();
+    }
+
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: newValue,
     }));
 
     if (error) setError("");
@@ -36,8 +45,8 @@ export default function CreateVehicleModal({ onSave }) {
 
   const handleCreate = () => {
     const cleanedData = {
-      placa: formData.placa.trim(),
-      serie: formData.serie.trim(),
+      placa: formData.placa.trim().toUpperCase(),
+      serie: formData.serie.trim().toUpperCase(),
       tipo: formData.tipo.trim(),
       cedis: formData.cedis.trim(),
       region: formData.region.trim(),
@@ -51,6 +60,16 @@ export default function CreateVehicleModal({ onSave }) {
       !cleanedData.region
     ) {
       setError("Faltan campos por llenar");
+      return;
+    }
+
+    if (!placaRegex.test(cleanedData.placa)) {
+      setError("La placa no tiene un formato válido. Ejemplo: ABC-123-A o AB-123-CD");
+      return;
+    }
+
+    if (!serieRegex.test(cleanedData.serie)) {
+      setError("La serie debe tener 17 caracteres alfanuméricos y no puede incluir I, O o Q");
       return;
     }
 
@@ -109,7 +128,7 @@ export default function CreateVehicleModal({ onSave }) {
                     type="text"
                     name="placa"
                     className="form-control"
-                    placeholder="Ej. AB-123-CD"
+                    placeholder="Ej. ABC-123-A"
                     value={formData.placa}
                     onChange={handleChange}
                   />
@@ -123,9 +142,10 @@ export default function CreateVehicleModal({ onSave }) {
                     type="text"
                     name="serie"
                     className="form-control"
-                    placeholder="Ej. ABC123456789"
+                    placeholder="Ej. 1HGCM82633A123456"
                     value={formData.serie}
                     onChange={handleChange}
+                    maxLength={17}
                   />
                 </div>
               </div>
@@ -207,9 +227,12 @@ export default function CreateVehicleModal({ onSave }) {
                 Cancelar
               </button>
 
-              <button type="button" className="btn btn-primary mt-3" onClick={handleCreate}>
-                              <i className="bi bi-file-earmark-plus"></i>&nbsp;Crear Vehículo
-
+              <button
+                type="button"
+                className="btn btn-primary mt-3"
+                onClick={handleCreate}
+              >
+                <i className="bi bi-file-earmark-plus"></i>&nbsp;Crear Vehículo
               </button>
             </div>
           </div>
