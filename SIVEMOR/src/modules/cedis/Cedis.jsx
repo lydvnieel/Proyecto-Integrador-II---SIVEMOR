@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Modal from "bootstrap/js/dist/modal";
 import Admin from "../../components/Admin";
 import CedisRow from "./components/CedisRow";
@@ -23,10 +23,24 @@ export default function Cedis() {
   const [createMessage, setCreateMessage] = useState("");
   const [updateMessage, setUpdateMessage] = useState("");
   const [deleteMessage, setDeleteMessage] = useState("");
+  const [searchCliente, setSearchCliente] = useState("");
+  const [searchRegion, setSearchRegion] = useState("");
 
   useEffect(() => {
     localStorage.setItem("cedis", JSON.stringify(cedisList));
   }, [cedisList]);
+
+  const filteredCedis = useMemo(() => {
+    return cedisList.filter((item) => {
+      const cliente = (item.cliente || "").toLowerCase();
+      const region = (item.region || "").toLowerCase();
+
+      const matchesCliente = cliente.includes(searchCliente.trim().toLowerCase());
+      const matchesRegion = region.includes(searchRegion.trim().toLowerCase());
+
+      return matchesCliente && matchesRegion;
+    });
+  }, [cedisList, searchCliente, searchRegion]);
 
   const cleanupModalArtifacts = () => {
     document.body.classList.remove("modal-open");
@@ -88,11 +102,11 @@ export default function Cedis() {
 
   const handleSelectAll = () => {
     const allSelected =
-      cedisList.length > 0 &&
-      cedisList.every((item) => selectedRows[item.id]);
+      filteredCedis.length > 0 &&
+      filteredCedis.every((item) => selectedRows[item.id]);
 
-    const newSelected = {};
-    cedisList.forEach((item) => {
+    const newSelected = { ...selectedRows };
+    filteredCedis.forEach((item) => {
       newSelected[item.id] = !allSelected;
     });
 
@@ -120,14 +134,14 @@ export default function Cedis() {
   };
 
   const handleOpenDeleteOne = (cedis) => {
-  setSelectedRows({});
-  setSelectedCedis(cedis);
-  setSelectedId(cedis.id);
+    setSelectedRows({});
+    setSelectedCedis(cedis);
+    setSelectedId(cedis.id);
 
-  setTimeout(() => {
-    openModal("deleteCedisModal");
-  }, 0);
-};
+    setTimeout(() => {
+      openModal("deleteCedisModal");
+    }, 0);
+  };
 
   const handleOpenDeleteSelected = () => {
     setSelectedCedis(null);
@@ -145,6 +159,8 @@ export default function Cedis() {
     const createdCedis = {
       id: Date.now(),
       nombre: newCedis.nombre,
+      cliente: newCedis.cliente,
+      region: newCedis.region,
       direccion: newCedis.direccion,
       encargado: newCedis.encargado,
       correo: newCedis.correo,
@@ -189,7 +205,10 @@ export default function Cedis() {
     setSelectedCedis(null);
     setSelectedId(null);
 
-    showDeleteSuccessModal(`Se eliminó con éxito ${deletedName}.`, "deleteCedisModal");
+    showDeleteSuccessModal(
+      `Se eliminó con éxito ${deletedName}.`,
+      "deleteCedisModal"
+    );
   };
 
   const handleDeleteSelected = () => {
@@ -231,11 +250,18 @@ export default function Cedis() {
     );
   };
 
+  const clearFilters = () => {
+    setSearchCliente("");
+    setSearchRegion("");
+  };
+
   const isAllSelected =
-    cedisList.length > 0 &&
-    cedisList.every((item) => selectedRows[item.id]);
+    filteredCedis.length > 0 &&
+    filteredCedis.every((item) => selectedRows[item.id]);
 
   const selectedCount = Object.values(selectedRows).filter(Boolean).length;
+  const hasActiveFilters =
+    searchCliente.trim() !== "" || searchRegion.trim() !== "";
 
   return (
     <Admin>
@@ -247,23 +273,25 @@ export default function Cedis() {
 
         <div className={selectedCount > 0 ? "selection-toolbar" : "d-flex gap-2"}>
           {selectedCount === 0 ? (
-            <button
-              className="primary-btn"
-              onClick={() => openModal("createCedisModal")}
-              type="button"
-            >
-              <i className="bi bi-plus-lg"></i>&nbsp;Nuevo CEDIS
-            </button>
-          ) : (
-            
             <>
-            {isAllSelected && (
+              <button
+                className="primary-btn"
+                onClick={() => openModal("createCedisModal")}
+                type="button"
+              >
+                <i className="bi bi-plus-lg"></i>&nbsp;Nuevo CEDIS
+              </button>
+            </>
+          ) : (
+            <>
+              {isAllSelected && (
                 <div className="selection-info">
                   <i className="bi bi-info-circle"></i>
                   ¡Seleccionaste todo!
                 </div>
               )}
-              {selectedCount === cedisList.length ? (
+
+              {selectedCount === filteredCedis.length && filteredCedis.length > 0 ? (
                 <button
                   className="selection-delete"
                   onClick={handleOpenDeleteAll}
@@ -298,18 +326,26 @@ export default function Cedis() {
       </div>
 
       <div className="panel-card">
-        <div className="toolbar-row">
+        <div className="toolbar-row flex-wrap gap-2">
           <div className="search-box">
             <i className="bi bi-search"></i>
             <input
               type="text"
-              placeholder="Buscar por nombre, dirección o encargado..."
+              placeholder="Filtrar por cliente..."
+              value={searchCliente}
+              onChange={(e) => setSearchCliente(e.target.value)}
             />
           </div>
 
-          <button className="outline-btn" type="button">
-            <i className="bi bi-funnel"></i> Filtros
-          </button>
+          <input
+            type="text"
+            className="form-control"
+            style={{ maxWidth: "260px" }}
+            placeholder="Filtrar por región..."
+            value={searchRegion}
+            onChange={(e) => setSearchRegion(e.target.value)}
+          />
+
         </div>
 
         <div className="table-shell">
@@ -333,21 +369,32 @@ export default function Cedis() {
             </thead>
 
             <tbody>
-              {cedisList.map((item) => (
-                <CedisRow
-                  key={item.id}
-                  item={item}
-                  isSelected={!!selectedRows[item.id]}
-                  onSelect={() => handleSelectRow(item.id)}
-                  onEdit={() => handleOpenEdit(item)}
-                  onDelete={() => handleOpenDeleteOne(item)}
-                />
-              ))}
+              {filteredCedis.length > 0 ? (
+                filteredCedis.map((item) => (
+                  <CedisRow
+                    key={item.id}
+                    item={item}
+                    isSelected={!!selectedRows[item.id]}
+                    onSelect={() => handleSelectRow(item.id)}
+                    onEdit={() => handleOpenEdit(item)}
+                    onDelete={() => handleOpenDeleteOne(item)}
+                  />
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="7" className="text-center py-4">
+                    No se encontraron CEDIS con los filtros aplicados.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
+
         <div className="d-flex justify-content-between align-items-center mt-3">
-          <small>Mostrando {cedisList.length} registros</small>
+          <small>
+            Mostrando {filteredCedis.length} de {cedisList.length} registros
+          </small>
 
           <div className="d-flex gap-2">
             <button className="btn btn-light" disabled>

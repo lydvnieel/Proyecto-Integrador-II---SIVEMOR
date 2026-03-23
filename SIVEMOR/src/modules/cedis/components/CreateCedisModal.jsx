@@ -4,6 +4,8 @@ import Modal from "bootstrap/js/dist/modal";
 export default function CreateCedisModal({ onCreate }) {
   const [formData, setFormData] = useState({
     nombre: "",
+    cliente: "",
+    region: "",
     direccion: "",
     encargado: "",
     correo: "",
@@ -13,9 +15,13 @@ export default function CreateCedisModal({ onCreate }) {
 
   const [error, setError] = useState("");
 
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
   const resetForm = () => {
     setFormData({
       nombre: "",
+      cliente: "",
+      region: "",
       direccion: "",
       encargado: "",
       correo: "",
@@ -28,9 +34,15 @@ export default function CreateCedisModal({ onCreate }) {
   const handleChange = (e) => {
     const { name, value } = e.target;
 
+    let newValue = value;
+
+    if (name === "telefonoPrincipal" || name === "telefonoAlternativo") {
+      newValue = value.replace(/\D/g, "");
+    }
+
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: newValue,
     }));
 
     if (error) setError("");
@@ -39,6 +51,8 @@ export default function CreateCedisModal({ onCreate }) {
   const handleCreate = () => {
     const cleanedData = {
       nombre: formData.nombre.trim(),
+      cliente: formData.cliente.trim(),
+      region: formData.region.trim(),
       direccion: formData.direccion.trim(),
       encargado: formData.encargado.trim(),
       correo: formData.correo.trim(),
@@ -48,12 +62,31 @@ export default function CreateCedisModal({ onCreate }) {
 
     if (
       !cleanedData.nombre ||
+      !cleanedData.cliente ||
+      !cleanedData.region ||
       !cleanedData.direccion ||
       !cleanedData.encargado ||
-      !cleanedData.correo ||
       !cleanedData.telefonoPrincipal
     ) {
       setError("Faltan campos por llenar");
+      return;
+    }
+
+    if (cleanedData.correo && !emailRegex.test(cleanedData.correo)) {
+      setError("El correo electrónico no tiene un formato válido.");
+      return;
+    }
+
+    if (!/^\d+$/.test(cleanedData.telefonoPrincipal)) {
+      setError("El teléfono principal solo debe contener números.");
+      return;
+    }
+
+    if (
+      cleanedData.telefonoAlternativo &&
+      !/^\d+$/.test(cleanedData.telefonoAlternativo)
+    ) {
+      setError("El teléfono alternativo solo debe contener números.");
       return;
     }
 
@@ -118,6 +151,30 @@ export default function CreateCedisModal({ onCreate }) {
               </div>
 
               <div className="mb-3">
+                <label className="form-label">Cliente *</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  name="cliente"
+                  value={formData.cliente}
+                  onChange={handleChange}
+                  placeholder="Ej: Pepsi"
+                />
+              </div>
+
+              <div className="mb-3">
+                <label className="form-label">Región *</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  name="region"
+                  value={formData.region}
+                  onChange={handleChange}
+                  placeholder="Ej: Norte"
+                />
+              </div>
+
+              <div className="mb-3">
                 <label className="form-label">Dirección Completa *</label>
                 <textarea
                   className="form-control"
@@ -142,9 +199,9 @@ export default function CreateCedisModal({ onCreate }) {
               </div>
 
               <div className="mb-3">
-                <label className="form-label">Correo Electrónico *</label>
+                <label className="form-label">Correo Electrónico</label>
                 <input
-                  type="email"
+                  type="text"
                   className="form-control"
                   name="correo"
                   value={formData.correo}
@@ -162,7 +219,8 @@ export default function CreateCedisModal({ onCreate }) {
                     name="telefonoPrincipal"
                     value={formData.telefonoPrincipal}
                     onChange={handleChange}
-                    placeholder="81-1234-5678"
+                    placeholder="8112345678"
+                    inputMode="numeric"
                   />
                 </div>
 
@@ -174,7 +232,8 @@ export default function CreateCedisModal({ onCreate }) {
                     name="telefonoAlternativo"
                     value={formData.telefonoAlternativo}
                     onChange={handleChange}
-                    placeholder="81-8765-4321"
+                    placeholder="8187654321"
+                    inputMode="numeric"
                   />
                 </div>
               </div>
