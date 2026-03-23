@@ -4,6 +4,7 @@ import CostRow from "./components/CostRow";
 import EditCostModal from "./components/EditCostModal";
 import UpdateCostSuccessModal from "./components/UpdateCostSuccessModal";
 import DeleteCostsModal from "./components/DeleteCostsModal";
+import CreateCostModal from "./components/CreateCostModal";
 
 export default function Costos() {
   const [costos, setCostos] = useState([
@@ -74,6 +75,16 @@ export default function Costos() {
 
   const selectedCount = Object.values(selectedRows).filter(Boolean).length;
 
+  const handleCreateCost = (newCost) => {
+  setCostos((prev) => [
+    ...prev,
+    {
+      ...newCost,
+      id: Date.now(),
+    },
+  ]);
+};
+
   return (
     <Admin>
       <div className="page-header">
@@ -83,9 +94,15 @@ export default function Costos() {
         </div>
 
         <div className={selectedCount > 0 ? "selection-toolbar" : ""}>
-          {selectedCount === 0 ? (
-            <button className="outline-btn">Volver</button>
-          ) : (
+{selectedCount === 0 ? (
+  <button
+    className="primary-btn"
+    data-bs-toggle="modal"
+    data-bs-target="#createCostModal"
+  >
+    <i className="bi bi-plus-lg"></i>&nbsp;Nuevo costo
+  </button>
+) : (
             <>
               {isAllSelected && (
                 <div className="selection-info">
@@ -182,6 +199,7 @@ export default function Costos() {
         totalCount={costos.length}
         onDelete={handleDeleteSelected}
       />
+      <CreateCostModal onCreate={handleCreateCost} />
     </Admin>
   );
 }
