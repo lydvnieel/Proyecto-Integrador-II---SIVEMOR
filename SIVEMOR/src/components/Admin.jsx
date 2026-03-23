@@ -7,6 +7,7 @@ function AdminLayout({ title = "Panel de Administración", children }) {
     { to: "/dashboard", icon: "bi-grid", label: "Dashboard" },
     { to: "/vehiculos", icon: "bi-truck", label: "Vehículos" },
     { to: "/verificaciones", icon: "bi-file-earmark-text", label: "Verificaciones" },
+    { to: "/costos", icon: "bi-cash-coin", label: "Costos" },
     { to: "/notas", icon: "bi-file-earmark-medical", label: "Notas" },
     { to: "/verificentros", icon: "bi-buildings", label: "Verificentros" },
     { to: "/usuarios", icon: "bi-people", label: "Usuarios" },
@@ -20,25 +21,27 @@ function AdminLayout({ title = "Panel de Administración", children }) {
   return (
     <div className="admin-layout">
       <aside className="admin-sidebar">
-        <div className="sidebar-brand">
-          <i className="bi bi-truck brand-icon"></i>
-          <span>SIVEMOR</span>
-        </div>
+        <div className="sidebar-top">
+          <div className="sidebar-brand">
+            <i className="bi bi-truck brand-icon"></i>
+            <span>SIVEMOR</span>
+          </div>
 
-        <nav className="sidebar-menu">
-          {menuItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              className={({ isActive }) =>
-                `sidebar-link ${isActive ? "active" : ""}`
-              }
-            >
-              <i className={`bi ${item.icon}`}></i>
-              <span>{item.label}</span>
-            </NavLink>
-          ))}
-        </nav>
+          <nav className="sidebar-menu">
+            {menuItems.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                className={({ isActive }) =>
+                  `sidebar-link ${isActive ? "active" : ""}`
+                }
+              >
+                <i className={`bi ${item.icon}`}></i>
+                <span>{item.label}</span>
+              </NavLink>
+            ))}
+          </nav>
+        </div>
 
         <div className="sidebar-user">
           <div className="sidebar-user-info">
@@ -63,7 +66,10 @@ function AdminLayout({ title = "Panel de Administración", children }) {
         <header className="admin-header">
           <h1>{title}</h1>
 
-          <button className="header-exit-btn" onClick={() => navigate("/login")}>
+          <button
+            className="header-exit-btn"
+            onClick={() => navigate("/login")}
+          >
             Salir
             <i className="bi bi-box-arrow-right"></i>
           </button>

@@ -11,6 +11,7 @@ import Reportes from "../modules/reportes/Reportes.jsx";
 import Cedis from "../modules/cedis/Cedis.jsx";
 import Transacciones from "../modules/transacciones/Transacciones.jsx";
 import Pedidos from "../modules/pedidos/Pedidos.jsx";
+import Costos from "../modules/costos/Costos.jsx";
 
 function AppRouter() {
   return (
@@ -29,6 +30,8 @@ function AppRouter() {
         <Route path="/cedis" element={<Cedis />} />
         <Route path="/transacciones" element={<Transacciones />} />
         <Route path="/pedidos" element={<Pedidos />} />
+        <Route path="/costos" element={<Costos />} />
+
       </Routes>
     </BrowserRouter>
   );
