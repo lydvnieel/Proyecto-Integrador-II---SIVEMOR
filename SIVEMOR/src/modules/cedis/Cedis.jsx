@@ -345,9 +345,7 @@ export default function Cedis() {
             value={searchRegion}
             onChange={(e) => setSearchRegion(e.target.value)}
           />
-
         </div>
-
         <div className="table-shell">
           <table className="admin-table">
             <thead>
