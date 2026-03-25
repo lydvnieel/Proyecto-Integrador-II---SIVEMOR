@@ -1,18 +1,22 @@
 import { useEffect, useState } from "react";
+import Modal from "bootstrap/js/dist/modal";
 
 export default function EditUserModal({ user, onSave }) {
   const [formData, setFormData] = useState(user || {});
+  const [originalData, setOriginalData] = useState({});
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (user) {
       setFormData(user);
+      setOriginalData(user);
+      setError("");
     }
   }, [user]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    let updatedValue = value;
     let updatedClass = formData.estadoClass;
 
     if (name === "estado") {
@@ -21,20 +25,89 @@ export default function EditUserModal({ user, onSave }) {
 
     setFormData((prev) => ({
       ...prev,
-      [name]: updatedValue,
+      [name]: value,
       estadoClass: updatedClass,
     }));
+
+    if (error) {
+      setError("");
+    }
+  };
+
+  const isSameData = (cleanedData) => {
+    return (
+      cleanedData.nombre === String(originalData.nombre || "").trim() &&
+      cleanedData.email === String(originalData.email || "").trim() &&
+      cleanedData.rol === String(originalData.rol || "").trim() &&
+      cleanedData.estado === String(originalData.estado || "").trim()
+    );
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSave(formData);
+
+    const cleanedData = {
+      ...formData,
+      nombre: String(formData.nombre || "").trim(),
+      email: String(formData.email || "").trim(),
+      rol: String(formData.rol || "").trim(),
+      estado: String(formData.estado || "").trim(),
+    };
+
+    if (
+      !cleanedData.nombre ||
+      !cleanedData.email ||
+      !cleanedData.rol ||
+      !cleanedData.estado
+    ) {
+      setError("Faltan campos obligatorios por llenar.");
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(cleanedData.email)) {
+      setError("Ingresa un correo electrónico válido.");
+      return;
+    }
+
+    if (isSameData(cleanedData)) {
+      setError("No se realizaron cambios en el usuario.");
+      return;
+    }
+
+    onSave(cleanedData);
+
+    const editModalElement = document.getElementById("editUserModal");
+    const successModalElement = document.getElementById("updateUserSuccessModal");
+
+    if (!editModalElement || !successModalElement) return;
+
+    const editModalInstance = Modal.getOrCreateInstance(editModalElement);
+    const successModalInstance = Modal.getOrCreateInstance(successModalElement);
+
+    editModalElement.addEventListener(
+      "hidden.bs.modal",
+      () => {
+        setError("");
+        successModalInstance.show();
+      },
+      { once: true }
+    );
+
+    editModalInstance.hide();
   };
 
   if (!user) return null;
 
   return (
-    <div className="modal fade" id="editUserModal" tabIndex="-1" aria-hidden="true">
+    <div
+      className="modal fade"
+      id="editUserModal"
+      tabIndex="-1"
+      aria-hidden="true"
+      data-bs-backdrop="static"
+      data-bs-keyboard="false"
+    >
       <div className="modal-dialog modal-dialog-centered modal-lg">
         <div className="modal-content">
           <form onSubmit={handleSubmit}>
@@ -68,8 +141,14 @@ export default function EditUserModal({ user, onSave }) {
                 </div>
               </div>
 
+              {error && (
+                <div className="alert alert-danger" role="alert">
+                  {error}
+                </div>
+              )}
+
               <div className="mb-3">
-                <label className="form-label">Nombre completo</label>
+                <label className="form-label">Nombre de usuario</label>
                 <input
                   type="text"
                   className="form-control"
@@ -80,7 +159,7 @@ export default function EditUserModal({ user, onSave }) {
               </div>
 
               <div className="mb-3">
-                <label className="form-label">Correo electrónico</label>
+                <label className="form-label">Email</label>
                 <input
                   type="email"
                   className="form-control"
@@ -91,38 +170,14 @@ export default function EditUserModal({ user, onSave }) {
               </div>
 
               <div className="mb-3">
-                <label className="form-label">Teléfono</label>
+                <label className="form-label">Tipo de usuario</label>
                 <input
                   type="text"
                   className="form-control"
-                  name="telefono"
-                  value={formData.telefono || ""}
+                  name="rol"
+                  value={formData.rol || ""}
                   onChange={handleChange}
                 />
-              </div>
-
-              <div className="row">
-                <div className="col-md-6 mb-3">
-                  <label className="form-label">Tipo de usuario</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    name="rol"
-                    value={formData.rol || ""}
-                    onChange={handleChange}
-                  />
-                </div>
-
-                <div className="col-md-6 mb-3">
-                  <label className="form-label">Verificentro</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    name="verificentro"
-                    value={formData.verificentro || ""}
-                    onChange={handleChange}
-                  />
-                </div>
               </div>
 
               <div className="user-extra-box">
@@ -138,16 +193,17 @@ export default function EditUserModal({ user, onSave }) {
               </div>
 
               <div className="modal-footer px-0 pb-0 mt-4">
-                <button type="button" className="btn btn-light" data-bs-dismiss="modal">
+                <button
+                  type="button"
+                  className="btn btn-light"
+                  data-bs-dismiss="modal"
+                >
                   Cancelar
                 </button>
 
                 <button
                   type="submit"
                   className="btn btn-primary"
-                  data-bs-dismiss="modal"
-                  data-bs-toggle="modal"
-                  data-bs-target="#updateUserSuccessModal"
                 >
                   Guardar cambios
                 </button>

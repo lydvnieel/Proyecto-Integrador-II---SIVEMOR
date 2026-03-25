@@ -1,13 +1,14 @@
 import { useState } from "react";
+import Modal from "bootstrap/js/dist/modal";
 
 export default function CreateUserModal({ onCreate }) {
   const [formData, setFormData] = useState({
     nombre: "",
-    telefono: "",
-    verificentro: "",
     email: "",
     rol: "Técnico",
   });
+
+  const [error, setError] = useState("");
 
   const handleChange = (e) => {
     const { name, value, type } = e.target;
@@ -16,34 +17,89 @@ export default function CreateUserModal({ onCreate }) {
       ...prev,
       [name]: type === "radio" ? value : value,
     }));
+
+    if (error) {
+      setError("");
+    }
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onCreate(formData);
 
-    setFormData({
-      nombre: "",
-      telefono: "",
-      verificentro: "",
-      email: "",
-      rol: "Técnico",
-    });
+    const cleanedData = {
+      nombre: formData.nombre.trim(),
+      email: formData.email.trim(),
+      rol: formData.rol.trim(),
+    };
+
+    if (!cleanedData.nombre || !cleanedData.email || !cleanedData.rol) {
+      setError("Faltan campos obligatorios por llenar.");
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(cleanedData.email)) {
+      setError("Ingresa un correo electrónico válido.");
+      return;
+    }
+
+    onCreate(cleanedData);
+
+    const createModalElement = document.getElementById("createUserModal");
+    const successModalElement = document.getElementById("createUserSuccessModal");
+
+    if (!createModalElement || !successModalElement) return;
+
+    const createModalInstance = Modal.getOrCreateInstance(createModalElement);
+    const successModalInstance = Modal.getOrCreateInstance(successModalElement);
+
+    createModalElement.addEventListener(
+      "hidden.bs.modal",
+      () => {
+        setFormData({
+          nombre: "",
+          email: "",
+          rol: "Técnico",
+        });
+        setError("");
+        successModalInstance.show();
+      },
+      { once: true }
+    );
+
+    createModalInstance.hide();
   };
 
   return (
-    <div className="modal fade" id="createUserModal" tabIndex="-1" aria-hidden="true">
+    <div
+      className="modal fade"
+      id="createUserModal"
+      tabIndex="-1"
+      aria-hidden="true"
+      data-bs-backdrop="static"
+      data-bs-keyboard="false"
+    >
       <div className="modal-dialog modal-dialog-centered">
         <div className="modal-content">
           <form onSubmit={handleSubmit}>
             <div className="modal-header">
               <h5 className="modal-title">Registrar Nuevo Usuario</h5>
-              <button type="button" className="btn-close" data-bs-dismiss="modal"></button>
+              <button
+                type="button"
+                className="btn-close"
+                data-bs-dismiss="modal"
+              ></button>
             </div>
 
             <div className="modal-body">
+              {error && (
+                <div className="alert alert-danger" role="alert">
+                  {error}
+                </div>
+              )}
+
               <div className="mb-3">
-                <label className="form-label">Nombre Completo</label>
+                <label className="form-label">Nombre de usuario *</label>
                 <input
                   type="text"
                   className="form-control"
@@ -55,31 +111,7 @@ export default function CreateUserModal({ onCreate }) {
               </div>
 
               <div className="mb-3">
-                <label className="form-label">Telefono</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  name="telefono"
-                  value={formData.telefono}
-                  onChange={handleChange}
-                  placeholder="Ej. 52 777 983 7362"
-                />
-              </div>
-
-              <div className="mb-3">
-                <label className="form-label">Verificentro</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  name="verificentro"
-                  value={formData.verificentro}
-                  onChange={handleChange}
-                  placeholder="Ej. Monterrey Norte"
-                />
-              </div>
-
-              <div className="mb-3">
-                <label className="form-label">Correo Electrónico</label>
+                <label className="form-label">Email *</label>
                 <input
                   type="email"
                   className="form-control"
@@ -91,7 +123,7 @@ export default function CreateUserModal({ onCreate }) {
               </div>
 
               <div className="mb-3">
-                <label className="form-label">Cargo</label>
+                <label className="form-label">Tipo de usuario *</label>
 
                 <div className="d-flex gap-4 mt-2">
                   <div className="form-check">
@@ -128,16 +160,17 @@ export default function CreateUserModal({ onCreate }) {
             </div>
 
             <div className="modal-footer">
-              <button type="button" className="btn btn-light" data-bs-dismiss="modal">
+              <button
+                type="button"
+                className="btn btn-light"
+                data-bs-dismiss="modal"
+              >
                 Cancelar
               </button>
 
               <button
                 type="submit"
                 className="btn btn-primary"
-                data-bs-dismiss="modal"
-                data-bs-toggle="modal"
-                data-bs-target="#createUserSuccessModal"
               >
                 Crear Usuario
               </button>

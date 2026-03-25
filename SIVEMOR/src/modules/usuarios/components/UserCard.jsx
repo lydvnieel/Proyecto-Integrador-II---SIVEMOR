@@ -1,4 +1,4 @@
-export default function UserCard({ user, onEdit, onCredential, onEmail }) {
+export default function UserCard({ user, onEdit, onEmail }) {
   return (
     <div className="user-card">
       <div className="user-card-top">
@@ -37,17 +37,9 @@ export default function UserCard({ user, onEdit, onCredential, onEmail }) {
         <button
           className="outline-btn"
           data-bs-toggle="modal"
-          data-bs-target="#currentCredentialModal"
-          onClick={onCredential}
-        >
-          <i className="bi bi-key"></i>&nbsp;Clave
-        </button>
-
-        <button
-          className="outline-btn"
-          data-bs-toggle="modal"
           data-bs-target="#editUserModal"
           onClick={onEdit}
+          type="button"
         >
           <i className="bi bi-pencil-square"></i>&nbsp;Editar
         </button>
@@ -57,8 +49,9 @@ export default function UserCard({ user, onEdit, onCredential, onEmail }) {
           data-bs-toggle="modal"
           data-bs-target="#emailSentModal"
           onClick={onEmail}
+          type="button"
         >
-          <i className="bi bi-envelope"></i>&nbsp;Enviar
+          <i className="bi bi-envelope"></i>&nbsp;Enviar credenciales
         </button>
       </div>
     </div>
