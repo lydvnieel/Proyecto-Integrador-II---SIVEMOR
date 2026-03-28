@@ -71,18 +71,21 @@ a {
   border-right: 1px solid rgba(255, 255, 255, 0.06);
   overflow-y: auto;
   overflow-x: hidden;
+  transition: width 0.3s ease;
 }
 
 .sidebar-brand {
   height: 58px;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 10px;
-  padding: 0 20px;
+  padding: 0 12px;
   color: #ffffff;
   font-weight: 700;
   font-size: 1.05rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  white-space: nowrap;
 }
 
 .brand-icon {
@@ -109,6 +112,7 @@ a {
   color: #8ea0bf;
   font-size: 0.98rem;
   transition: all 0.2s ease;
+  white-space: nowrap;
 }
 
 .sidebar-link:hover {
@@ -131,6 +135,7 @@ a {
   border-top: 1px solid rgba(255, 255, 255, 0.06);
   margin-top: auto;
   flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .sidebar-user-info {
@@ -150,6 +155,7 @@ a {
   align-items: center;
   justify-content: center;
   font-weight: 700;
+  flex-shrink: 0;
 }
 
 .sidebar-user-name {
@@ -175,6 +181,7 @@ a {
   justify-content: center;
   gap: 8px;
   padding: 10px 12px;
+  cursor: pointer;
 }
 
 .sidebar-logout-btn:hover {
@@ -186,6 +193,7 @@ a {
   flex: 1;
   margin-left: 242px;
   min-height: 100vh;
+  transition: margin-left 0.3s ease;
 }
 
 .admin-header {
@@ -199,11 +207,22 @@ a {
   box-shadow: 0 1px 0 rgba(12, 22, 48, 0.04);
 }
 
+.admin-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .admin-header h1 {
   margin: 0;
   font-size: 1rem;
   font-weight: 700;
   color: #27334d;
+}
+
+
+.menu-toggle-btn:hover {
+  background: #f5f8fc;
 }
 
 .header-exit-btn {
@@ -214,6 +233,25 @@ a {
   align-items: center;
   gap: 8px;
   font-weight: 500;
+  cursor: pointer;
+}
+.header-toggle-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #5f6368;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.header-toggle-btn:hover {
+  background: #f1f3f4;
 }
 
 .admin-content {
@@ -239,6 +277,29 @@ a {
   font-size: 2rem;
   font-weight: 700;
   color: #1a243b;
+}
+
+/* SIDEBAR COLAPSADO */
+
+.admin-sidebar {
+  transition: width 0.3s ease;
+}
+
+.admin-main {
+  flex: 1;
+  margin-left: 242px;
+  min-height: 100vh;
+  transition: margin-left 0.3s ease;
+}
+
+.sidebar-collapsed .admin-sidebar {
+  width: 0;
+  min-width: 0;
+  border-right: none;
+}
+
+.sidebar-collapsed .admin-main {
+  margin-left: 0;
 }
 
 /* BUTTONS */
@@ -1023,6 +1084,10 @@ body.modal-open {
   .form-grid-2 {
     grid-template-columns: 1fr;
   }
+
+  .sidebar-collapsed .admin-main {
+    margin-left: 0;
+  }
 }
 
 @media (max-width: 768px) {
@@ -1065,5 +1130,9 @@ body.modal-open {
 
   .selection-toolbar {
     flex-wrap: wrap;
+  }
+
+  .admin-header h1 {
+    font-size: 0.95rem;
   }
 }
