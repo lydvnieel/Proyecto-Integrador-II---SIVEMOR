@@ -1,12 +1,22 @@
 import { NavLink, useNavigate } from "react-router-dom";
+import { useState } from "react";
 
-function AdminLayout({ title = "Panel de Administración", children }) {
+export default function AdminLayout({
+  title = "Panel de Administración",
+  children,
+}) {
   const navigate = useNavigate();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   const menuItems = [
     { to: "/dashboard", icon: "bi-grid", label: "Dashboard" },
     { to: "/vehiculos", icon: "bi-truck", label: "Vehículos" },
-    { to: "/verificaciones", icon: "bi-file-earmark-text", label: "Verificaciones" },
+    {
+      to: "/verificaciones",
+      icon: "bi-file-earmark-text",
+      label: "Verificaciones",
+    },
+    { to: "/costos", icon: "bi-cash-coin", label: "Costos" },
     { to: "/notas", icon: "bi-file-earmark-medical", label: "Notas" },
     { to: "/verificentros", icon: "bi-buildings", label: "Verificentros" },
     { to: "/usuarios", icon: "bi-people", label: "Usuarios" },
@@ -17,12 +27,20 @@ function AdminLayout({ title = "Panel de Administración", children }) {
     { to: "/pedidos", icon: "bi-box", label: "Pedidos" },
   ];
 
+  const toggleSidebar = () => {
+    setIsSidebarOpen((prev) => !prev);
+  };
+
   return (
-    <div className="admin-layout">
+    <div
+      className={`admin-layout ${!isSidebarOpen ? "sidebar-collapsed" : ""}`}
+    >
       <aside className="admin-sidebar">
         <div className="sidebar-brand">
-          <i className="bi bi-truck brand-icon"></i>
-          <span>SIVEMOR</span>
+          <div className="sidebar-brand-content">
+            <i className="bi bi-truck brand-icon"></i>
+            <span>SIVEMOR</span>
+          </div>
         </div>
 
         <nav className="sidebar-menu">
@@ -54,16 +72,30 @@ function AdminLayout({ title = "Panel de Administración", children }) {
             onClick={() => navigate("/login")}
           >
             <i className="bi bi-box-arrow-right"></i>
-            Cerrar Sesión
+            <span>Cerrar Sesión</span>
           </button>
         </div>
       </aside>
 
       <div className="admin-main">
         <header className="admin-header">
-          <h1>{title}</h1>
+          <div className="admin-header-left">
+            <button
+              type="button"
+              className="header-toggle-btn"
+              onClick={toggleSidebar}
+              aria-label="Mostrar u ocultar menú"
+            >
+              <i className="bi bi-list"></i>
+            </button>
 
-          <button className="header-exit-btn" onClick={() => navigate("/login")}>
+            <h1>{title}</h1>
+          </div>
+
+          <button
+            className="header-exit-btn"
+            onClick={() => navigate("/login")}
+          >
             Salir
             <i className="bi bi-box-arrow-right"></i>
           </button>
@@ -74,5 +106,3 @@ function AdminLayout({ title = "Panel de Administración", children }) {
     </div>
   );
 }
-
-export default AdminLayout;
