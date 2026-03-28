@@ -1,6 +1,12 @@
 import { useState } from "react";
 
-export default function ReportFilters({ onGenerate, onDownload, currentData }) {
+export default function ReportFilters({
+  onGenerate,
+  onDownload,
+  currentData,
+  isGenerating,
+  options,
+}) {
   const [form, setForm] = useState({
     tipo: "cliente",
     cliente: "",
@@ -24,25 +30,28 @@ export default function ReportFilters({ onGenerate, onDownload, currentData }) {
   return (
     <>
       <div className="form-grid-2">
-
-         <div className="form-field">
+        <div className="form-field">
           <label>Cliente</label>
-          <input
-            type="text"
-            name="cliente"
-            value={form.cliente}
-            onChange={handleChange}
-          />
+          <select name="cliente" value={form.cliente} onChange={handleChange}>
+            <option value="">Todos</option>
+            {options?.clientes?.map((cliente) => (
+              <option key={cliente} value={cliente}>
+                {cliente}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="form-field">
           <label>Región</label>
-          <input
-            type="text"
-            name="region"
-            value={form.region}
-            onChange={handleChange}
-          />
+          <select name="region" value={form.region} onChange={handleChange}>
+            <option value="">Todas</option>
+            {options?.regiones?.map((region) => (
+              <option key={region} value={region}>
+                {region}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="form-field">
@@ -53,35 +62,49 @@ export default function ReportFilters({ onGenerate, onDownload, currentData }) {
             <option value="nota">Por nota</option>
           </select>
         </div>
-        
+
         <div className="form-field">
           <label>Tipo de verificación</label>
-          <input
-            type="text"
+          <select
             name="tipoVerificacion"
             value={form.tipoVerificacion}
             onChange={handleChange}
-          />
+          >
+            <option value="">Todos</option>
+            {options?.tiposVerificacion?.map((tipo) => (
+              <option key={tipo} value={tipo}>
+                {tipo}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="form-field">
           <label>Estado del dictamen</label>
-          <input
-            type="text"
+          <select
             name="estadoDictamen"
             value={form.estadoDictamen}
             onChange={handleChange}
-          />
+          >
+            <option value="">Todos</option>
+            {options?.dictamenes?.map((dictamen) => (
+              <option key={dictamen} value={dictamen}>
+                {dictamen}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="form-field">
           <label>Nota</label>
-          <input
-            type="text"
-            name="nota"
-            value={form.nota}
-            onChange={handleChange}
-          />
+          <select name="nota" value={form.nota} onChange={handleChange}>
+            <option value="">Todas</option>
+            {options?.notas?.map((nota) => (
+              <option key={nota} value={nota}>
+                {nota}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="form-field">
@@ -109,17 +132,18 @@ export default function ReportFilters({ onGenerate, onDownload, currentData }) {
         <button
           className="primary-btn"
           type="button"
-          onClick={() => onGenerate(form)}
+          onClick={() => onGenerate(form, true)}
+          disabled={isGenerating}
         >
           <i className="bi bi-file-earmark-pdf"></i>
-          Generar Reporte PDF
+          {isGenerating ? "Generando PDF..." : "Generar Reporte PDF"}
         </button>
 
         <button
           className="outline-btn"
           type="button"
           onClick={() => onDownload()}
-          disabled={!currentData || currentData.length === 0}
+          disabled={!currentData || currentData.length === 0 || isGenerating}
         >
           <i className="bi bi-download"></i>
           Descargar PDF

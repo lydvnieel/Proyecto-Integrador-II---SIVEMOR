@@ -43,50 +43,72 @@ export default function Reportes() {
     item.createdAt ||
     "";
 
-  const generateReport = (formFilters) => {
-    setError("");
-    setSuccessMessage("");
-    setReportData([]);
+  const parseDate = (dateString) => {
+    if (!dateString) return null;
 
+    if (dateString.includes("-")) {
+      const date = new Date(dateString);
+      return Number.isNaN(date.getTime()) ? null : date;
+    }
+
+    if (dateString.includes("/")) {
+      const [day, month, year] = dateString.split("/");
+      const date = new Date(`${year}-${month}-${day}`);
+      return Number.isNaN(date.getTime()) ? null : date;
+    }
+
+    const date = new Date(dateString);
+    return Number.isNaN(date.getTime()) ? null : date;
+  };
+
+  const getFilterOptions = () => {
+    const uniqueSorted = (values) =>
+      [...new Set(values.filter(Boolean).map((v) => String(v).trim()))].sort(
+        (a, b) => a.localeCompare(b, "es", { sensitivity: "base" }),
+      );
+
+    return {
+      clientes: uniqueSorted(data.map((item) => item.cliente)),
+      regiones: uniqueSorted(data.map((item) => item.region)),
+      notas: uniqueSorted(data.map((item) => item.nota)),
+      dictamenes: uniqueSorted(data.map((item) => item.dictamen)),
+      tiposVerificacion: uniqueSorted(
+        data.map((item) => item.tipoVerificacion),
+      ),
+    };
+  };
+
+  const buildReportData = (formFilters) => {
     const currentFilters = {
       tipo: formFilters.tipo || "cliente",
       cliente: (formFilters.cliente || "").trim(),
       region: (formFilters.region || "").trim(),
       nota: (formFilters.nota || "").trim(),
       tipoVerificacion: (formFilters.tipoVerificacion || "").trim(),
-      Dictamen: (formFilters.estadoDictamen || "").trim(),
+      estadoDictamen: (formFilters.estadoDictamen || "").trim(),
       fechaInicio: formFilters.fechaInicio || "",
       fechaFin: formFilters.fechaFin || "",
     };
 
-    const parseDate = (dateString) => {
-  if (!dateString) return null;
-
-  if (dateString.includes("-")) {
-    return new Date(dateString);
-  }
-
-  if (dateString.includes("/")) {
-    const [day, month, year] = dateString.split("/");
-    return new Date(`${year}-${month}-${day}`);
-  }
-
-  return null;
-};
-
     if (currentFilters.tipo === "cliente" && !currentFilters.region) {
-      setError("La región es obligatoria para el reporte por cliente.");
-      return;
+      return {
+        ok: false,
+        error: "La región es obligatoria para el reporte por cliente.",
+      };
     }
 
     if (currentFilters.tipo === "region" && !currentFilters.cliente) {
-      setError("El cliente es obligatorio para el reporte por región.");
-      return;
+      return {
+        ok: false,
+        error: "El cliente es obligatorio para el reporte por región.",
+      };
     }
 
     if (currentFilters.tipo === "nota" && !currentFilters.region) {
-      setError("La región es obligatoria para el reporte por nota.");
-      return;
+      return {
+        ok: false,
+        error: "La región es obligatoria para el reporte por nota.",
+      };
     }
 
     const filtered = data.filter((item) => {
@@ -95,13 +117,15 @@ export default function Reportes() {
       const itemNota = String(item.nota || "").trim();
       const itemTipoVerificacion = String(item.tipoVerificacion || "").trim();
       const itemDictamen = normalizeText(item.dictamen);
-      
+
       const itemFecha = parseDate(getEvaluationDate(item));
       const fechaInicio = parseDate(currentFilters.fechaInicio);
       const fechaFin = parseDate(currentFilters.fechaFin);
 
-      const matchFechaInicio = fechaInicio ? itemFecha >= fechaInicio : true;
-      const matchFechaFin = fechaFin ? itemFecha <= fechaFin : true;
+      const matchFechaInicio =
+        fechaInicio && itemFecha ? itemFecha >= fechaInicio : !fechaInicio;
+      const matchFechaFin =
+        fechaFin && itemFecha ? itemFecha <= fechaFin : !fechaFin;
 
       const matchRegion = currentFilters.region
         ? itemRegion.toLowerCase() === currentFilters.region.toLowerCase()
@@ -112,7 +136,7 @@ export default function Reportes() {
         : true;
 
       const matchNota = currentFilters.nota
-        ? itemNota.toLowerCase().includes(currentFilters.nota.toLowerCase())
+        ? itemNota.toLowerCase() === currentFilters.nota.toLowerCase()
         : true;
 
       const matchTipoVerificacion = currentFilters.tipoVerificacion
@@ -136,8 +160,10 @@ export default function Reportes() {
     });
 
     if (filtered.length === 0) {
-      setError("No hay datos para generar el reporte.");
-      return;
+      return {
+        ok: false,
+        error: "No hay datos para generar el reporte.",
+      };
     }
 
     const grouped = {};
@@ -158,6 +184,8 @@ export default function Reportes() {
           agrupacion: key,
           region: item.region || "-",
           cliente: item.cliente || "-",
+          nota: item.nota || "-",
+          dictamen: item.dictamen || "-",
           vehiculo:
             item.vehiculo ||
             item.placa ||
@@ -187,13 +215,19 @@ export default function Reportes() {
           : "0.00",
     }));
 
-    setFilters(currentFilters);
-    setReportData(finalData);
-
     const reportName = `Reporte_${currentFilters.tipo}_${new Date()
       .toISOString()
       .slice(0, 10)}.pdf`;
 
+    return {
+      ok: true,
+      filters: currentFilters,
+      data: finalData,
+      reportName,
+    };
+  };
+
+  const saveRecentReport = (reportName, currentFilters, finalData) => {
     const newRecent = {
       id: Date.now(),
       nombre: reportName,
@@ -205,6 +239,28 @@ export default function Reportes() {
     const updatedRecent = [newRecent, ...recentReports].slice(0, 8);
     setRecentReports(updatedRecent);
     localStorage.setItem("recentReports", JSON.stringify(updatedRecent));
+  };
+
+  const generateReport = async (formFilters, autoDownload = false) => {
+    setError("");
+    setSuccessMessage("");
+    setReportData([]);
+
+    const result = buildReportData(formFilters);
+
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
+
+    setFilters(result.filters);
+    setReportData(result.data);
+    saveRecentReport(result.reportName, result.filters, result.data);
+
+    if (autoDownload) {
+      await downloadPDF(result.data, result.filters, result.reportName);
+      return;
+    }
 
     setSuccessMessage("Reporte generado correctamente.");
   };
@@ -225,9 +281,6 @@ export default function Reportes() {
     try {
       setIsGenerating(true);
 
-      // 🔥 Simula carga (puedes quitarlo si no quieres delay)
-      await new Promise((resolve) => setTimeout(resolve, 800));
-
       const doc = new jsPDF();
 
       doc.setFontSize(16);
@@ -235,29 +288,49 @@ export default function Reportes() {
 
       doc.setFontSize(10);
       doc.text(`Fecha de generación: ${new Date().toLocaleString()}`, 14, 24);
+      doc.text(`Tipo: ${customFilters.tipo || "-"}`, 14, 30);
+      doc.text(`Cliente: ${customFilters.cliente || "Todos"}`, 14, 36);
+      doc.text(`Región: ${customFilters.region || "Todas"}`, 14, 42);
+      doc.text(`Nota: ${customFilters.nota || "Todas"}`, 14, 48);
+      doc.text(
+        `Dictamen: ${customFilters.estadoDictamen || "Todos"}`,
+        14,
+        54,
+      );
 
-      let y = 40;
+      let y = 66;
 
-      customData.forEach((row) => {
-        if (y > 265) {
+      customData.forEach((row, index) => {
+        if (y > 260) {
           doc.addPage();
           y = 20;
         }
 
-        doc.text(`${row.agrupacion}`, 14, y);
-        y += 6;
+        doc.setFontSize(12);
+        doc.text(`${index + 1}. ${row.agrupacion}`, 14, y);
+        y += 7;
+
+        doc.setFontSize(10);
         doc.text(`Cliente: ${row.cliente}`, 18, y);
         y += 6;
-        doc.text(`Total: ${row.numeroVerificaciones}`, 18, y);
+        doc.text(`Región: ${row.region}`, 18, y);
         y += 6;
-        doc.text(`%: ${row.porcentajeAprobacion}%`, 18, y);
+        doc.text(`Vehículo: ${row.vehiculo}`, 18, y);
+        y += 6;
+        doc.text(`Verificaciones: ${row.numeroVerificaciones}`, 18, y);
+        y += 6;
+        doc.text(`Aprobadas: ${row.aprobadas}`, 18, y);
+        y += 6;
+        doc.text(`Reprobadas: ${row.reprobadas}`, 18, y);
+        y += 6;
+        doc.text(`% Aprobación: ${row.porcentajeAprobacion}%`, 18, y);
         y += 10;
       });
 
       doc.save(fileName);
-
       setSuccessMessage("PDF generado correctamente.");
     } catch (err) {
+      console.error(err);
       setError("Error al generar el PDF.");
     } finally {
       setIsGenerating(false);
@@ -267,6 +340,8 @@ export default function Reportes() {
   const handleDownloadRecent = (report) => {
     downloadPDF(report.data, report.filters, report.nombre);
   };
+
+  const filterOptions = getFilterOptions();
 
   return (
     <Admin>
@@ -289,6 +364,7 @@ export default function Reportes() {
             onDownload={downloadPDF}
             currentData={reportData}
             isGenerating={isGenerating}
+            options={filterOptions}
           />
         </div>
 
