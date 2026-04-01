@@ -3,9 +3,11 @@ package mx.edu.utez.sivemorapp.modules.clientes;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
+import mx.edu.utez.sivemorapp.kernel.AuditFields;
 import mx.edu.utez.sivemorapp.modules.cedis.Cedis;
-
-import java.time.LocalDateTime;
+import mx.edu.utez.sivemorapp.modules.costos.Costo;
+import mx.edu.utez.sivemorapp.modules.notas.Notas;
+import mx.edu.utez.sivemorapp.modules.vehiculos.Vehiculo;
 import java.util.List;
 
 @Entity
@@ -16,7 +18,7 @@ import java.util.List;
 @AllArgsConstructor
 @Table(name = "clientes")
 
-public class Cliente{
+public class Cliente extends AuditFields {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -37,34 +39,22 @@ public class Cliente{
     private String telefono_alternativo;
 
     @Column(name = "gestor", nullable = false)
-    private Integer gestor;
-
-    @Column(name = "activo", nullable = false)
-    private Boolean activo;
-
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
+    private String gestor;
 
     @JsonIgnore
-    @OneToMany(mappedBy = "cliente", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "cliente", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Cedis> cedis;
 
-    @PrePersist
-    public void prePersist() {
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
-        if (this.activo == null) this.activo = true;
-    }
+    @JsonIgnore
+    @OneToMany(mappedBy = "cliente", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Vehiculo> vehiculos;
 
-    @PreUpdate
-    public void preUpdate() {
-        this.updatedAt = LocalDateTime.now();
-    }
+    @JsonIgnore
+    @OneToMany(mappedBy = "cliente", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Notas> notas;
 
-
-
+    @JsonIgnore
+    @OneToMany(mappedBy = "cliente", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Costo> costos;
 
 }

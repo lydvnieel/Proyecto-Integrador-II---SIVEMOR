@@ -3,7 +3,9 @@ package mx.edu.utez.sivemorapp.modules.cedis;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
+import mx.edu.utez.sivemorapp.kernel.AuditFields;
 import mx.edu.utez.sivemorapp.modules.clientes.Cliente;
+import mx.edu.utez.sivemorapp.modules.regiones.Region;
 import mx.edu.utez.sivemorapp.modules.vehiculos.Vehiculo;
 
 import java.time.LocalDateTime;
@@ -16,7 +18,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class Cedis{
+public class Cedis extends AuditFields {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -24,11 +26,12 @@ public class Cedis{
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_cedis", nullable = false)
+    @JoinColumn(name = "id_cliente", nullable = false)
     private Cliente cliente;
 
-    @Column(name = "id_region", nullable = false)
-    private Long idRegion;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_region", nullable = false)
+    private Region region;
 
     @Column(name = "nombre", nullable = false)
     private String nombre;
@@ -48,28 +51,8 @@ public class Cedis{
     @Column(name = "telefono_alternativo", nullable = false)
     private String telefono_alternativo;
 
-    @Column(name = "activo", nullable = false)
-    private Boolean activo;
-
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
-
     @JsonIgnore
-    @OneToMany(mappedBy = "cedis", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "cedis", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Vehiculo> vehiculos;
 
-    @PrePersist
-    public void prePersist() {
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
-        if (this.activo == null) this.activo = true;
-    }
-
-    @PreUpdate
-    public void preUpdate() {
-        this.updatedAt = LocalDateTime.now();
-    }
 }

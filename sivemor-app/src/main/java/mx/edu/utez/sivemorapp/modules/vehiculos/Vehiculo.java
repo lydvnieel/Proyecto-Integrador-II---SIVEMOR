@@ -1,20 +1,23 @@
 package mx.edu.utez.sivemorapp.modules.vehiculos;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
+import mx.edu.utez.sivemorapp.kernel.AuditFields;
 import mx.edu.utez.sivemorapp.modules.clientes.Cliente;
 import mx.edu.utez.sivemorapp.modules.cedis.Cedis;
-
-import java.time.LocalDateTime;
+import mx.edu.utez.sivemorapp.modules.verificaciones.Verificacion;
+import jakarta.persistence.Entity;
+import java.util.List;
 
 @Entity
-@Table(name = "vehiculo")
+@Table(name = "vehiculos")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Vehiculo{
+public class Vehiculo extends AuditFields {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -38,26 +41,8 @@ public class Vehiculo{
     @Column(name = "tipo", nullable = false)
     private String tipo;
 
-    @Column(name = "activo", nullable = false)
-    private Boolean activo;
-
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
-
-    @PrePersist
-    public void prePersist() {
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
-        if (this.activo == null) this.activo = true;
-    }
-
-    @PreUpdate
-    public void preUpdate() {
-        this.updatedAt = LocalDateTime.now();
-    }
-
+    @JsonIgnore
+    @OneToMany(mappedBy = "vehiculo", fetch = FetchType.LAZY)
+    private List<Verificacion> verificaciones;
 
 }
