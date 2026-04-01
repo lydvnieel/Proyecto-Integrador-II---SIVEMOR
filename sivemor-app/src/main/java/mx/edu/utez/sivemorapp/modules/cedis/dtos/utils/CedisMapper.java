@@ -11,16 +11,16 @@ public class CedisMapper {
     public static CedisResponseDTO toDto(Cedis cedis) {
         return CedisResponseDTO.builder()
                 .id(cedis.getId())
-                .id_cliente(cedis.getCliente() != null ? cedis.getCliente().getId() : null)
+                .idCliente(cedis.getCliente() != null ? cedis.getCliente().getId() : null)
                 .cliente(cedis.getCliente() != null ? cedis.getCliente().getRazon_social() : null)
-                .id_region(cedis.getRegion() != null ? cedis.getRegion().getId() : null)
+                .idRegion(cedis.getRegion() != null ? cedis.getRegion().getId() : null)
                 .region(cedis.getRegion() != null ? cedis.getRegion().getNombre() : null)
                 .nombre(cedis.getNombre())
                 .direccion(cedis.getDireccion())
                 .encargado(cedis.getEncargado())
                 .correo(cedis.getCorreo())
                 .telefono(cedis.getTelefono())
-                .telefonoAlternativo(cedis.getTelefono_alternativo())
+                .telefonoAlternativo(cedis.getTelefonoAlternativo())
                 .activo(cedis.getActivo())
                 .build();
     }

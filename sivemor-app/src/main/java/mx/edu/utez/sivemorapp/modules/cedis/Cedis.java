@@ -49,7 +49,7 @@ public class Cedis extends AuditFields {
     private String telefono;
 
     @Column(name = "telefono_alternativo", nullable = false)
-    private String telefono_alternativo;
+    private String telefonoAlternativo;
 
     @JsonIgnore
     @OneToMany(mappedBy = "cedis", cascade = CascadeType.ALL, orphanRemoval = true)

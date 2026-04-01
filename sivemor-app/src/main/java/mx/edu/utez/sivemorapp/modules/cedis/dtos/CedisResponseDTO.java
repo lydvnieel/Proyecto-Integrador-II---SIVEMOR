@@ -2,16 +2,15 @@ package mx.edu.utez.sivemorapp.modules.cedis.dtos;
 
 import lombok.*;
 
-@Getter
-@Setter
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class CedisResponseDTO {
     private Long id;
-    private Long id_cliente;
+    private Long idCliente;
+    private Long idRegion;
     private String cliente;
-    private Long id_region;
     private String region;
     private String nombre;
     private String direccion;
