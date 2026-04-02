@@ -27,7 +27,7 @@ public class Cliente extends AuditFields {
 
 
     @Column(name = "razon_social", nullable = false, unique = true)
-    private String razon_social;
+    private String razonSocial;
 
     @Column(name = "email", nullable = false)
     private String email;
@@ -36,7 +36,7 @@ public class Cliente extends AuditFields {
     private String telefono;
 
     @Column(name = "telefono_alternativo", nullable = false)
-    private String telefono_alternativo;
+    private String telefonoAlternativo;
 
     @Column(name = "gestor", nullable = false)
     private String gestor;
