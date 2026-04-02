@@ -1,4 +1,4 @@
-package mx.edu.utez.sivemorapp.vehiculos;
+package mx.edu.utez.sivemorapp.modules.vehiculos;
 
 public class VehiculoController {
 }
