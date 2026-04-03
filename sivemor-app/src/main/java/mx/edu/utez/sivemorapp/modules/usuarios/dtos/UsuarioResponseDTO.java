@@ -20,4 +20,6 @@ public class UsuarioResponseDTO {
     private Boolean activo;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    private String contrasenaTemporal;
 }

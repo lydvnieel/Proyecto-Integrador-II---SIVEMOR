@@ -14,7 +14,6 @@ public class UsuarioRequestDTO  {
     private Long id;
     private String nombreUsuario;
     private String email;
-    private String contrasena;
     private TipoUsuario tipoUsuario;
     private Boolean activo;
 }

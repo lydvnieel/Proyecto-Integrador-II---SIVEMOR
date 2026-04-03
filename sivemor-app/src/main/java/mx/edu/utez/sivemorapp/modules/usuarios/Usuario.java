@@ -2,6 +2,7 @@ package mx.edu.utez.sivemorapp.modules.usuarios;
 
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 import mx.edu.utez.sivemorapp.kernel.AuditFields;
 import mx.edu.utez.sivemorapp.kernel.enums.TipoUsuario;
 
@@ -13,7 +14,7 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
 public class Usuario extends AuditFields {
 
     @Id
@@ -22,13 +23,13 @@ public class Usuario extends AuditFields {
     private Long id;
 
     @Column(name = "nombre_usuario", nullable = false, unique = true)
-    private String nombre;
+    private String nombreUsuario;
 
     @Column(name = "email", nullable = false, unique = true)
     private String email;
 
     @Column(name = "contrasena_hash", nullable = false)
-    private String contrasena;
+    private String contrasenaHash;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "tipo_usuario", nullable = false)
@@ -37,6 +38,6 @@ public class Usuario extends AuditFields {
     @Column(name = "intentos_fallidos", nullable = false)
     private Integer intentosFallidos = 0;
 
-    @Column(name = "bloqueado_hasta", nullable = false)
+    @Column(name = "bloqueado_hasta")
     private LocalDateTime bloqueadoHasta;
 }
