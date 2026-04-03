@@ -11,20 +11,40 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class VerificacionController {
 
-    private final VerificacionService service;
+    private final VerificacionService verificacionService;
 
-    @GetMapping
-    public ResponseEntity<ApiResponse> getAll() {
-        return service.findAll();
+    @GetMapping("")
+    public ResponseEntity<ApiResponse> getAll(
+            @RequestParam(value = "idVehiculo", required = false) Long idVehiculo,
+            @RequestParam(value = "idNota", required = false) Long idNota,
+            @RequestParam(value = "materia", required = false) String materia,
+            @RequestParam(value = "dictamen", required = false) String dictamen,
+            @RequestParam(value = "fechaVerificacion", required = false) String fechaVerificacion
+    ) {
+        return verificacionService.filterVerificaciones(idVehiculo, idNota, materia, dictamen, fechaVerificacion);
     }
 
-    @PostMapping
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponse> getById(@PathVariable Long id) {
+        return verificacionService.findById(id);
+    }
+
+    @PostMapping("")
     public ResponseEntity<ApiResponse> create(@RequestBody VerificacionRequestDTO dto) {
-        return service.save(dto);
+        return verificacionService.save(dto);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponse> update(
+            @PathVariable Long id,
+            @RequestBody VerificacionRequestDTO dto
+    ) {
+        dto.setId(id);
+        return verificacionService.update(dto);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse> delete(@PathVariable Long id) {
-        return service.delete(id);
+        return verificacionService.delete(id);
     }
 }
