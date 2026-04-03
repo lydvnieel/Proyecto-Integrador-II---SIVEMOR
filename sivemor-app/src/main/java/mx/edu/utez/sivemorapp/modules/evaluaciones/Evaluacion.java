@@ -3,6 +3,7 @@ package mx.edu.utez.sivemorapp.modules.evaluaciones;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 import mx.edu.utez.sivemorapp.kernel.AuditFields;
 import mx.edu.utez.sivemorapp.kernel.enums.*;
 import mx.edu.utez.sivemorapp.modules.evidencias_evaluacion.EvidenciaEvaluacion;
@@ -15,11 +16,10 @@ import java.util.List;
 
 @Entity
 @Table(name = "evaluaciones")
-@Getter
-@Setter
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
 public class Evaluacion extends AuditFields {
 
     @Id
@@ -27,10 +27,12 @@ public class Evaluacion extends AuditFields {
     @Column(name = "id_evaluacion")
     private Long id;
 
+    @JsonIgnore
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_verificacion", nullable = false, unique = true)
     private Verificacion verificacion;
 
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_tecnico", nullable = false)
     private Usuario tecnico;
@@ -149,8 +151,6 @@ public class Evaluacion extends AuditFields {
     @Builder.Default
     private Integer llantasBirlosDelanteraIzquierdaNum = 0;
 
-    @Column(name = "llantas_birlos_delantera_derecha", insertable = false, updatable = false)
-    private String _evitarConflictoNombreBirlosDelanteraDerechaColumna; // no usar
 
     @Column(name = "llantas_birlos_delantera_derecha_num", nullable = false)
     @Builder.Default
@@ -231,7 +231,7 @@ public class Evaluacion extends AuditFields {
     // E. Motor y emisiones
     @Enumerated(EnumType.STRING)
     @Column(name = "humo")
-    private Materia humo;
+    private Dictamen humo;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "gobernado")
@@ -278,6 +278,7 @@ public class Evaluacion extends AuditFields {
 
     @Column(name = "fecha_modificacion")
     private LocalDateTime fechaModificacion;
+
 
     // Relación con evidencias
     @JsonIgnore
