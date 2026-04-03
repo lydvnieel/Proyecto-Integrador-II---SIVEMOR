@@ -39,14 +39,14 @@ public class Verificacion extends AuditFields {
     private Vehiculo vehiculo;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "materia")
+    @Column(name = "materia", nullable = false)
     private Materia materia;
 
     @Column(name = "precio")
     private BigDecimal precio;
 
     @Column(name = "multa")
-    private Boolean multa;
+    private BigDecimal multa;
 
     @Column(name = "fecha_verificacion")
     private LocalDate fechaVerificacion;
@@ -58,4 +58,6 @@ public class Verificacion extends AuditFields {
     @JsonIgnore
     @OneToOne(mappedBy = "verificacion", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private Evaluacion evaluacion;
+
+
 }
