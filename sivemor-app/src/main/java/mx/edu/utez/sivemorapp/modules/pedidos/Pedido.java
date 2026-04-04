@@ -6,6 +6,8 @@ import mx.edu.utez.sivemorapp.kernel.AuditFields;
 import mx.edu.utez.sivemorapp.kernel.enums.EstatusEnvio;
 import mx.edu.utez.sivemorapp.modules.notas.Notas;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "pedidos")
 @Getter
@@ -23,6 +25,9 @@ public class Pedido extends AuditFields {
     @JoinColumn(name = "id_nota", nullable = false)
     private Notas nota;
 
+    @Column(name = "fecha_envio")
+    private LocalDateTime fechaEnvio;
+
     @Column(name = "numero_guia")
     private String numeroGuia;
 
@@ -31,18 +36,21 @@ public class Pedido extends AuditFields {
 
     @Lob
     @Column(name = "foto")
-    private Byte[] foto;
+    private byte[] foto;
+
+    @Column(name = "foto_nombre_archivo")
+    private String fotoNombreArchivo;
 
     @Column(name = "foto_mime_type")
-    private String foto_mime_type;
+    private String fotoMimeType;
 
     @Column(name = "foto_tamano_bytes")
-    private Integer foto_tamano_bytes;
+    private Integer fotoTamanoBytes;
 
     @Enumerated(EnumType.STRING)
-    @Column(name  = "estatus_envio")
-    private EstatusEnvio estatus_envio;
+    @Column(name  = "estatus_envio", nullable = false)
+    private EstatusEnvio estatusEnvio;
 
-    @Column(name = "comentario")
+    @Column(name = "comentario", columnDefinition = "TEXT")
     private String comentario;
 }
