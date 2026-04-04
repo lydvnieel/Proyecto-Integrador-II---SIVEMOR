@@ -19,11 +19,11 @@ public class EvidenciaEvaluacion extends AuditFields {
     @Column(name = "id_evidencia")
     private Long id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_evaluacion", nullable = false)
     private Evaluacion evaluacion;
 
-    @Column(name = "numero_evidencia")
+    @Column(name = "numero_evidencia", nullable = false)
     private Integer numeroEvidencia;
 
     @Lob
@@ -41,4 +41,7 @@ public class EvidenciaEvaluacion extends AuditFields {
 
     @Column(name = "comentario")
     private String comentario;
+
+    @Column(name = "activo")
+    private Boolean activo;
 }
