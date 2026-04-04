@@ -2,21 +2,22 @@ package mx.edu.utez.sivemorapp.modules.transacciones;
 
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 import mx.edu.utez.sivemorapp.kernel.AuditFields;
 import mx.edu.utez.sivemorapp.kernel.enums.TipoPago;
 import mx.edu.utez.sivemorapp.modules.notas.Notas;
 import mx.edu.utez.sivemorapp.modules.usuarios.Usuario;
+import jakarta.persistence.PrePersist;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "transacciones")
-@Getter
-@Setter
-@AllArgsConstructor
+@Data
 @NoArgsConstructor
-@Builder
+@AllArgsConstructor
+@SuperBuilder
 public class Transaccion extends AuditFields {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -44,7 +45,7 @@ public class Transaccion extends AuditFields {
     private Boolean pagado;
 
     @Column(name = "fecha_pedido", nullable = false)
-    private LocalDateTime fecha_pedido;
+    private LocalDateTime fechaPedido;
 
     @Column(name = "cotizacion", nullable = false)
     private String cotizacion;
@@ -53,15 +54,13 @@ public class Transaccion extends AuditFields {
     @JoinColumn(name = "reviso")
     private Usuario reviso;
 
-    @ManyToOne
-    @JoinColumn(name = "atendio")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "atendio", nullable = false)
     private Usuario atendio;
 
     @Column(name = "pendiente", nullable = false)
     private Boolean pendiente;
 
-    @Column(name = "comentario", nullable = false)
+    @Column(name = "comentario")
     private String comentario;
-
-
 }
