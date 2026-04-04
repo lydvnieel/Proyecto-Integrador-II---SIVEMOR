@@ -6,7 +6,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class RegionResponseDTO {
+public class    RegionResponseDTO {
     private long id;
     private String nombre;
     private Boolean activo;

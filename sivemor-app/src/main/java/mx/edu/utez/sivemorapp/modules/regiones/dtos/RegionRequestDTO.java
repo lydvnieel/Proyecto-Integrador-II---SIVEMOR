@@ -9,4 +9,5 @@ import lombok.*;
 public class RegionRequestDTO {
     private Long id;
     private String nombre;
+    private String descripcion;
 }
