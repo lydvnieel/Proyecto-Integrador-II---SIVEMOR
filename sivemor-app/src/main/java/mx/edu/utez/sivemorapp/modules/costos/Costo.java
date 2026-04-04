@@ -37,12 +37,12 @@ public class Costo extends AuditFields {
     @Column(name = "costo", nullable = false)
     private BigDecimal costo;
 
-    @ManyToOne
-    @JoinColumn(name = "encargado")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "encargado", nullable = false)
     private Usuario encargado;
 
-    @ManyToOne
-    @JoinColumn(name = "atiende_y_cobra")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "atiende_y_cobra", nullable = false)
     private Usuario atiendeYCobra;
 
 
