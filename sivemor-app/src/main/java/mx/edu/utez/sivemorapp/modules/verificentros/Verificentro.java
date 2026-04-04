@@ -3,6 +3,7 @@ package mx.edu.utez.sivemorapp.modules.verificentros;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 import mx.edu.utez.sivemorapp.kernel.AuditFields;
 import mx.edu.utez.sivemorapp.modules.notas.Notas;
 import mx.edu.utez.sivemorapp.modules.regiones.Region;
@@ -15,7 +16,7 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
 public class Verificentro extends AuditFields {
 
     @Id
@@ -30,8 +31,8 @@ public class Verificentro extends AuditFields {
     @Column(name = "nombre", nullable = false)
     private String nombre;
 
-    @Column(name = "clave_verificentro", nullable = false)
-    private String clave_verificentro;
+    @Column(name = "clave_verificentro", unique = true, nullable = false)
+    private String claveVerificentro;
 
     @Column(name = "direccion", nullable = false)
     private String direccion;
@@ -46,10 +47,10 @@ public class Verificentro extends AuditFields {
     private String telefono;
 
     @Column(name = "telefono_alternativo", nullable = false)
-    private String telefono_alternativo;
+    private String telefonoAlternativo;
 
     @Column(name = "horario_general", nullable = false)
-    private String horario_general;
+    private String horarioGeneral;
 
     @JsonIgnore
     @OneToMany(mappedBy = "verificentro", fetch = FetchType.LAZY)
