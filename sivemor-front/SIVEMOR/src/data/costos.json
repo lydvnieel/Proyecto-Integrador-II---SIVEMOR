@@ -1,0 +1,18 @@
+[
+  {
+    "id": 1,
+    "cliente": "Juan Pérez",
+    "materia": "Humo",
+    "encargado": "Vanessa Tabado",
+    "atiendeCobra": "Luis Castro",
+    "costo": "$320"
+  },
+  {
+    "id": 2,
+    "cliente": "María López",
+    "materia": "Logística Humo",
+    "encargado": "Julian Tabado",
+    "atiendeCobra": "Christian Fuenzalida",
+    "costo": "$450"
+  }
+]

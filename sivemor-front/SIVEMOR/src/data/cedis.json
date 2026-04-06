@@ -1,0 +1,29 @@
+[
+    {
+      "id": 1,
+      "nombre": "CEDIS Monterrey Norte",
+      "direccion": "Av. Constitución 1234, Monterrey, N.L.",
+      "encargado": "Carlos Méndez",
+      "correo": "carlos.mendez@empresa.com",
+      "telefonoPrincipal": "81-1234-5678",
+      "telefonoAlternativo": "81-8765-4321"
+    },
+    {
+      "id": 2,
+      "nombre": "CEDIS Guadalajara Sur",
+      "direccion": "Periférico Sur 5678, Guadalajara, JAL.",
+      "encargado": "María González",
+      "correo": "maria.gonzalez@empresa.com",
+      "telefonoPrincipal": "33-2345-6789",
+      "telefonoAlternativo": "33-9876-5432"
+    },
+    {
+      "id": 3,
+      "nombre": "CEDIS CDMX Centro",
+      "direccion": "Calzada Ignacio Zaragoza 9876, CDMX",
+      "encargado": "Roberto Silva",
+      "correo": "roberto.silva@empresa.com",
+      "telefonoPrincipal": "55-3456-7890",
+      "telefonoAlternativo": "55-0987-6543"
+    }
+  ]

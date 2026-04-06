@@ -1,0 +1,53 @@
+[
+  {
+    "id": 1,
+    "nota": "N-1001",
+    "tipoPago": "TRANSFERENCIA",
+    "monto": "$1,200",
+    "cuentaDeposito": "BBVA-1234",
+    "factura": "F-900",
+    "pagado": "Sí",
+    "pagadoClass": "status-success",
+    "fechaPedido": "2026-02-15",
+    "cotizacion": "C-500",
+    "reviso": "Carlos Mendoza",
+    "atendio": "Ana García",
+    "pendiente": "No",
+    "pendienteClass": "status-success",
+    "comentario": "Pago completo verificado"
+  },
+  {
+    "id": 2,
+    "nota": "N-1002",
+    "tipoPago": "EFECTIVO",
+    "monto": "$800",
+    "cuentaDeposito": "-",
+    "factura": "F-901",
+    "pagado": "No",
+    "pagadoClass": "status-warning",
+    "fechaPedido": "2026-02-16",
+    "cotizacion": "C-501",
+    "reviso": "María López",
+    "atendio": "Juan Pérez",
+    "pendiente": "Sí",
+    "pendienteClass": "status-warning",
+    "comentario": "Pendiente de validación"
+  },
+  {
+    "id": 3,
+    "nota": "N-1001",
+    "tipoPago": "DEPOSITO",
+    "monto": "$500",
+    "cuentaDeposito": "Santander-5678",
+    "factura": "F-902",
+    "pagado": "Sí",
+    "pagadoClass": "status-success",
+    "fechaPedido": "2026-02-17",
+    "cotizacion": "C-500",
+    "reviso": "Carlos Mendoza",
+    "atendio": "Ana García",
+    "pendiente": "No",
+    "pendienteClass": "status-success",
+    "comentario": "Segundo pago de la nota N-1001"
+  }
+]

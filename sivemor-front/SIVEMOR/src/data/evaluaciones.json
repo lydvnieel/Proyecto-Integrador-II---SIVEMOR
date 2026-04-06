@@ -1,0 +1,74 @@
+[
+  {
+    "id": "eval-1",
+    "vehicleId": 1,
+    "placa": "AB-123-CD",
+    "serie": "XYZ987654321",
+    "tipo": "Camión Rabón",
+    "cedis": "Monterrey Norte",
+    "region": "Norte",
+    "tecnico": "juan@veritrack.mx",
+    "fechaEvaluacion": "2026-03-20 03:30 a.m.",
+    "dictamen": "APROBADO",
+
+    "luces_galibo": "aprobadas",
+    "luces_altas": "aprobadas",
+    "luces_bajas": "aprobadas",
+    "luces_demarcadoras_delanteras": "aprobadas",
+    "luces_demarcadoras_traseras": "aprobadas",
+    "luces_indicadoras": "aprobadas",
+    "faro_izquierdo": "aprobado",
+    "faro_derecho": "aprobado",
+    "luces_direccionales_delanteras": "aprobadas",
+    "luces_direccionales_traseras": "aprobadas",
+
+    "llantas_rines_delanteros": "aprobados",
+    "llantas_rines_traseros": "aprobados",
+    "llantas_masas_delanteras": "aprobadas",
+    "llantas_masas_traseras": "aprobadas",
+
+    "llantas_presion_delantera_izquierda": 90,
+    "llantas_presion_delantera_derecha": 91,
+    "llantas_presion_trasera_izquierda_1": 88,
+    "llantas_presion_trasera_izquierda_2": 87,
+    "llantas_presion_trasera_derecha_1": 89,
+    "llantas_presion_trasera_derecha_2": 90,
+
+    "llantas_profundidad_delantera_izquierda": 4.2,
+    "llantas_profundidad_delantera_derecha": 4.0,
+    "llantas_profundidad_trasera_izquierda_1": 2.1,
+    "llantas_profundidad_trasera_izquierda_2": 2.0,
+    "llantas_profundidad_trasera_derecha_1": 2.2,
+    "llantas_profundidad_trasera_derecha_2": 2.1,
+
+    "brazo_pitman": "aprobado",
+    "manijas_de_puertas": "aprobadas",
+    "chavetas": "aprobadas",
+    "chavetas_num": 0,
+
+    "compresor": "aprobado",
+    "tanques_de_aire": "aprobado",
+    "tiempo_de_carga_psi": 95,
+    "tiempo_de_carga_tiempo": 45,
+
+    "humo": "aprobado",
+    "gobernado": "aprobado",
+
+    "caja_direccion": "aprobada",
+    "deposito_aceite": "aprobada",
+    "parabrisas": "aprobado",
+    "limpiaparabrisas": "aprobado",
+    "huelgo": "Aprobado",
+    "huelgo_cuanto": 0,
+    "escape": "aprobado",
+
+    "evidencias": [
+      "/img/evidencia1.jpg",
+      "/img/evidencia2.jpg",
+      "/img/evidencia3.jpg",
+      "/img/evidencia4.jpg"
+    ],
+    "comentarios": "Vehículo en excelentes condiciones.",
+    "observaciones": "Se recomienda revisar el nivel de aceite en 1000 km."
+  }
+]
