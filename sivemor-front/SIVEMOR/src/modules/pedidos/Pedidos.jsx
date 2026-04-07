@@ -10,15 +10,20 @@ import DeleteOrdersModal from "./components/DeleteOrdersModal";
 import DeleteAllOrdersModal from "./components/DeleteAllOrdersModal";
 import DeleteOrderSuccessModal from "./components/DeleteOrderSuccessModal.jsx";
 import MarkDeliveredOrdersModal from "./components/MarkDeliveredOrdersModal";
-import pedidosData from "../../data/pedidos.json";
+import {
+  getPedidos,
+  createPedido,
+  updatePedido,
+  deletePedido,
+} from "./services/pedidosService";
+import { api } from "../../../server/api";
 
 const STATUS_OPTIONS = ["PENDIENTE", "ENVIADO", "ENTREGADO", "INCIDENCIA"];
 
 export default function Pedidos() {
-  const [pedidos, setPedidos] = useState(() => {
-    const saved = localStorage.getItem("pedidos");
-    return saved ? JSON.parse(saved) : pedidosData;
-  });
+  const [pedidos, setPedidos] = useState([]);
+  const [notas, setNotas] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const [selectedRows, setSelectedRows] = useState({});
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -31,8 +36,33 @@ export default function Pedidos() {
   const [filterEstatus, setFilterEstatus] = useState("");
 
   useEffect(() => {
-    localStorage.setItem("pedidos", JSON.stringify(pedidos));
-  }, [pedidos]);
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+
+      const [pedidosData, notasRes] = await Promise.all([
+        getPedidos(),
+        api.get("/notas"),
+      ]);
+
+      setPedidos(pedidosData);
+
+      setNotas(
+        Array.isArray(notasRes?.data?.data)
+          ? notasRes.data.data
+          : Array.isArray(notasRes?.data)
+          ? notasRes.data
+          : []
+      );
+    } catch (error) {
+      console.error("Error cargando pedidos:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredPedidos = useMemo(() => {
     const search = searchTerm.trim().toLowerCase();
@@ -172,114 +202,161 @@ export default function Pedidos() {
     openModal("markDeliveredOrdersModal");
   };
 
-  const handleCreate = (newOrder) => {
-    const createdOrder = {
-      ...newOrder,
-      id: Date.now(),
-    };
+  const handleCreate = async (newOrder) => {
+    try {
+      const createdOrder = await createPedido(newOrder);
 
-    setPedidos((prev) => [...prev, createdOrder]);
+      setPedidos((prev) => [...prev, createdOrder]);
 
-    showCreateSuccessModal(
-      `Se creó correctamente el pedido ${createdOrder.numeroGuia}.`
-    );
+      showCreateSuccessModal(
+        `Se creó correctamente el pedido ${
+          createdOrder.numeroGuia || createdOrder.nota
+        }.`
+      );
+
+      return createdOrder;
+    } catch (error) {
+      console.error("Error creando pedido:", error);
+      throw error;
+    }
   };
 
-  const handleSaveEdit = (updatedOrder) => {
+  const handleSaveEdit = async (updatedOrder) => {
     if (selectedId === null) return;
 
-    setPedidos((prev) =>
-      prev.map((item) =>
-        item.id === selectedId ? { ...item, ...updatedOrder } : item
-      )
-    );
+    try {
+      const updated = await updatePedido(selectedId, updatedOrder);
 
-    showUpdateSuccessModal(
-      "Se actualizó correctamente la información del pedido."
-    );
+      setPedidos((prev) =>
+        prev.map((item) => (item.id === selectedId ? updated : item))
+      );
+
+      setSelectedOrder(updated);
+
+      showUpdateSuccessModal(
+        "Se actualizó correctamente la información del pedido."
+      );
+    } catch (error) {
+      console.error("Error actualizando pedido:", error);
+      alert(error.message || "No se pudo actualizar el pedido.");
+    }
   };
 
-  const handleDeleteOne = () => {
+  const handleDeleteOne = async () => {
     if (selectedId === null) return;
 
-    const deletedName = selectedOrder?.numeroGuia || "el pedido";
+    try {
+      const deletedName = selectedOrder?.numeroGuia || "el pedido";
 
-    setPedidos((prev) => prev.filter((item) => item.id !== selectedId));
+      await deletePedido(selectedId);
 
-    setSelectedRows((prev) => {
-      const updated = { ...prev };
-      delete updated[selectedId];
-      return updated;
-    });
+      setPedidos((prev) => prev.filter((item) => item.id !== selectedId));
 
-    setSelectedOrder(null);
-    setSelectedId(null);
+      setSelectedRows((prev) => {
+        const updated = { ...prev };
+        delete updated[selectedId];
+        return updated;
+      });
 
-    showDeleteSuccessModal(
-      `Se eliminó con éxito ${deletedName}.`,
-      "deleteOrdersModal"
-    );
+      setSelectedOrder(null);
+      setSelectedId(null);
+
+      showDeleteSuccessModal(
+        `Se eliminó con éxito ${deletedName}.`,
+        "deleteOrdersModal"
+      );
+    } catch (error) {
+      console.error("Error eliminando pedido:", error);
+      alert(error.message || "No se pudo eliminar el pedido.");
+    }
   };
 
-  const handleDeleteSelected = () => {
+  const handleDeleteSelected = async () => {
     const idsToDelete = Object.keys(selectedRows)
       .filter((id) => selectedRows[id])
       .map(Number);
 
-    const count = idsToDelete.length;
+    try {
+      await Promise.all(idsToDelete.map((id) => deletePedido(id)));
 
-    setPedidos((prev) => prev.filter((item) => !idsToDelete.includes(item.id)));
+      const count = idsToDelete.length;
 
-    setSelectedRows({});
-    setSelectedOrder(null);
-    setSelectedId(null);
+      setPedidos((prev) => prev.filter((item) => !idsToDelete.includes(item.id)));
 
-    showDeleteSuccessModal(
-      count === 1
-        ? "Se eliminó con éxito 1 pedido."
-        : `Se eliminaron con éxito ${count} pedidos.`,
-      "deleteOrdersModal"
-    );
+      setSelectedRows({});
+      setSelectedOrder(null);
+      setSelectedId(null);
+
+      showDeleteSuccessModal(
+        count === 1
+          ? "Se eliminó con éxito 1 pedido."
+          : `Se eliminaron con éxito ${count} pedidos.`,
+        "deleteOrdersModal"
+      );
+    } catch (error) {
+      console.error("Error eliminando pedidos:", error);
+      alert(error.message || "No se pudieron eliminar los pedidos.");
+    }
   };
 
-  const handleDeleteAll = () => {
-    const total = pedidos.length;
+  const handleDeleteAll = async () => {
+    try {
+      const ids = pedidos.map((p) => p.id);
 
-    setPedidos([]);
-    setSelectedRows({});
-    setSelectedOrder(null);
-    setSelectedId(null);
+      await Promise.all(ids.map((id) => deletePedido(id)));
 
-    showDeleteSuccessModal(
-      total === 1
-        ? "Se eliminó con éxito 1 pedido."
-        : `Se eliminaron con éxito ${total} pedidos.`,
-      "deleteAllOrdersModal"
-    );
+      const total = pedidos.length;
+
+      setPedidos([]);
+      setSelectedRows({});
+      setSelectedOrder(null);
+      setSelectedId(null);
+
+      showDeleteSuccessModal(
+        total === 1
+          ? "Se eliminó con éxito 1 pedido."
+          : `Se eliminaron con éxito ${total} pedidos.`,
+        "deleteAllOrdersModal"
+      );
+    } catch (error) {
+      console.error("Error eliminando todos los pedidos:", error);
+      alert(error.message || "No se pudieron eliminar todos los pedidos.");
+    }
   };
 
-  const handleMarkDelivered = () => {
+  const handleMarkDelivered = async () => {
     const idsToUpdate = Object.keys(selectedRows)
       .filter((id) => selectedRows[id])
       .map(Number);
 
-    setPedidos((prev) =>
-      prev.map((item) =>
-        idsToUpdate.includes(item.id)
-          ? {
-              ...item,
-              estatusEnvio: "ENTREGADO",
-              estatusClass: "status-success",
-            }
-          : item
-      )
-    );
+    try {
+      const selectedItems = pedidos.filter((p) => idsToUpdate.includes(p.id));
 
-    setSelectedRows({});
+      const updatedItems = await Promise.all(
+        selectedItems.map((item) =>
+          updatePedido(item.id, {
+            ...item,
+            estatusEnvio: "ENTREGADO",
+          })
+        )
+      );
 
-    hideModal("markDeliveredOrdersModal", () => {
-      cleanupModalArtifacts();
-    });
+      setPedidos((prev) =>
+        prev.map((item) => {
+          const updated = updatedItems.find((u) => u.id === item.id);
+          return updated || item;
+        })
+      );
+
+      setSelectedRows({});
+
+      hideModal("markDeliveredOrdersModal", () => {
+        cleanupModalArtifacts();
+      });
+    } catch (error) {
+      console.error("Error marcando pedidos como entregados:", error);
+      alert(error.message || "No se pudieron marcar como entregados.");
+    }
   };
 
   const isAllSelected =
@@ -415,7 +492,13 @@ export default function Pedidos() {
             </thead>
 
             <tbody>
-              {filteredPedidos.length > 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan="9" className="text-center py-4">
+                    Cargando pedidos...
+                  </td>
+                </tr>
+              ) : filteredPedidos.length > 0 ? (
                 filteredPedidos.map((item) => (
                   <OrderRow
                     key={item.id}
@@ -447,8 +530,9 @@ export default function Pedidos() {
         </div>
       </div>
 
-      <CreateOrderModal onCreate={handleCreate} />
+      <CreateOrderModal onCreate={handleCreate} notas={notas} />
       <CreateOrderSuccessModal message={createMessage} />
+
       <EditOrderModal order={selectedOrder} onSave={handleSaveEdit} />
       <UpdateOrderSuccessModal message={updateMessage} />
 

@@ -11,6 +11,10 @@ export default function EditOrderModal({ order, onSave }) {
     numeroGuia: "",
     recibio: "",
     foto: "",
+    fotoBase64: null,
+    fotoNombreArchivo: "",
+    fotoMimeType: "",
+    clearFoto: false,
     estatusEnvio: "PENDIENTE",
     estatusClass: "status-warning",
     comentario: "",
@@ -24,7 +28,6 @@ export default function EditOrderModal({ order, onSave }) {
     recibio: "",
     foto: "",
     estatusEnvio: "PENDIENTE",
-    estatusClass: "status-warning",
     comentario: "",
   });
 
@@ -45,6 +48,10 @@ export default function EditOrderModal({ order, onSave }) {
         numeroGuia: order.numeroGuia || "",
         recibio: order.recibio || "",
         foto: order.foto || "",
+        fotoBase64: null,
+        fotoNombreArchivo: "",
+        fotoMimeType: "",
+        clearFoto: false,
         estatusEnvio: (order.estatusEnvio || "PENDIENTE").toUpperCase(),
         estatusClass: order.estatusClass || "status-warning",
         comentario: order.comentario || "",
@@ -73,38 +80,76 @@ export default function EditOrderModal({ order, onSave }) {
     if (error) setError("");
   };
 
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+
+    if (!file) {
+      setFormData((prev) => ({
+        ...prev,
+        fotoBase64: null,
+        fotoNombreArchivo: "",
+        fotoMimeType: "",
+        clearFoto: false,
+      }));
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result || "";
+      const base64 = String(result).includes(",")
+        ? String(result).split(",")[1]
+        : "";
+
+      setFormData((prev) => ({
+        ...prev,
+        fotoBase64: base64,
+        fotoNombreArchivo: file.name,
+        fotoMimeType: file.type,
+        clearFoto: false,
+      }));
+    };
+    reader.readAsDataURL(file);
+
+    if (error) setError("");
+  };
+
+  const handleRemovePhoto = () => {
+    setFormData((prev) => ({
+      ...prev,
+      foto: "",
+      fotoBase64: "",
+      fotoNombreArchivo: "",
+      fotoMimeType: "",
+      clearFoto: true,
+    }));
+  };
+
   const isSameData = (cleanedData) => {
     return (
-      cleanedData.nota === originalData.nota.trim() &&
       cleanedData.fechaEnvio === originalData.fechaEnvio.trim() &&
       cleanedData.numeroGuia === originalData.numeroGuia.trim() &&
       cleanedData.recibio === originalData.recibio.trim() &&
-      cleanedData.foto === originalData.foto.trim() &&
       cleanedData.estatusEnvio === originalData.estatusEnvio &&
-      cleanedData.comentario === originalData.comentario.trim()
+      cleanedData.comentario === originalData.comentario.trim() &&
+      !cleanedData.fotoBase64 &&
+      !cleanedData.clearFoto
     );
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const cleanedData = {
       ...formData,
-      nota: formData.nota.trim(),
       fechaEnvio: formData.fechaEnvio.trim(),
       numeroGuia: formData.numeroGuia.trim(),
       recibio: formData.recibio.trim(),
-      foto: formData.foto.trim(),
       estatusEnvio: formData.estatusEnvio.trim().toUpperCase(),
       comentario: formData.comentario.trim(),
     };
 
-    if (
-      !cleanedData.nota ||
-      !cleanedData.fechaEnvio ||
-      !cleanedData.numeroGuia ||
-      !cleanedData.estatusEnvio
-    ) {
+    if (!cleanedData.estatusEnvio) {
       setError("Faltan campos obligatorios por llenar.");
       return;
     }
@@ -116,17 +161,34 @@ export default function EditOrderModal({ order, onSave }) {
       return;
     }
 
-    cleanedData.estatusClass = getStatusClass(cleanedData.estatusEnvio);
+    if (
+      cleanedData.estatusEnvio === "ENVIADO" &&
+      !cleanedData.numeroGuia
+    ) {
+      setError("El número de guía es obligatorio cuando el estatus es ENVIADO.");
+      return;
+    }
 
-    if (!cleanedData.recibio) cleanedData.recibio = "-";
-    if (!cleanedData.foto) cleanedData.foto = "Sin foto";
+    if (
+      cleanedData.estatusEnvio === "ENTREGADO" &&
+      !cleanedData.recibio
+    ) {
+      setError("La persona que recibió es obligatoria cuando el estatus es ENTREGADO.");
+      return;
+    }
+
+    cleanedData.estatusClass = getStatusClass(cleanedData.estatusEnvio);
 
     if (isSameData(cleanedData)) {
       setError("No se realizaron cambios en el pedido.");
       return;
     }
 
-    onSave(cleanedData);
+    try {
+      await onSave(cleanedData);
+    } catch (err) {
+      setError(err.message || "No se pudo actualizar el pedido.");
+    }
   };
 
   const handleClose = () => {
@@ -168,18 +230,17 @@ export default function EditOrderModal({ order, onSave }) {
               )}
 
               <div className="mb-3">
-                <label className="form-label">Nota *</label>
+                <label className="form-label">Nota</label>
                 <input
                   type="text"
                   className="form-control"
-                  name="nota"
                   value={formData.nota}
-                  onChange={handleChange}
+                  disabled
                 />
               </div>
 
               <div className="mb-3">
-                <label className="form-label">Fecha de envío *</label>
+                <label className="form-label">Fecha de envío</label>
                 <input
                   type="date"
                   className="form-control"
@@ -190,7 +251,7 @@ export default function EditOrderModal({ order, onSave }) {
               </div>
 
               <div className="mb-3">
-                <label className="form-label">Número de guía *</label>
+                <label className="form-label">Número de guía</label>
                 <input
                   type="text"
                   className="form-control"
@@ -214,12 +275,25 @@ export default function EditOrderModal({ order, onSave }) {
               <div className="mb-3">
                 <label className="form-label">Foto</label>
                 <input
-                  type="text"
+                  type="file"
                   className="form-control"
-                  name="foto"
-                  value={formData.foto}
-                  onChange={handleChange}
+                  accept="image/*"
+                  onChange={handleFileChange}
                 />
+                {(formData.foto || formData.fotoNombreArchivo) && (
+                  <div className="mt-2 d-flex gap-2 align-items-center">
+                    <small className="text-muted">
+                      {formData.fotoNombreArchivo || formData.foto}
+                    </small>
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-danger"
+                      onClick={handleRemovePhoto}
+                    >
+                      Quitar foto
+                    </button>
+                  </div>
+                )}
               </div>
 
               <div className="mb-3">
