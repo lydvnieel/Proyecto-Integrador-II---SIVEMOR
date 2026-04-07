@@ -4,13 +4,19 @@ import Modal from "bootstrap/js/dist/modal";
 const ALLOWED_MATERIAS = ["MOTRIZ", "ARRASTRE", "GASOLINA", "HUMO"];
 
 export default function EditVerificationModal({ verification, onSave }) {
-  const [formData, setFormData] = useState(verification || {});
+  const [formData, setFormData] = useState({});
   const [originalData, setOriginalData] = useState({});
   const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (verification) {
-      setFormData(verification);
+      setFormData({
+        id: verification.id,
+        materia: verification.materia || "",
+        precio: String(verification.precio || "").replace(/[^0-9.]/g, ""),
+        multa: String(verification.multa || "").replace(/[^0-9.]/g, ""),
+      });
       setOriginalData(verification);
       setError("");
     }
@@ -32,13 +38,10 @@ export default function EditVerificationModal({ verification, onSave }) {
       }
     }
 
-    const updated = { ...formData, [name]: newValue };
-
-    if (name === "precio") {
-      updated.pendiente = newValue ? `$${newValue}` : "";
-    }
-
-    setFormData(updated);
+    setFormData((prev) => ({
+      ...prev,
+      [name]: newValue,
+    }));
 
     if (error) setError("");
   };
@@ -46,28 +49,22 @@ export default function EditVerificationModal({ verification, onSave }) {
   const isSameData = (cleanedData) => {
     return (
       cleanedData.materia === String(originalData.materia || "").trim().toUpperCase() &&
-      cleanedData.precio ===
-        String(originalData.precio || "").replace(/[^0-9.]/g, "").trim() &&
-      cleanedData.multa ===
-        String(originalData.multa || "").replace(/[^0-9.]/g, "").trim() &&
-      cleanedData.fechaFolio === String(originalData.fechaFolio || "").trim() &&
-      cleanedData.dictamen === String(originalData.dictamen || "").trim()
+      cleanedData.precio === String(originalData.precio || "").replace(/[^0-9.]/g, "").trim() &&
+      cleanedData.multa === String(originalData.multa || "").replace(/[^0-9.]/g, "").trim()
     );
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const cleanedData = {
-      ...formData,
+      id: formData.id,
       materia: String(formData.materia || "").trim().toUpperCase(),
-      precio: String(formData.precio || "").replace(/[^0-9.]/g, "").trim(),
-      multa: String(formData.multa || "").replace(/[^0-9.]/g, "").trim(),
-      fechaFolio: String(formData.fechaFolio || "").trim(),
-      dictamen: String(formData.dictamen || "").trim(),
+      precio: Number(String(formData.precio || "").trim()),
+      multa: formData.multa === "" ? null : Number(String(formData.multa || "").trim()),
     };
 
-    if (!cleanedData.materia || !cleanedData.precio) {
+    if (!cleanedData.materia || Number.isNaN(cleanedData.precio)) {
       setError("Faltan campos obligatorios por llenar.");
       return;
     }
@@ -77,45 +74,52 @@ export default function EditVerificationModal({ verification, onSave }) {
       return;
     }
 
-    const precioNumber = Number(cleanedData.precio);
-    if (Number.isNaN(precioNumber) || precioNumber <= 0) {
+    if (cleanedData.precio <= 0) {
       setError("El precio debe ser un valor numérico positivo mayor que cero.");
       return;
     }
 
-    if (isSameData(cleanedData)) {
+    if (isSameData({
+      materia: cleanedData.materia,
+      precio: String(cleanedData.precio),
+      multa: cleanedData.multa == null ? "" : String(cleanedData.multa),
+    })) {
       setError("No se realizaron cambios en la verificación.");
       return;
     }
 
-    const finalData = {
-      ...cleanedData,
-      precio: `$${precioNumber}`,
-      pendiente: `$${precioNumber}`,
-    };
+    try {
+      setSaving(true);
+      await onSave(cleanedData);
 
-    onSave(finalData);
+      const editModalElement = document.getElementById("editVerificationModal");
+      const successModalElement = document.getElementById(
+        "updateVerificationSuccessModal"
+      );
 
-    const editModalElement = document.getElementById("editVerificationModal");
-    const successModalElement = document.getElementById(
-      "updateVerificationSuccessModal"
-    );
+      if (!editModalElement || !successModalElement) return;
 
-    if (!editModalElement || !successModalElement) return;
+      const editModalInstance = Modal.getOrCreateInstance(editModalElement);
+      const successModalInstance = Modal.getOrCreateInstance(successModalElement);
 
-    const editModalInstance = Modal.getOrCreateInstance(editModalElement);
-    const successModalInstance = Modal.getOrCreateInstance(successModalElement);
+      editModalElement.addEventListener(
+        "hidden.bs.modal",
+        () => {
+          setError("");
+          successModalInstance.show();
+        },
+        { once: true }
+      );
 
-    editModalElement.addEventListener(
-      "hidden.bs.modal",
-      () => {
-        setError("");
-        successModalInstance.show();
-      },
-      { once: true }
-    );
-
-    editModalInstance.hide();
+      editModalInstance.hide();
+    } catch (err) {
+      console.error("Error al editar verificación:", err);
+      setError(
+        err?.response?.data?.message || "No se pudo actualizar la verificación."
+      );
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (!verification) return null;
@@ -150,14 +154,19 @@ export default function EditVerificationModal({ verification, onSave }) {
 
               <div className="mb-3">
                 <label className="form-label">Materia *</label>
-                <input
-                  type="text"
-                  className="form-control"
+                <select
+                  className="form-select"
                   name="materia"
                   value={formData.materia || ""}
                   onChange={handleChange}
-                  placeholder="Ej. HUMO"
-                />
+                >
+                  <option value="">Selecciona una materia</option>
+                  {ALLOWED_MATERIAS.map((materia) => (
+                    <option key={materia} value={materia}>
+                      {materia}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div className="mb-3">
@@ -166,7 +175,7 @@ export default function EditVerificationModal({ verification, onSave }) {
                   type="text"
                   className="form-control"
                   name="precio"
-                  value={String(formData.precio || "").replace(/[^0-9.]/g, "")}
+                  value={formData.precio || ""}
                   onChange={handleChange}
                   placeholder="Ej. 650"
                 />
@@ -178,33 +187,10 @@ export default function EditVerificationModal({ verification, onSave }) {
                   type="text"
                   className="form-control"
                   name="multa"
-                  value={String(formData.multa || "").replace(/[^0-9.]/g, "")}
+                  value={formData.multa || ""}
                   onChange={handleChange}
                   placeholder="Ej. 298"
                 />
-              </div>
-
-              <div className="mb-3">
-                <label className="form-label">Fecha de verificación</label>
-                <input
-                  type="date"
-                  className="form-control"
-                  name="fechaFolio"
-                  value={formData.fechaFolio || ""}
-                  onChange={handleChange}
-                />
-              </div>
-
-              <div className="mb-3">
-                <label className="form-label">Dictamen</label>
-                <textarea
-                  className="form-control"
-                  rows="2"
-                  name="dictamen"
-                  value={formData.dictamen || ""}
-                  onChange={handleChange}
-                  placeholder="Puede quedar vacío hasta que el técnico lo capture"
-                ></textarea>
               </div>
             </div>
 
@@ -217,11 +203,8 @@ export default function EditVerificationModal({ verification, onSave }) {
                 Cancelar
               </button>
 
-              <button
-                type="submit"
-                className="btn btn-primary"
-              >
-                Guardar cambios
+              <button type="submit" className="btn btn-primary" disabled={saving}>
+                {saving ? "Guardando..." : "Guardar cambios"}
               </button>
             </div>
           </form>
@@ -229,4 +212,4 @@ export default function EditVerificationModal({ verification, onSave }) {
       </div>
     </div>
   );
-}
+} 

@@ -1,36 +1,51 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Modal from "bootstrap/js/dist/modal";
+import { catalogosVerificacionService } from "../services/catalogosVerificacion";
 
 const ALLOWED_MATERIAS = ["MOTRIZ", "ARRASTRE", "GASOLINA", "HUMO"];
 
 const initialForm = {
-  gestor: "Pendiente",
-  razonSocial: "Pendiente",
-  placa: "Pendiente",
-  serie: "Pendiente",
+  idNota: "",
+  idVehiculo: "",
   materia: "",
-  verificentro: "Pendiente",
   precio: "",
-  tipoPago: "Pendiente",
-  numeroNota: "",
-  cotizacion: "Pendiente",
-  fechaFolio: "",
-  folio: `V-${Date.now()}`,
-  cuentaDeposito: "Pendiente",
-  numeroFactura: "Pendiente",
-  pagado: "No",
-  pagadoClass: "status-warning",
-  pendiente: "",
-  pendienteClass: "text-danger fw-semibold",
-  fechaPedido: "",
   multa: "",
-  vehiculo: "",
-  dictamen: "",
 };
 
 export default function CreateVerificationModal({ onCreate }) {
   const [formData, setFormData] = useState(initialForm);
+  const [notas, setNotas] = useState([]);
+  const [vehiculos, setVehiculos] = useState([]);
   const [error, setError] = useState("");
+  const [loadingCatalogs, setLoadingCatalogs] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    loadCatalogs();
+  }, []);
+
+  const loadCatalogs = async () => {
+    try {
+      setLoadingCatalogs(true);
+      const [notasData, vehiculosData] = await Promise.all([
+        catalogosVerificacionService.getNotas(),
+        catalogosVerificacionService.getVehiculos(),
+      ]);
+
+      setNotas(notasData);
+      setVehiculos(vehiculosData);
+    } catch (err) {
+      console.error("Error cargando catálogos:", err);
+      setError("No se pudieron cargar notas y vehículos.");
+    } finally {
+      setLoadingCatalogs(false);
+    }
+  };
+
+  const resetForm = () => {
+    setFormData(initialForm);
+    setError("");
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -48,36 +63,30 @@ export default function CreateVerificationModal({ onCreate }) {
       }
     }
 
-    const updated = { ...formData, [name]: newValue };
-
-    if (name === "precio") {
-      updated.pendiente = newValue ? `$${newValue}` : "";
-    }
-
-    setFormData(updated);
+    setFormData((prev) => ({
+      ...prev,
+      [name]: newValue,
+    }));
 
     if (error) setError("");
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const cleanedData = {
-      ...formData,
-      numeroNota: formData.numeroNota.trim(),
-      vehiculo: formData.vehiculo.trim(),
+      idNota: formData.idNota ? Number(formData.idNota) : null,
+      idVehiculo: formData.idVehiculo ? Number(formData.idVehiculo) : null,
       materia: formData.materia.trim().toUpperCase(),
-      precio: formData.precio.trim(),
-      multa: formData.multa.trim(),
-      fechaFolio: formData.fechaFolio.trim(),
-      dictamen: formData.dictamen.trim(),
+      precio: formData.precio ? Number(formData.precio) : null,
+      multa: formData.multa ? Number(formData.multa) : null,
     };
 
     if (
-      !cleanedData.numeroNota ||
-      !cleanedData.vehiculo ||
+      !cleanedData.idNota ||
+      !cleanedData.idVehiculo ||
       !cleanedData.materia ||
-      !cleanedData.precio
+      cleanedData.precio === null
     ) {
       setError("Faltan campos obligatorios por llenar.");
       return;
@@ -88,41 +97,43 @@ export default function CreateVerificationModal({ onCreate }) {
       return;
     }
 
-    const precioNumber = Number(cleanedData.precio);
-    if (Number.isNaN(precioNumber) || precioNumber <= 0) {
+    if (Number.isNaN(cleanedData.precio) || cleanedData.precio <= 0) {
       setError("El precio debe ser un valor numérico positivo mayor que cero.");
       return;
     }
 
-    cleanedData.precio = `$${precioNumber}`;
-    cleanedData.pendiente = `$${precioNumber}`;
+    try {
+      setSaving(true);
+      await onCreate(cleanedData);
 
-    onCreate(cleanedData);
+      const createModalElement = document.getElementById("createVerificationModal");
+      const successModalElement = document.getElementById(
+        "createVerificationSuccessModal"
+      );
 
-    const createModalElement = document.getElementById("createVerificationModal");
-    const successModalElement = document.getElementById(
-      "createVerificationSuccessModal"
-    );
+      if (!createModalElement || !successModalElement) return;
 
-    if (!createModalElement || !successModalElement) return;
+      const createModalInstance = Modal.getOrCreateInstance(createModalElement);
+      const successModalInstance = Modal.getOrCreateInstance(successModalElement);
 
-    const createModalInstance = Modal.getOrCreateInstance(createModalElement);
-    const successModalInstance = Modal.getOrCreateInstance(successModalElement);
+      createModalElement.addEventListener(
+        "hidden.bs.modal",
+        () => {
+          resetForm();
+          successModalInstance.show();
+        },
+        { once: true }
+      );
 
-    createModalElement.addEventListener(
-      "hidden.bs.modal",
-      () => {
-        setFormData({
-          ...initialForm,
-          folio: `V-${Date.now()}`,
-        });
-        setError("");
-        successModalInstance.show();
-      },
-      { once: true }
-    );
-
-    createModalInstance.hide();
+      createModalInstance.hide();
+    } catch (err) {
+      console.error("Error al crear verificación:", err);
+      setError(
+        err?.response?.data?.message || "No se pudo crear la verificación."
+      );
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -153,90 +164,94 @@ export default function CreateVerificationModal({ onCreate }) {
                 </div>
               )}
 
-              <div className="mb-3">
-                <label className="form-label">Nota *</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  name="numeroNota"
-                  value={formData.numeroNota}
-                  onChange={handleChange}
-                  placeholder="Ej: N-1002"
-                />
-              </div>
+              {loadingCatalogs ? (
+                <div className="text-center py-3">Cargando datos...</div>
+              ) : (
+                <>
+                  <div className="mb-3">
+                    <label className="form-label">Nota *</label>
+                    <select
+                      className="form-select"
+                      name="idNota"
+                      value={formData.idNota}
+                      onChange={handleChange}
+                    >
+                      <option value="">Selecciona una nota</option>
+                      {notas.map((nota) => (
+                        <option
+                          key={nota.id ?? nota.idNota}
+                          value={nota.id ?? nota.idNota}
+                        >
+                          {nota.folioNota ??
+                            nota.numeroNota ??
+                            `Nota #${nota.id ?? nota.idNota}`}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-              <div className="mb-3">
-                <label className="form-label">Vehículo *</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  name="vehiculo"
-                  value={formData.vehiculo}
-                  onChange={handleChange}
-                  placeholder="Ej. Camión Rígido"
-                />
-              </div>
+                  <div className="mb-3">
+                    <label className="form-label">Vehículo *</label>
+                    <select
+                      className="form-select"
+                      name="idVehiculo"
+                      value={formData.idVehiculo}
+                      onChange={handleChange}
+                    >
+                      <option value="">Selecciona un vehículo</option>
+                      {vehiculos.map((vehiculo) => (
+                        <option
+                          key={vehiculo.id ?? vehiculo.idVehiculo}
+                          value={vehiculo.id ?? vehiculo.idVehiculo}
+                        >
+                          {vehiculo.placa} - {vehiculo.serie}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-              <div className="mb-3">
-                <label className="form-label">Materia *</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  name="materia"
-                  value={formData.materia}
-                  onChange={handleChange}
-                  placeholder="Ej. HUMO"
-                />
-              </div>
+                  <div className="mb-3">
+                    <label className="form-label">Materia *</label>
+                    <select
+                      className="form-select"
+                      name="materia"
+                      value={formData.materia}
+                      onChange={handleChange}
+                    >
+                      <option value="">Selecciona una materia</option>
+                      {ALLOWED_MATERIAS.map((materia) => (
+                        <option key={materia} value={materia}>
+                          {materia}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-              <div className="mb-3">
-                <label className="form-label">Precio *</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  name="precio"
-                  value={formData.precio}
-                  onChange={handleChange}
-                  placeholder="Ej. 320"
-                />
-              </div>
+                  <div className="mb-3">
+                    <label className="form-label">Precio *</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      name="precio"
+                      value={formData.precio}
+                      onChange={handleChange}
+                      placeholder="Ej. 320"
+                    />
+                  </div>
 
-              <div className="row">
-                <div className="col-md-6 mb-3">
-                  <label className="form-label">Multa</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    name="multa"
-                    value={formData.multa}
-                    onChange={handleChange}
-                    placeholder="Ej. 120"
-                  />
-                </div>
-
-                <div className="col-md-6 mb-3">
-                  <label className="form-label">Fecha de verificación</label>
-                  <input
-                    type="date"
-                    className="form-control"
-                    name="fechaFolio"
-                    value={formData.fechaFolio}
-                    onChange={handleChange}
-                  />
-                </div>
-              </div>
-
-              <div className="mb-3">
-                <label className="form-label">Dictamen</label>
-                <textarea
-                  className="form-control"
-                  rows="2"
-                  name="dictamen"
-                  value={formData.dictamen}
-                  onChange={handleChange}
-                  placeholder="Puede quedar vacío hasta que el técnico lo capture"
-                ></textarea>
-              </div>
+                  <div className="mb-3">
+                    <label className="form-label">Multa</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      name="multa"
+                      value={formData.multa}
+                      onChange={handleChange}
+                      placeholder="Ej. 120"
+                    />
+                  </div>
+                </>
+              )}
             </div>
 
             <div className="modal-footer">
@@ -248,11 +263,8 @@ export default function CreateVerificationModal({ onCreate }) {
                 Cancelar
               </button>
 
-              <button
-                type="submit"
-                className="btn btn-primary"
-              >
-                Crear verificación
+              <button type="submit" className="btn btn-primary" disabled={saving}>
+                {saving ? "Creando..." : "Crear verificación"}
               </button>
             </div>
           </form>

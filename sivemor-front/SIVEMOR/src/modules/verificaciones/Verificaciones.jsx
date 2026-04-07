@@ -10,27 +10,39 @@ import UpdateVerificationSuccessModal from "./components/UpdateVerificationSucce
 import CreateCostSuccessModal from "./components/CreateCostSuccessModal";
 import DeleteVerificationsModal from "./components/DeleteVerificationsModal";
 import MarkPaidVerificationsModal from "./components/MarkPaidVerificationsModal";
-import verificacionesData from "../../data/verificaciones.json";
 import DeleteSuccessfulModal from "./components/DeleteSuccessfulModal";
 import DeleteAllVerificationModal from "./components/DeleteAllVerificationModal";
+import { verificacionService } from "../verificaciones/services/verificacionesService";
 
 const ALLOWED_MATERIAS = ["MOTRIZ", "ARRASTRE", "GASOLINA", "HUMO"];
 
 export default function Verificaciones() {
-  const [verificaciones, setVerificaciones] = useState(() => {
-    const saved = localStorage.getItem("verificaciones");
-    return saved ? JSON.parse(saved) : verificacionesData;
-  });
-
+  const [verificaciones, setVerificaciones] = useState([]);
   const [selectedRows, setSelectedRows] = useState({});
   const [selectedVerification, setSelectedVerification] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterMateria, setFilterMateria] = useState("")
-  const [deleteMessage, setDeleteMessage] = useState("");;
+  const [filterMateria, setFilterMateria] = useState("");
+  const [deleteMessage, setDeleteMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    localStorage.setItem("verificaciones", JSON.stringify(verificaciones));
-  }, [verificaciones]);
+    fetchVerificaciones();
+  }, []);
+
+  const fetchVerificaciones = async (filters = {}) => {
+    try {
+      setLoading(true);
+      setError("");
+      const data = await verificacionService.getAll(filters);
+      setVerificaciones(data);
+    } catch (err) {
+      console.error("Error al cargar verificaciones:", err);
+      setError("No se pudieron cargar las verificaciones.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredVerificaciones = useMemo(() => {
     const search = searchTerm.trim().toLowerCase();
@@ -79,46 +91,6 @@ export default function Verificaciones() {
     }));
   };
 
-  const handleDeleteAll = () => {
-  const total = verificaciones.length;
-
-  setVerificaciones([]);
-  setSelectedRows({});
-  setSelectedVerification(null);
-
-  const modalElement = document.getElementById("deleteAllVerificationModal");
-  const successElement = document.getElementById("deleteSuccessfulModal");
-
-  if (!modalElement || !successElement) return;
-
-  const modalInstance = Modal.getOrCreateInstance(modalElement);
-  const successInstance = Modal.getOrCreateInstance(successElement);
-
-  modalElement.addEventListener(
-    "hidden.bs.modal",
-    () => {
-      document.body.classList.remove("modal-open");
-      document.body.style.removeProperty("padding-right");
-      document.body.style.removeProperty("overflow");
-
-      document.querySelectorAll(".modal-backdrop").forEach((backdrop) => {
-        backdrop.remove();
-      });
-
-      setDeleteMessage(
-        total === 1
-          ? "Se eliminó correctamente 1 verificación."
-          : `Se eliminaron correctamente ${total} verificaciones.`
-      );
-
-      successInstance.show();
-    },
-    { once: true }
-  );
-
-  modalInstance.hide();
-};
-
   const handleCancelSelection = () => {
     setSelectedRows({});
   };
@@ -129,9 +101,7 @@ export default function Verificaciones() {
     setTimeout(() => {
       const modalElement = document.getElementById("editVerificationModal");
       if (!modalElement) return;
-
-      const modalInstance = Modal.getOrCreateInstance(modalElement);
-      modalInstance.show();
+      Modal.getOrCreateInstance(modalElement).show();
     }, 0);
   };
 
@@ -141,115 +111,181 @@ export default function Verificaciones() {
     setTimeout(() => {
       const modalElement = document.getElementById("deleteVerificationsModal");
       if (!modalElement) return;
-
-      const modalInstance = Modal.getOrCreateInstance(modalElement);
-      modalInstance.show();
+      Modal.getOrCreateInstance(modalElement).show();
     }, 0);
   };
 
-  const handleCreateVerification = (newVerification) => {
-    setVerificaciones((prev) => [
-      ...prev,
-      {
-        ...newVerification,
-        id: Date.now(),
-      },
-    ]);
+  const handleCreateVerification = async (payload) => {
+    const created = await verificacionService.create(payload);
+    setVerificaciones((prev) => [...prev, created]);
   };
 
-  const handleSaveEdit = (updatedVerification) => {
+  const handleSaveEdit = async (payload) => {
+    const updated = await verificacionService.update(payload.id, payload);
+
     setVerificaciones((prev) =>
-      prev.map((item) =>
-        item.id === updatedVerification.id ? updatedVerification : item
-      )
+      prev.map((item) => (item.id === updated.id ? updated : item))
     );
   };
 
-  const handleDeleteSelected = () => {
-  const idsToDelete = Object.keys(selectedRows)
-    .filter((id) => selectedRows[id])
-    .map(Number);
+  const handleDeleteSelected = async () => {
+    const idsToDelete = Object.keys(selectedRows)
+      .filter((id) => selectedRows[id])
+      .map(Number);
 
-  const count = idsToDelete.length;
+    const count = idsToDelete.length;
 
-  setVerificaciones((prev) =>
-    prev.filter((item) => !idsToDelete.includes(item.id))
-  );
+    try {
+      for (const id of idsToDelete) {
+        await verificacionService.remove(id);
+      }
 
-  setSelectedRows({});
-
-  const modal = document.getElementById("deleteVerificationsModal");
-  const success = document.getElementById("deleteSuccessfulModal");
-
-  if (!modal || !success) return;
-
-  const modalInstance = Modal.getOrCreateInstance(modal);
-  const successInstance = Modal.getOrCreateInstance(success);
-
-  modal.addEventListener(
-    "hidden.bs.modal",
-    () => {
-      document.body.classList.remove("modal-open");
-      document.body.style.removeProperty("padding-right");
-      document.body.style.removeProperty("overflow");
-
-      document.querySelectorAll(".modal-backdrop").forEach((b) => b.remove());
-
-      setDeleteMessage(
-        count === 1
-          ? "Se eliminó correctamente 1 verificación."
-          : `Se eliminaron correctamente ${count} verificaciones.`
+      setVerificaciones((prev) =>
+        prev.filter((item) => !idsToDelete.includes(item.id))
       );
 
-      successInstance.show();
-    },
-    { once: true }
-  );
+      setSelectedRows({});
 
-  modalInstance.hide();
-};
-  const handleDeleteOne = () => {
-  if (!selectedVerification) return;
+      const modal = document.getElementById("deleteVerificationsModal");
+      const success = document.getElementById("deleteSuccessfulModal");
 
-  const deleted = selectedVerification.placa || "la verificación";
+      if (!modal || !success) return;
 
-  setVerificaciones((prev) =>
-    prev.filter((item) => item.id !== selectedVerification.id)
-  );
+      const modalInstance = Modal.getOrCreateInstance(modal);
+      const successInstance = Modal.getOrCreateInstance(success);
 
-  setSelectedRows((prev) => {
-    const updated = { ...prev };
-    delete updated[selectedVerification.id];
-    return updated;
-  });
+      modal.addEventListener(
+        "hidden.bs.modal",
+        () => {
+          document.body.classList.remove("modal-open");
+          document.body.style.removeProperty("padding-right");
+          document.body.style.removeProperty("overflow");
+          document.querySelectorAll(".modal-backdrop").forEach((b) => b.remove());
 
-  setSelectedVerification(null);
+          setDeleteMessage(
+            count === 1
+              ? "Se eliminó correctamente 1 verificación."
+              : `Se eliminaron correctamente ${count} verificaciones.`
+          );
 
-  const modal = document.getElementById("deleteVerificationsModal");
-  const success = document.getElementById("deleteSuccessfulModal");
+          successInstance.show();
+        },
+        { once: true }
+      );
 
-  if (!modal || !success) return;
+      modalInstance.hide();
+    } catch (err) {
+      console.error("Error al eliminar verificaciones:", err);
+      alert(
+        err?.response?.data?.message ||
+          "No se pudieron eliminar las verificaciones seleccionadas."
+      );
+    }
+  };
 
-  const modalInstance = Modal.getOrCreateInstance(modal);
-  const successInstance = Modal.getOrCreateInstance(success);
+  const handleDeleteOne = async () => {
+    if (!selectedVerification) return;
 
-  modal.addEventListener(
-    "hidden.bs.modal",
-    () => {
-      document.body.classList.remove("modal-open");
-      document.body.style.removeProperty("padding-right");
-      document.body.style.removeProperty("overflow");
+    try {
+      await verificacionService.remove(selectedVerification.id);
 
-      document.querySelectorAll(".modal-backdrop").forEach((b) => b.remove());
+      const deleted = selectedVerification.placa || "la verificación";
 
-      setDeleteMessage(`Se eliminó correctamente ${deleted}.`);
-      successInstance.show();
-    },
-    { once: true }
-  );
+      setVerificaciones((prev) =>
+        prev.filter((item) => item.id !== selectedVerification.id)
+      );
 
-  modalInstance.hide();
-};
+      setSelectedRows((prev) => {
+        const updated = { ...prev };
+        delete updated[selectedVerification.id];
+        return updated;
+      });
+
+      setSelectedVerification(null);
+
+      const modal = document.getElementById("deleteVerificationsModal");
+      const success = document.getElementById("deleteSuccessfulModal");
+
+      if (!modal || !success) return;
+
+      const modalInstance = Modal.getOrCreateInstance(modal);
+      const successInstance = Modal.getOrCreateInstance(success);
+
+      modal.addEventListener(
+        "hidden.bs.modal",
+        () => {
+          document.body.classList.remove("modal-open");
+          document.body.style.removeProperty("padding-right");
+          document.body.style.removeProperty("overflow");
+          document.querySelectorAll(".modal-backdrop").forEach((b) => b.remove());
+
+          setDeleteMessage(`Se eliminó correctamente ${deleted}.`);
+          successInstance.show();
+        },
+        { once: true }
+      );
+
+      modalInstance.hide();
+    } catch (err) {
+      console.error("Error al eliminar verificación:", err);
+      alert(
+        err?.response?.data?.message ||
+          "No se pudo eliminar la verificación."
+      );
+    }
+  };
+
+  const handleDeleteAll = async () => {
+    const total = verificaciones.length;
+
+    try {
+      for (const item of verificaciones) {
+        await verificacionService.remove(item.id);
+      }
+
+      setVerificaciones([]);
+      setSelectedRows({});
+      setSelectedVerification(null);
+
+      const modalElement = document.getElementById("deleteAllVerificationModal");
+      const successElement = document.getElementById("deleteSuccessfulModal");
+
+      if (!modalElement || !successElement) return;
+
+      const modalInstance = Modal.getOrCreateInstance(modalElement);
+      const successInstance = Modal.getOrCreateInstance(successElement);
+
+      modalElement.addEventListener(
+        "hidden.bs.modal",
+        () => {
+          document.body.classList.remove("modal-open");
+          document.body.style.removeProperty("padding-right");
+          document.body.style.removeProperty("overflow");
+
+          document.querySelectorAll(".modal-backdrop").forEach((backdrop) => {
+            backdrop.remove();
+          });
+
+          setDeleteMessage(
+            total === 1
+              ? "Se eliminó correctamente 1 verificación."
+              : `Se eliminaron correctamente ${total} verificaciones.`
+          );
+
+          successInstance.show();
+        },
+        { once: true }
+      );
+
+      modalInstance.hide();
+    } catch (err) {
+      console.error("Error al eliminar todas:", err);
+      alert(
+        err?.response?.data?.message ||
+          "No se pudieron eliminar todas las verificaciones."
+      );
+    }
+  };
 
   const handleMarkPaid = () => {
     const idsToUpdate = Object.keys(selectedRows)
@@ -283,16 +319,13 @@ export default function Verificaciones() {
       <div className="page-header">
         <div>
           <h2 className="page-heading">Resumen de Verificaciones</h2>
-          <p className="page-title">
-            Control detallado de procesos y pagos
-          </p>
+          <p className="page-title">Control detallado de procesos y pagos</p>
         </div>
 
         <div className={selectedCount > 0 ? "selection-toolbar" : "d-flex gap-2"}>
           {selectedCount === 0 ? (
             <>
-
-            <button
+              <button
                 className="primary-btn ms-2"
                 data-bs-toggle="modal"
                 data-bs-target="#createCostModal"
@@ -300,6 +333,7 @@ export default function Verificaciones() {
               >
                 <i className="bi bi-plus-lg"></i>&nbsp;Nuevo costo
               </button>
+
               <button
                 className="primary-btn ms-1"
                 data-bs-toggle="modal"
@@ -382,6 +416,8 @@ export default function Verificaciones() {
           </select>
         </div>
 
+        {error && <div className="alert alert-danger mt-3">{error}</div>}
+
         <div className="table-shell">
           <table className="admin-table">
             <thead>
@@ -415,7 +451,13 @@ export default function Verificaciones() {
             </thead>
 
             <tbody>
-              {filteredVerificaciones.length > 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan="19" className="text-center py-4">
+                    Cargando verificaciones...
+                  </td>
+                </tr>
+              ) : filteredVerificaciones.length > 0 ? (
                 filteredVerificaciones.map((item) => (
                   <VerificationRow
                     key={item.id}
@@ -438,7 +480,9 @@ export default function Verificaciones() {
         </div>
 
         <div className="table-footer">
-          <span>Mostrando {filteredVerificaciones.length} de {verificaciones.length} registros</span>
+          <span>
+            Mostrando {filteredVerificaciones.length} de {verificaciones.length} registros
+          </span>
 
           <div className="pagination-mini">
             <button disabled>Anterior</button>
@@ -467,12 +511,10 @@ export default function Verificaciones() {
         onConfirm={handleMarkPaid}
       />
       <DeleteAllVerificationModal
-  totalCount={verificaciones.length}
-  onConfirmDelete={handleDeleteAll}
-/>
-
-<DeleteSuccessfulModal message={deleteMessage} />
-      
+        totalCount={verificaciones.length}
+        onConfirmDelete={handleDeleteAll}
+      />
+      <DeleteSuccessfulModal message={deleteMessage} />
     </Admin>
   );
 }
