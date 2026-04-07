@@ -9,13 +9,13 @@ import DeleteAllVerificentrosModal from "./components/DeleteAllVerificentrosModa
 import CreateSuccessModal from "./components/CreateSuccessModal";
 import DeleteSuccessModal from "./components/DeleteSuccessModal";
 import EditSuccessModal from "./components/EditSuccessModal";
-import verificentrosData from "../../data/verificentros.json";
+import { getVerificentros, createVerificentro, updateVerificentro, deleteVerificentro,} from "../verificentros/services/verificentroServices";
+import { api } from "../../../server/api";
 
 export default function Verificentros() {
-  const [verificentros, setVerificentros] = useState(() => {
-    const saved = localStorage.getItem("verificentros");
-    return saved ? JSON.parse(saved) : verificentrosData;
-  });
+  const [verificentros, setVerificentros] = useState([]);
+  const [regiones, setRegiones] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const [selectedRows, setSelectedRows] = useState({});
   const [currentItem, setCurrentItem] = useState(null);
@@ -27,8 +27,32 @@ export default function Verificentros() {
   const [regionFilter, setRegionFilter] = useState("");
 
   useEffect(() => {
-    localStorage.setItem("verificentros", JSON.stringify(verificentros));
-  }, [verificentros]);
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+
+      const [verificentrosData, regionesRes] = await Promise.all([
+        getVerificentros(),
+        api.get("/regiones"),
+      ]);
+
+      const regionesData = Array.isArray(regionesRes?.data?.data)
+        ? regionesRes.data.data
+        : Array.isArray(regionesRes?.data)
+        ? regionesRes.data
+        : [];
+
+      setVerificentros(verificentrosData);
+      setRegiones(regionesData);
+    } catch (error) {
+      console.error("Error cargando verificentros:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const cleanupModalArtifacts = () => {
     document.body.classList.remove("modal-open");
@@ -88,21 +112,17 @@ export default function Verificentros() {
 
   const filteredVerificentros = useMemo(() => {
     return verificentros.filter((item) => {
-      const matchesName = item.nombre
+      const matchesName = (item.nombre || "")
         .toLowerCase()
         .includes(searchTerm.trim().toLowerCase());
 
       const matchesRegion = regionFilter
-        ? item.region.toLowerCase() === regionFilter.toLowerCase()
+        ? String(item.idRegion) === String(regionFilter)
         : true;
 
       return matchesName && matchesRegion;
     });
   }, [verificentros, searchTerm, regionFilter]);
-
-  const uniqueRegions = useMemo(() => {
-    return [...new Set(verificentros.map((item) => item.region).filter(Boolean))];
-  }, [verificentros]);
 
   const handleSelectAll = () => {
     const allSelected =
@@ -139,90 +159,122 @@ export default function Verificentros() {
     setCurrentId(item.id);
   };
 
-  const handleCreate = (newItem) => {
-    const createdItem = {
-      ...newItem,
-      id: Date.now(),
-    };
-
-    setVerificentros((prev) => [...prev, createdItem]);
-    setCreateMessage(`Se creó con éxito el verificentro ${createdItem.nombre}.`);
+  const handleCreate = async (newItem) => {
+    try {
+      const createdItem = await createVerificentro(newItem);
+      setVerificentros((prev) => [...prev, createdItem]);
+      setCreateMessage(`Se creó con éxito el verificentro ${createdItem.nombre}.`);
+      return createdItem;
+    } catch (error) {
+      console.error("Error creando verificentro:", error);
+      throw error;
+    }
   };
 
-  const handleSaveEdit = (updatedItem) => {
+  const handleSaveEdit = async (updatedItem) => {
     if (currentId === null) return;
 
-    setVerificentros((prev) =>
-      prev.map((item) =>
-        item.id === currentId ? { ...item, ...updatedItem } : item
-      )
-    );
+    try {
+      const updated = await updateVerificentro(currentId, updatedItem);
 
-    showEditSuccessModal(
-      "Se actualizó el verificentro correctamente.",
-      "editVerificentroModal"
-    );
+      setVerificentros((prev) =>
+        prev.map((item) => (item.id === currentId ? updated : item))
+      );
+
+      setCurrentItem(updated);
+
+      showEditSuccessModal(
+        "Se actualizó el verificentro correctamente.",
+        "editVerificentroModal"
+      );
+    } catch (error) {
+      console.error("Error actualizando verificentro:", error);
+      alert(error.message || "No se pudo actualizar el verificentro.");
+    }
   };
 
-  const handleDeleteOne = () => {
+  const handleDeleteOne = async () => {
     if (currentId === null) return;
 
-    const deletedName = currentItem?.nombre || "el verificentro";
+    try {
+      const deletedName = currentItem?.nombre || "el verificentro";
 
-    setVerificentros((prev) => prev.filter((item) => item.id !== currentId));
+      await deleteVerificentro(currentId);
 
-    setSelectedRows((prev) => {
-      const updated = { ...prev };
-      delete updated[currentId];
-      return updated;
-    });
+      setVerificentros((prev) => prev.filter((item) => item.id !== currentId));
 
-    setCurrentItem(null);
-    setCurrentId(null);
+      setSelectedRows((prev) => {
+        const updated = { ...prev };
+        delete updated[currentId];
+        return updated;
+      });
 
-    showDeleteSuccessModal(
-      `Se eliminó con éxito ${deletedName}.`,
-      "deleteVerificentroModal"
-    );
+      setCurrentItem(null);
+      setCurrentId(null);
+
+      showDeleteSuccessModal(
+        `Se eliminó con éxito ${deletedName}.`,
+        "deleteVerificentroModal"
+      );
+    } catch (error) {
+      console.error("Error eliminando verificentro:", error);
+      alert(error.message || "No se pudo eliminar el verificentro.");
+    }
   };
 
-  const handleDeleteSelected = () => {
+  const handleDeleteSelected = async () => {
     const idsToDelete = Object.keys(selectedRows)
       .filter((id) => selectedRows[id])
       .map(Number);
 
-    const count = idsToDelete.length;
+    try {
+      await Promise.all(idsToDelete.map((id) => deleteVerificentro(id)));
 
-    setVerificentros((prev) =>
-      prev.filter((item) => !idsToDelete.includes(item.id))
-    );
+      const count = idsToDelete.length;
 
-    setSelectedRows({});
-    setCurrentItem(null);
-    setCurrentId(null);
+      setVerificentros((prev) =>
+        prev.filter((item) => !idsToDelete.includes(item.id))
+      );
 
-    showDeleteSuccessModal(
-      count === 1
-        ? "Se eliminó con éxito 1 verificentro."
-        : `Se eliminaron con éxito ${count} verificentros.`,
-      "deleteVerificentroModal"
-    );
+      setSelectedRows({});
+      setCurrentItem(null);
+      setCurrentId(null);
+
+      showDeleteSuccessModal(
+        count === 1
+          ? "Se eliminó con éxito 1 verificentro."
+          : `Se eliminaron con éxito ${count} verificentros.`,
+        "deleteVerificentroModal"
+      );
+    } catch (error) {
+      console.error("Error eliminando múltiples verificentros:", error);
+      alert(error.message || "No se pudieron eliminar los verificentros.");
+    }
   };
 
-  const handleDeleteAll = () => {
-    const total = verificentros.length;
+  const handleDeleteAll = async () => {
+    try {
+      const ids = verificentros.map((v) => v.id);
 
-    setVerificentros([]);
-    setSelectedRows({});
-    setCurrentItem(null);
-    setCurrentId(null);
+      await Promise.all(ids.map((id) => deleteVerificentro(id)));
 
-    showDeleteSuccessModal(
-      total === 1
-        ? "Se eliminó con éxito 1 verificentro."
-        : `Se eliminaron con éxito ${total} verificentros.`,
-      "deleteAllVerificentroModal"
-    );
+      const total = verificentros.length;
+
+      setVerificentros([]);
+      setSelectedRows({});
+      setCurrentItem(null);
+      setCurrentId(null);
+
+      showDeleteSuccessModal(
+        total === 1
+          ? "Se eliminó con éxito 1 verificentro."
+          : `Se eliminaron con éxito ${total} verificentros.`,
+        "deleteAllVerificentroModal"
+      );
+    } catch (error) {
+      console.error("Error eliminando todos los verificentros:", error);
+      alert(error.message || "No se pudieron eliminar todos los verificentros.");
+    }
   };
 
   const clearFilters = () => {
@@ -235,7 +287,6 @@ export default function Verificentros() {
     filteredVerificentros.every((item) => selectedRows[item.id]);
 
   const selectedCount = Object.values(selectedRows).filter(Boolean).length;
-  const hasActiveFilters = searchTerm.trim() !== "" || regionFilter !== "";
 
   return (
     <Admin>
@@ -249,16 +300,14 @@ export default function Verificentros() {
 
         <div className={selectedCount > 0 ? "selection-toolbar" : "d-flex gap-2"}>
           {selectedCount === 0 ? (
-            <>
-              <button
-                className="primary-btn"
-                data-bs-toggle="modal"
-                data-bs-target="#createVerificentroModal"
-                type="button"
-              >
-                <i className="bi bi-plus-lg"></i>&nbsp;Nuevo Verificentro
-              </button>
-            </>
+            <button
+              className="primary-btn"
+              data-bs-toggle="modal"
+              data-bs-target="#createVerificentroModal"
+              type="button"
+            >
+              <i className="bi bi-plus-lg"></i>&nbsp;Nuevo Verificentro
+            </button>
           ) : (
             <>
               {isAllSelected && filteredVerificentros.length > 0 && (
@@ -328,9 +377,12 @@ export default function Verificentros() {
             onChange={(e) => setRegionFilter(e.target.value)}
           >
             <option value="">Todas las regiones</option>
-            {uniqueRegions.map((region) => (
-              <option key={region} value={region}>
-                {region}
+            {regiones.map((region) => (
+              <option
+                key={region.id ?? region.idRegion}
+                value={region.id ?? region.idRegion}
+              >
+                {region.nombre ?? region.region ?? region.nombreRegion}
               </option>
             ))}
           </select>
@@ -358,7 +410,13 @@ export default function Verificentros() {
             </thead>
 
             <tbody>
-              {filteredVerificentros.length > 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan="8" className="text-center py-4">
+                    Cargando verificentros...
+                  </td>
+                </tr>
+              ) : filteredVerificentros.length > 0 ? (
                 filteredVerificentros.map((item) => (
                   <VerificentroRow
                     key={item.id}
@@ -394,8 +452,8 @@ export default function Verificentros() {
         </div>
       </div>
 
-      <CreateVerificentroModal onCreate={handleCreate} />
-      <EditVerificentroModal item={currentItem} onSave={handleSaveEdit} />
+      <CreateVerificentroModal onCreate={handleCreate} regiones={regiones} />
+      <EditVerificentroModal item={currentItem} onSave={handleSaveEdit} regiones={regiones} />
 
       <DeleteVerificentroModal
         item={currentItem}

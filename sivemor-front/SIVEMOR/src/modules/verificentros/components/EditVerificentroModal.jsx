@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 
-export default function EditVerificentroModal({ item, onSave }) {
+export default function EditVerificentroModal({ item, onSave, regiones = [] }) {
   const [formData, setFormData] = useState({
     nombre: "",
     clave: "",
     direccion: "",
-    region: "",
+    idRegion: "",
     responsable: "",
     telefonoPrincipal: "",
     telefonoAlternativo: "",
@@ -17,7 +17,7 @@ export default function EditVerificentroModal({ item, onSave }) {
     nombre: "",
     clave: "",
     direccion: "",
-    region: "",
+    idRegion: "",
     responsable: "",
     telefonoPrincipal: "",
     telefonoAlternativo: "",
@@ -26,6 +26,7 @@ export default function EditVerificentroModal({ item, onSave }) {
   });
 
   const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -35,7 +36,7 @@ export default function EditVerificentroModal({ item, onSave }) {
         nombre: item.nombre || "",
         clave: item.clave || "",
         direccion: item.direccion || "",
-        region: item.region || "",
+        idRegion: item.idRegion || "",
         responsable: item.responsable || "",
         telefonoPrincipal: item.telefonoPrincipal || "",
         telefonoAlternativo: item.telefonoAlternativo || "",
@@ -46,6 +47,7 @@ export default function EditVerificentroModal({ item, onSave }) {
       setFormData(verificentroData);
       setOriginalData(verificentroData);
       setError("");
+      setSaving(false);
     }
   }, [item]);
 
@@ -67,28 +69,17 @@ export default function EditVerificentroModal({ item, onSave }) {
   };
 
   const isSameData = (cleanedData) => {
-    return (
-      cleanedData.nombre === originalData.nombre.trim() &&
-      cleanedData.clave === originalData.clave.trim() &&
-      cleanedData.direccion === originalData.direccion.trim() &&
-      cleanedData.region === originalData.region.trim() &&
-      cleanedData.responsable === originalData.responsable.trim() &&
-      cleanedData.telefonoPrincipal === originalData.telefonoPrincipal.trim() &&
-      cleanedData.telefonoAlternativo ===
-        originalData.telefonoAlternativo.trim() &&
-      cleanedData.correo === originalData.correo.trim() &&
-      cleanedData.horario === originalData.horario.trim()
-    );
+    return JSON.stringify(cleanedData) === JSON.stringify(originalData);
   };
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
 
     const cleanedData = {
       nombre: formData.nombre.trim(),
       clave: formData.clave.trim(),
       direccion: formData.direccion.trim(),
-      region: formData.region.trim(),
+      idRegion: formData.idRegion,
       responsable: formData.responsable.trim(),
       telefonoPrincipal: formData.telefonoPrincipal.trim(),
       telefonoAlternativo: formData.telefonoAlternativo.trim(),
@@ -100,7 +91,7 @@ export default function EditVerificentroModal({ item, onSave }) {
       !cleanedData.nombre ||
       !cleanedData.clave ||
       !cleanedData.direccion ||
-      !cleanedData.region ||
+      !cleanedData.idRegion ||
       !cleanedData.responsable ||
       !cleanedData.telefonoPrincipal ||
       !cleanedData.correo ||
@@ -133,7 +124,14 @@ export default function EditVerificentroModal({ item, onSave }) {
       return;
     }
 
-    onSave(cleanedData);
+    try {
+      setSaving(true);
+      await onSave(cleanedData);
+    } catch (err) {
+      setError(err.message || "No se pudo actualizar el verificentro.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (!item) return null;
@@ -156,6 +154,7 @@ export default function EditVerificentroModal({ item, onSave }) {
                 type="button"
                 className="btn-close"
                 data-bs-dismiss="modal"
+                disabled={saving}
               ></button>
             </div>
 
@@ -175,6 +174,7 @@ export default function EditVerificentroModal({ item, onSave }) {
                     name="nombre"
                     value={formData.nombre}
                     onChange={handleChange}
+                    disabled={saving}
                   />
                 </div>
 
@@ -186,6 +186,7 @@ export default function EditVerificentroModal({ item, onSave }) {
                     name="clave"
                     value={formData.clave}
                     onChange={handleChange}
+                    disabled={saving}
                   />
                 </div>
               </div>
@@ -198,19 +199,30 @@ export default function EditVerificentroModal({ item, onSave }) {
                   name="direccion"
                   value={formData.direccion}
                   onChange={handleChange}
+                  disabled={saving}
                 />
               </div>
 
               <div className="row">
                 <div className="col-md-6 mb-3">
                   <label className="form-label">REGIÓN *</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    name="region"
-                    value={formData.region}
+                  <select
+                    className="form-select"
+                    name="idRegion"
+                    value={formData.idRegion}
                     onChange={handleChange}
-                  />
+                    disabled={saving}
+                  >
+                    <option value="">Selecciona una región</option>
+                    {regiones.map((region) => (
+                      <option
+                        key={region.id ?? region.idRegion}
+                        value={region.id ?? region.idRegion}
+                      >
+                        {region.nombre ?? region.region ?? region.nombreRegion}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="col-md-6 mb-3">
@@ -221,6 +233,7 @@ export default function EditVerificentroModal({ item, onSave }) {
                     name="responsable"
                     value={formData.responsable}
                     onChange={handleChange}
+                    disabled={saving}
                   />
                 </div>
               </div>
@@ -235,6 +248,7 @@ export default function EditVerificentroModal({ item, onSave }) {
                     value={formData.telefonoPrincipal}
                     onChange={handleChange}
                     inputMode="numeric"
+                    disabled={saving}
                   />
                 </div>
 
@@ -247,6 +261,7 @@ export default function EditVerificentroModal({ item, onSave }) {
                     value={formData.telefonoAlternativo}
                     onChange={handleChange}
                     inputMode="numeric"
+                    disabled={saving}
                   />
                 </div>
               </div>
@@ -259,6 +274,7 @@ export default function EditVerificentroModal({ item, onSave }) {
                   name="correo"
                   value={formData.correo}
                   onChange={handleChange}
+                  disabled={saving}
                 />
               </div>
 
@@ -270,6 +286,7 @@ export default function EditVerificentroModal({ item, onSave }) {
                   name="horario"
                   value={formData.horario}
                   onChange={handleChange}
+                  disabled={saving}
                 />
               </div>
             </div>
@@ -279,12 +296,13 @@ export default function EditVerificentroModal({ item, onSave }) {
                 type="button"
                 className="btn btn-light"
                 data-bs-dismiss="modal"
+                disabled={saving}
               >
                 Cancelar
               </button>
 
-              <button type="submit" className="btn btn-primary">
-                Guardar cambios
+              <button type="submit" className="btn btn-primary" disabled={saving}>
+                {saving ? "Guardando..." : "Guardar cambios"}
               </button>
             </div>
           </form>

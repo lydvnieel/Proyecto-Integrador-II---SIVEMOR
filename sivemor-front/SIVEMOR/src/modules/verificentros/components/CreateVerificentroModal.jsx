@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Modal from "bootstrap/js/dist/modal";
 
 const initialForm = {
   nombre: "",
   clave: "",
   direccion: "",
-  region: "",
+  idRegion: "",
   responsable: "",
   telefonoPrincipal: "",
   telefonoAlternativo: "",
@@ -13,16 +13,28 @@ const initialForm = {
   horario: "",
 };
 
-export default function CreateVerificentroModal({ onCreate }) {
+export default function CreateVerificentroModal({ onCreate, regiones = [] }) {
   const [formData, setFormData] = useState(initialForm);
   const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-  const resetForm = () => {
-    setFormData(initialForm);
-    setError("");
-  };
+  useEffect(() => {
+    const modalElement = document.getElementById("createVerificentroModal");
+    if (!modalElement) return;
+
+    const handleHidden = () => {
+      setFormData(initialForm);
+      setError("");
+      setSaving(false);
+    };
+
+    modalElement.addEventListener("hidden.bs.modal", handleHidden);
+    return () => {
+      modalElement.removeEventListener("hidden.bs.modal", handleHidden);
+    };
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -41,12 +53,12 @@ export default function CreateVerificentroModal({ onCreate }) {
     if (error) setError("");
   };
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     const cleanedData = {
       nombre: formData.nombre.trim(),
       clave: formData.clave.trim(),
       direccion: formData.direccion.trim(),
-      region: formData.region.trim(),
+      idRegion: formData.idRegion,
       responsable: formData.responsable.trim(),
       telefonoPrincipal: formData.telefonoPrincipal.trim(),
       telefonoAlternativo: formData.telefonoAlternativo.trim(),
@@ -58,7 +70,7 @@ export default function CreateVerificentroModal({ onCreate }) {
       !cleanedData.nombre ||
       !cleanedData.clave ||
       !cleanedData.direccion ||
-      !cleanedData.region ||
+      !cleanedData.idRegion ||
       !cleanedData.responsable ||
       !cleanedData.telefonoPrincipal ||
       !cleanedData.correo ||
@@ -86,28 +98,36 @@ export default function CreateVerificentroModal({ onCreate }) {
       return;
     }
 
-    onCreate(cleanedData);
+    try {
+      setSaving(true);
+      setError("");
 
-    const createModalElement = document.getElementById("createVerificentroModal");
-    const successModalElement = document.getElementById(
-      "createVerificentroSuccessModal"
-    );
+      await onCreate(cleanedData);
 
-    if (!createModalElement || !successModalElement) return;
+      const createModalElement = document.getElementById("createVerificentroModal");
+      const successModalElement = document.getElementById(
+        "createVerificentroSuccessModal"
+      );
 
-    const createModalInstance = Modal.getOrCreateInstance(createModalElement);
-    const successModalInstance = Modal.getOrCreateInstance(successModalElement);
+      if (!createModalElement || !successModalElement) return;
 
-    createModalElement.addEventListener(
-      "hidden.bs.modal",
-      () => {
-        resetForm();
-        successModalInstance.show();
-      },
-      { once: true }
-    );
+      const createModalInstance = Modal.getOrCreateInstance(createModalElement);
+      const successModalInstance = Modal.getOrCreateInstance(successModalElement);
 
-    createModalInstance.hide();
+      createModalElement.addEventListener(
+        "hidden.bs.modal",
+        () => {
+          successModalInstance.show();
+        },
+        { once: true }
+      );
+
+      createModalInstance.hide();
+    } catch (err) {
+      setError(err.message || "No se pudo crear el verificentro.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -127,6 +147,7 @@ export default function CreateVerificentroModal({ onCreate }) {
               type="button"
               className="btn-close"
               data-bs-dismiss="modal"
+              disabled={saving}
             ></button>
           </div>
 
@@ -147,19 +168,29 @@ export default function CreateVerificentroModal({ onCreate }) {
                   value={formData.clave}
                   onChange={handleChange}
                   placeholder="Ej VN-2024-001"
+                  disabled={saving}
                 />
               </div>
 
               <div className="col-md-6 mb-3">
                 <label className="form-label">REGIÓN *</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  name="region"
-                  value={formData.region}
+                <select
+                  className="form-select"
+                  name="idRegion"
+                  value={formData.idRegion}
                   onChange={handleChange}
-                  placeholder="Ej Norte"
-                />
+                  disabled={saving}
+                >
+                  <option value="">Selecciona una región</option>
+                  {regiones.map((region) => (
+                    <option
+                      key={region.id ?? region.idRegion}
+                      value={region.id ?? region.idRegion}
+                    >
+                      {region.nombre ?? region.region ?? region.nombreRegion}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 
@@ -172,6 +203,7 @@ export default function CreateVerificentroModal({ onCreate }) {
                 value={formData.nombre}
                 onChange={handleChange}
                 placeholder="Ej Verificentro Norte"
+                disabled={saving}
               />
             </div>
 
@@ -184,6 +216,7 @@ export default function CreateVerificentroModal({ onCreate }) {
                 value={formData.direccion}
                 onChange={handleChange}
                 placeholder="Ej Av. Insurgentes Norte #1500"
+                disabled={saving}
               />
             </div>
 
@@ -196,6 +229,7 @@ export default function CreateVerificentroModal({ onCreate }) {
                 value={formData.responsable}
                 onChange={handleChange}
                 placeholder="Ej María García López"
+                disabled={saving}
               />
             </div>
 
@@ -210,6 +244,7 @@ export default function CreateVerificentroModal({ onCreate }) {
                   onChange={handleChange}
                   placeholder="Ej 8112345678"
                   inputMode="numeric"
+                  disabled={saving}
                 />
               </div>
 
@@ -223,6 +258,7 @@ export default function CreateVerificentroModal({ onCreate }) {
                   onChange={handleChange}
                   placeholder="Ej 8187654321"
                   inputMode="numeric"
+                  disabled={saving}
                 />
               </div>
             </div>
@@ -236,6 +272,7 @@ export default function CreateVerificentroModal({ onCreate }) {
                 value={formData.correo}
                 onChange={handleChange}
                 placeholder="Ej contacto@verificentro.com"
+                disabled={saving}
               />
             </div>
 
@@ -248,6 +285,7 @@ export default function CreateVerificentroModal({ onCreate }) {
                 value={formData.horario}
                 onChange={handleChange}
                 placeholder="Ej Lunes a Viernes: 8:00 AM - 6:00 PM"
+                disabled={saving}
               />
             </div>
           </div>
@@ -257,6 +295,7 @@ export default function CreateVerificentroModal({ onCreate }) {
               type="button"
               className="btn btn-light"
               data-bs-dismiss="modal"
+              disabled={saving}
             >
               Cancelar
             </button>
@@ -265,8 +304,10 @@ export default function CreateVerificentroModal({ onCreate }) {
               type="button"
               className="btn btn-primary"
               onClick={handleCreate}
+              disabled={saving}
             >
-              <i className="bi bi-file-earmark-plus"></i>&nbsp;Crear Verificentro
+              <i className="bi bi-file-earmark-plus"></i>&nbsp;
+              {saving ? "Creando..." : "Crear Verificentro"}
             </button>
           </div>
         </div>
