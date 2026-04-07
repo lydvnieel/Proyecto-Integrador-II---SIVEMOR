@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import Modal from "bootstrap/js/dist/modal";
 
-const PAYMENT_TYPES = ["EFECTIVO", "TARJETA", "DEPÓSITO", "TRANSFERENCIA"];
+const PAYMENT_TYPES = ["EFECTIVO", "TARJETA", "DEPOSITO", "TRANSFERENCIA"];
 
-export default function EditTransactionModal({ transaction, onSave }) {
+export default function EditTransactionModal({ transaction, onSave, usuarios = [] }) {
   const [formData, setFormData] = useState({
     id: null,
     nota: "",
@@ -13,7 +13,6 @@ export default function EditTransactionModal({ transaction, onSave }) {
     factura: "",
     pagado: "No",
     pagadoClass: "status-warning",
-    fechaPedido: "",
     cotizacion: "",
     reviso: "",
     atendio: "",
@@ -31,7 +30,6 @@ export default function EditTransactionModal({ transaction, onSave }) {
     factura: "",
     pagado: "No",
     pagadoClass: "status-warning",
-    fechaPedido: "",
     cotizacion: "",
     reviso: "",
     atendio: "",
@@ -53,10 +51,9 @@ export default function EditTransactionModal({ transaction, onSave }) {
         factura: transaction.factura || "",
         pagado: transaction.pagado || "No",
         pagadoClass: transaction.pagadoClass || "status-warning",
-        fechaPedido: transaction.fechaPedido || "",
         cotizacion: transaction.cotizacion || "",
-        reviso: transaction.reviso || "",
-        atendio: transaction.atendio || "",
+        reviso: transaction.revisoId || "",
+        atendio: transaction.atendioId || "",
         pendiente: transaction.pendiente || "Sí",
         pendienteClass: transaction.pendienteClass || "status-warning",
         comentario: transaction.comentario || "",
@@ -86,7 +83,7 @@ export default function EditTransactionModal({ transaction, onSave }) {
       [name]: newValue,
     };
 
-    if (name === "tipoPago" && !["DEPÓSITO", "TRANSFERENCIA"].includes(newValue)) {
+    if (name === "tipoPago" && !["DEPOSITO", "TRANSFERENCIA"].includes(newValue)) {
       updatedData.cuentaDeposito = "";
     }
 
@@ -107,45 +104,38 @@ export default function EditTransactionModal({ transaction, onSave }) {
 
   const isSameData = (cleanedData) => {
     return (
-      cleanedData.nota === originalData.nota.trim() &&
-      cleanedData.tipoPago === originalData.tipoPago.trim().toUpperCase() &&
+      cleanedData.tipoPago === originalData.tipoPago &&
       cleanedData.monto === String(originalData.monto).trim() &&
       cleanedData.cuentaDeposito === originalData.cuentaDeposito.trim() &&
       cleanedData.factura === originalData.factura.trim() &&
       cleanedData.pagado === originalData.pagado &&
-      cleanedData.fechaPedido === originalData.fechaPedido.trim() &&
       cleanedData.cotizacion === originalData.cotizacion.trim() &&
-      cleanedData.reviso === originalData.reviso.trim() &&
-      cleanedData.atendio === originalData.atendio.trim() &&
+      String(cleanedData.reviso) === String(originalData.reviso) &&
+      String(cleanedData.atendio) === String(originalData.atendio) &&
       cleanedData.pendiente === originalData.pendiente &&
       cleanedData.comentario === originalData.comentario.trim()
     );
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const cleanedData = {
       ...formData,
-      nota: formData.nota.trim(),
       tipoPago: formData.tipoPago.trim().toUpperCase(),
       monto: formData.monto.trim(),
       cuentaDeposito: formData.cuentaDeposito.trim(),
       factura: formData.factura.trim(),
-      fechaPedido: formData.fechaPedido.trim(),
       cotizacion: formData.cotizacion.trim(),
-      reviso: formData.reviso.trim(),
-      atendio: formData.atendio.trim(),
+      reviso: formData.reviso,
+      atendio: formData.atendio,
       comentario: formData.comentario.trim(),
     };
 
     if (
-      !cleanedData.nota ||
       !cleanedData.tipoPago ||
       !cleanedData.monto ||
       !cleanedData.factura ||
-      !cleanedData.fechaPedido ||
-      !cleanedData.cotizacion ||
       !cleanedData.reviso ||
       !cleanedData.atendio
     ) {
@@ -165,11 +155,11 @@ export default function EditTransactionModal({ transaction, onSave }) {
     }
 
     if (
-      ["DEPÓSITO", "TRANSFERENCIA"].includes(cleanedData.tipoPago) &&
+      ["DEPOSITO", "TRANSFERENCIA"].includes(cleanedData.tipoPago) &&
       !cleanedData.cuentaDeposito
     ) {
       setError(
-        "La cuenta de depósito es obligatoria cuando el tipo de pago es DEPÓSITO o TRANSFERENCIA."
+        "La cuenta de depósito es obligatoria cuando el tipo de pago es DEPOSITO o TRANSFERENCIA."
       );
       return;
     }
@@ -181,7 +171,11 @@ export default function EditTransactionModal({ transaction, onSave }) {
       return;
     }
 
-    onSave(cleanedData);
+    try {
+      await onSave(cleanedData);
+    } catch (err) {
+      setError(err.message || "No se pudo actualizar la transacción.");
+    }
   };
 
   const handleClose = () => {
@@ -224,13 +218,12 @@ export default function EditTransactionModal({ transaction, onSave }) {
 
               <div className="row">
                 <div className="col-md-6 mb-3">
-                  <label className="form-label">Nota *</label>
+                  <label className="form-label">Nota</label>
                   <input
                     type="text"
                     className="form-control"
-                    name="nota"
                     value={formData.nota}
-                    onChange={handleChange}
+                    disabled
                   />
                 </div>
 
@@ -275,7 +268,7 @@ export default function EditTransactionModal({ transaction, onSave }) {
                     value={formData.cuentaDeposito}
                     onChange={handleChange}
                     disabled={
-                      !["DEPÓSITO", "TRANSFERENCIA"].includes(formData.tipoPago)
+                      !["DEPOSITO", "TRANSFERENCIA"].includes(formData.tipoPago)
                     }
                   />
                 </div>
@@ -294,20 +287,7 @@ export default function EditTransactionModal({ transaction, onSave }) {
                 </div>
 
                 <div className="col-md-6 mb-3">
-                  <label className="form-label">Fecha pedido *</label>
-                  <input
-                    type="date"
-                    className="form-control"
-                    name="fechaPedido"
-                    value={formData.fechaPedido}
-                    onChange={handleChange}
-                  />
-                </div>
-              </div>
-
-              <div className="row">
-                <div className="col-md-6 mb-3">
-                  <label className="form-label">Cotización *</label>
+                  <label className="form-label">Cotización</label>
                   <input
                     type="text"
                     className="form-control"
@@ -316,31 +296,51 @@ export default function EditTransactionModal({ transaction, onSave }) {
                     onChange={handleChange}
                   />
                 </div>
-
-                <div className="col-md-6 mb-3">
-                  <label className="form-label">Revisó *</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    name="reviso"
-                    value={formData.reviso}
-                    onChange={handleChange}
-                  />
-                </div>
               </div>
 
               <div className="row">
                 <div className="col-md-6 mb-3">
+                  <label className="form-label">Revisó *</label>
+                  <select
+                    className="form-control"
+                    name="reviso"
+                    value={formData.reviso}
+                    onChange={handleChange}
+                  >
+                    <option value="">Selecciona un usuario</option>
+                    {usuarios.map((usuario) => (
+                      <option
+                        key={usuario.id ?? usuario.idUsuario}
+                        value={usuario.id ?? usuario.idUsuario}
+                      >
+                        {usuario.nombre ?? usuario.nombreUsuario}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="col-md-6 mb-3">
                   <label className="form-label">Atendió *</label>
-                  <input
-                    type="text"
+                  <select
                     className="form-control"
                     name="atendio"
                     value={formData.atendio}
                     onChange={handleChange}
-                  />
+                  >
+                    <option value="">Selecciona un usuario</option>
+                    {usuarios.map((usuario) => (
+                      <option
+                        key={usuario.id ?? usuario.idUsuario}
+                        value={usuario.id ?? usuario.idUsuario}
+                      >
+                        {usuario.nombre ?? usuario.nombreUsuario}
+                      </option>
+                    ))}
+                  </select>
                 </div>
+              </div>
 
+              <div className="row">
                 <div className="col-md-3 mb-3">
                   <label className="form-label">Pagado</label>
                   <select

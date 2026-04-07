@@ -1,17 +1,16 @@
 import { useEffect, useState } from "react";
 import Modal from "bootstrap/js/dist/modal";
 
-const PAYMENT_TYPES = ["EFECTIVO", "TARJETA", "DEPÓSITO", "TRANSFERENCIA"];
+const PAYMENT_TYPES = ["EFECTIVO", "TARJETA", "DEPOSITO", "TRANSFERENCIA"];
 
 const initialForm = {
-  nota: "",
+  idNota: "",
   tipoPago: "",
   monto: "",
   cuentaDeposito: "",
   factura: "",
   pagado: "No",
   pagadoClass: "status-warning",
-  fechaPedido: "",
   cotizacion: "",
   reviso: "",
   atendio: "",
@@ -20,9 +19,14 @@ const initialForm = {
   comentario: "",
 };
 
-export default function CreateTransactionModal({ onCreate }) {
+export default function CreateTransactionModal({
+  onCreate,
+  notas = [],
+  usuarios = [],
+}) {
   const [formData, setFormData] = useState(initialForm);
   const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const modalElement = document.getElementById("createTransactionModal");
@@ -31,6 +35,7 @@ export default function CreateTransactionModal({ onCreate }) {
     const handleHidden = () => {
       setFormData(initialForm);
       setError("");
+      setSaving(false);
     };
 
     modalElement.addEventListener("hidden.bs.modal", handleHidden);
@@ -57,7 +62,7 @@ export default function CreateTransactionModal({ onCreate }) {
       [name]: newValue,
     };
 
-    if (name === "tipoPago" && !["DEPÓSITO", "TRANSFERENCIA"].includes(newValue)) {
+    if (name === "tipoPago" && !["DEPOSITO", "TRANSFERENCIA"].includes(newValue)) {
       updatedData.cuentaDeposito = "";
     }
 
@@ -76,30 +81,27 @@ export default function CreateTransactionModal({ onCreate }) {
     if (error) setError("");
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const cleanedData = {
       ...formData,
-      nota: formData.nota.trim(),
+      idNota: formData.idNota,
       tipoPago: formData.tipoPago.trim().toUpperCase(),
       monto: formData.monto.trim(),
       cuentaDeposito: formData.cuentaDeposito.trim(),
       factura: formData.factura.trim(),
-      fechaPedido: formData.fechaPedido.trim(),
       cotizacion: formData.cotizacion.trim(),
-      reviso: formData.reviso.trim(),
-      atendio: formData.atendio.trim(),
+      reviso: formData.reviso,
+      atendio: formData.atendio,
       comentario: formData.comentario.trim(),
     };
 
     if (
-      !cleanedData.nota ||
+      !cleanedData.idNota ||
       !cleanedData.tipoPago ||
       !cleanedData.monto ||
       !cleanedData.factura ||
-      !cleanedData.fechaPedido ||
-      !cleanedData.cotizacion ||
       !cleanedData.reviso ||
       !cleanedData.atendio
     ) {
@@ -119,19 +121,23 @@ export default function CreateTransactionModal({ onCreate }) {
     }
 
     if (
-      ["DEPÓSITO", "TRANSFERENCIA"].includes(cleanedData.tipoPago) &&
+      ["DEPOSITO", "TRANSFERENCIA"].includes(cleanedData.tipoPago) &&
       !cleanedData.cuentaDeposito
     ) {
       setError(
-        "La cuenta de depósito es obligatoria cuando el tipo de pago es DEPÓSITO o TRANSFERENCIA."
+        "La cuenta de depósito es obligatoria cuando el tipo de pago es DEPOSITO o TRANSFERENCIA."
       );
       return;
     }
 
-    cleanedData.monto = montoNumber.toString();
-
-    setError("");
-    onCreate(cleanedData);
+    try {
+      setSaving(true);
+      await onCreate(cleanedData);
+    } catch (err) {
+      setError(err.message || "No se pudo crear la transacción.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleClose = () => {
@@ -160,6 +166,7 @@ export default function CreateTransactionModal({ onCreate }) {
                 type="button"
                 className="btn-close"
                 onClick={handleClose}
+                disabled={saving}
               ></button>
             </div>
 
@@ -173,14 +180,23 @@ export default function CreateTransactionModal({ onCreate }) {
               <div className="row">
                 <div className="col-md-6 mb-3">
                   <label className="form-label">Nota *</label>
-                  <input
-                    type="text"
+                  <select
                     className="form-control"
-                    name="nota"
-                    value={formData.nota}
+                    name="idNota"
+                    value={formData.idNota}
                     onChange={handleChange}
-                    placeholder="Ej. N-1002"
-                  />
+                    disabled={saving}
+                  >
+                    <option value="">Selecciona una nota</option>
+                    {notas.map((nota) => (
+                      <option
+                        key={nota.id ?? nota.idNota}
+                        value={nota.id ?? nota.idNota}
+                      >
+                        {nota.folioNota ?? nota.nota ?? `Nota ${nota.id ?? nota.idNota}`}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="col-md-6 mb-3">
@@ -190,6 +206,7 @@ export default function CreateTransactionModal({ onCreate }) {
                     name="tipoPago"
                     value={formData.tipoPago}
                     onChange={handleChange}
+                    disabled={saving}
                   >
                     <option value="">Selecciona una opción</option>
                     {PAYMENT_TYPES.map((type) => (
@@ -213,22 +230,15 @@ export default function CreateTransactionModal({ onCreate }) {
                     placeholder="Ej. 1200"
                     min="0.01"
                     step="0.01"
+                    disabled={saving}
                   />
                 </div>
 
                 <div className="col-md-6 mb-3">
                   <label className="form-label">Cuenta de depósito</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    name="cuentaDeposito"
-                    value={formData.cuentaDeposito}
-                    onChange={handleChange}
+                  <input type="text" className="form-control" name="cuentaDeposito"value={formData.cuentaDeposito}onChange={handleChange}
                     placeholder="Ej. BBVA-1234"
-                    disabled={
-                      !["DEPÓSITO", "TRANSFERENCIA"].includes(formData.tipoPago)
-                    }
-                  />
+                    disabled={!["DEPOSITO", "TRANSFERENCIA"].includes(formData.tipoPago)}/>
                 </div>
               </div>
 
@@ -242,24 +252,14 @@ export default function CreateTransactionModal({ onCreate }) {
                     value={formData.factura}
                     onChange={handleChange}
                     placeholder="Ej. F-900"
-                  />
-                </div>
-
-                <div className="col-md-6 mb-3">
-                  <label className="form-label">Fecha pedido *</label>
-                  <input
-                    type="date"
-                    className="form-control"
-                    name="fechaPedido"
-                    value={formData.fechaPedido}
-                    onChange={handleChange}
+                    disabled={saving}
                   />
                 </div>
               </div>
 
               <div className="row">
                 <div className="col-md-6 mb-3">
-                  <label className="form-label">Cotización *</label>
+                  <label className="form-label">Cotización</label>
                   <input
                     type="text"
                     className="form-control"
@@ -267,33 +267,52 @@ export default function CreateTransactionModal({ onCreate }) {
                     value={formData.cotizacion}
                     onChange={handleChange}
                     placeholder="Ej. C-500"
+                    disabled={saving}
                   />
                 </div>
 
                 <div className="col-md-6 mb-3">
                   <label className="form-label">Revisó *</label>
-                  <input
-                    type="text"
+                  <select
                     className="form-control"
                     name="reviso"
                     value={formData.reviso}
                     onChange={handleChange}
-                    placeholder="Nombre de quien revisó"
-                  />
+                    disabled={saving}
+                  >
+                    <option value="">Selecciona un usuario</option>
+                    {usuarios.map((usuario) => (
+                      <option
+                        key={usuario.id ?? usuario.idUsuario}
+                        value={usuario.id ?? usuario.idUsuario}
+                      >
+                        {usuario.nombre ?? usuario.nombreUsuario}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
               <div className="row">
                 <div className="col-md-6 mb-3">
                   <label className="form-label">Atendió *</label>
-                  <input
-                    type="text"
+                  <select
                     className="form-control"
                     name="atendio"
                     value={formData.atendio}
                     onChange={handleChange}
-                    placeholder="Nombre de quien atendió"
-                  />
+                    disabled={saving}
+                  >
+                    <option value="">Selecciona un usuario</option>
+                    {usuarios.map((usuario) => (
+                      <option
+                        key={usuario.id ?? usuario.idUsuario}
+                        value={usuario.id ?? usuario.idUsuario}
+                      >
+                        {usuario.nombre ?? usuario.nombreUsuario}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="col-md-3 mb-3">
@@ -303,6 +322,7 @@ export default function CreateTransactionModal({ onCreate }) {
                     name="pagado"
                     value={formData.pagado}
                     onChange={handleChange}
+                    disabled={saving}
                   >
                     <option value="Sí">Sí</option>
                     <option value="No">No</option>
@@ -316,6 +336,7 @@ export default function CreateTransactionModal({ onCreate }) {
                     name="pendiente"
                     value={formData.pendiente}
                     onChange={handleChange}
+                    disabled={saving}
                   >
                     <option value="Sí">Sí</option>
                     <option value="No">No</option>
@@ -332,6 +353,7 @@ export default function CreateTransactionModal({ onCreate }) {
                   value={formData.comentario}
                   onChange={handleChange}
                   placeholder="Ingresa un comentario opcional"
+                  disabled={saving}
                 ></textarea>
               </div>
             </div>
@@ -341,12 +363,13 @@ export default function CreateTransactionModal({ onCreate }) {
                 type="button"
                 className="btn btn-light"
                 onClick={handleClose}
+                disabled={saving}
               >
                 Cancelar
               </button>
 
-              <button type="submit" className="btn btn-primary">
-                Crear transacción
+              <button type="submit" className="btn btn-primary" disabled={saving}>
+                {saving ? "Creando..." : "Crear transacción"}
               </button>
             </div>
           </form>

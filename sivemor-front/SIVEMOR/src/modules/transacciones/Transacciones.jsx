@@ -10,13 +10,14 @@ import MarkPaidTransactionsModal from "./components/MarkPaidTransactionsModal";
 import CreateTransactionSuccessModal from "./components/CreateTransactionSuccessModal";
 import DeleteTransactionSuccessModal from "./components/DeleteTransactionSuccessModal";
 import DeleteAllTransactionsModal from "./components/DeleteAllTransactionsModal";
-import transaccionesData from "../../data/transacciones.json";
+import { getTransacciones, createTransaccion, updateTransaccion, deleteTransaccion,} from "../transacciones/services/transacccionesService";
+import { api } from "../../../server/api";
 
 export default function Transacciones() {
-  const [transacciones, setTransacciones] = useState(() => {
-    const saved = localStorage.getItem("transacciones");
-    return saved ? JSON.parse(saved) : transaccionesData;
-  });
+  const [transacciones, setTransacciones] = useState([]);
+  const [notas, setNotas] = useState([]);
+  const [usuarios, setUsuarios] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const [selectedRows, setSelectedRows] = useState({});
   const [selectedTransaction, setSelectedTransaction] = useState(null);
@@ -27,8 +28,42 @@ export default function Transacciones() {
   const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
-    localStorage.setItem("transacciones", JSON.stringify(transacciones));
-  }, [transacciones]);
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+
+      const [txData, notasRes, usuariosRes] = await Promise.all([
+        getTransacciones(),
+        api.get("/notas"),
+        api.get("/usuarios"),
+      ]);
+
+      setTransacciones(txData);
+
+      setNotas(
+        Array.isArray(notasRes?.data?.data)
+          ? notasRes.data.data
+          : Array.isArray(notasRes?.data)
+          ? notasRes.data
+          : []
+      );
+
+      setUsuarios(
+        Array.isArray(usuariosRes?.data?.data)
+          ? usuariosRes.data.data
+          : Array.isArray(usuariosRes?.data)
+          ? usuariosRes.data
+          : []
+      );
+    } catch (error) {
+      console.error("Error cargando transacciones:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredTransactions = useMemo(() => {
     const search = searchTerm.trim().toLowerCase();
@@ -36,41 +71,20 @@ export default function Transacciones() {
     if (!search) return transacciones;
 
     return transacciones.filter((item) => {
-      const cliente = String(
-        item.cliente ||
-          item.razonSocial ||
-          item.nombreCliente ||
-          ""
-      ).toLowerCase();
-
-      const tipoVerificacion = String(
-        item.tipoVerificacion ||
-          item.tipo_verificacion ||
-          item.verificacion ||
-          item.tipo ||
-          ""
-      ).toLowerCase();
-
-      const encargado = String(
-        item.encargado ||
-          item.responsable ||
-          ""
-      ).toLowerCase();
-
-      const empleado = String(
-        item.atendio ||
-          item.empleado ||
-          item.empleadoAtiende ||
-          item.empleadoCobra ||
-          item.atiendeYCobra ||
-          ""
-      ).toLowerCase();
+      const nota = String(item.nota || "").toLowerCase();
+      const tipoPago = String(item.tipoPago || "").toLowerCase();
+      const factura = String(item.factura || "").toLowerCase();
+      const reviso = String(item.reviso || "").toLowerCase();
+      const atendio = String(item.atendio || "").toLowerCase();
+      const comentario = String(item.comentario || "").toLowerCase();
 
       return (
-        cliente.includes(search) ||
-        tipoVerificacion.includes(search) ||
-        encargado.includes(search) ||
-        empleado.includes(search)
+        nota.includes(search) ||
+        tipoPago.includes(search) ||
+        factura.includes(search) ||
+        reviso.includes(search) ||
+        atendio.includes(search) ||
+        comentario.includes(search)
       );
     });
   }, [transacciones, searchTerm]);
@@ -192,118 +206,164 @@ export default function Transacciones() {
     openModal("markPaidTransactionsModal");
   };
 
-  const handleCreate = (newTransaction) => {
-    const createdTransaction = {
-      ...newTransaction,
-      id: Date.now(),
-    };
+  const handleCreate = async (newTransaction) => {
+    try {
+      const createdTransaction = await createTransaccion(newTransaction);
 
-    setTransacciones((prev) => [...prev, createdTransaction]);
+      setTransacciones((prev) => [...prev, createdTransaction]);
 
-    showCreateSuccessModal(
-      `Se creó correctamente la transacción ${createdTransaction.factura}.`
-    );
+      showCreateSuccessModal(
+        `Se creó correctamente la transacción ${createdTransaction.factura}.`
+      );
+
+      return createdTransaction;
+    } catch (error) {
+      console.error("Error creando transacción:", error);
+      throw error;
+    }
   };
 
-  const handleSaveEdit = (updatedTransaction) => {
+  const handleSaveEdit = async (updatedTransaction) => {
     if (selectedId === null) return;
 
-    setTransacciones((prev) =>
-      prev.map((item) =>
-        item.id === selectedId ? { ...item, ...updatedTransaction } : item
-      )
-    );
+    try {
+      const updated = await updateTransaccion(selectedId, updatedTransaction);
 
-    showUpdateSuccessModal(
-      "Se actualizó correctamente la información de la transacción."
-    );
+      setTransacciones((prev) =>
+        prev.map((item) => (item.id === selectedId ? updated : item))
+      );
+
+      setSelectedTransaction(updated);
+
+      showUpdateSuccessModal(
+        "Se actualizó correctamente la información de la transacción."
+      );
+    } catch (error) {
+      console.error("Error actualizando transacción:", error);
+      alert(error.message || "No se pudo actualizar la transacción.");
+    }
   };
 
-  const handleDeleteOne = () => {
+  const handleDeleteOne = async () => {
     if (selectedId === null) return;
 
-    const deletedName = selectedTransaction?.factura || "la transacción";
+    try {
+      const deletedName = selectedTransaction?.factura || "la transacción";
 
-    setTransacciones((prev) => prev.filter((item) => item.id !== selectedId));
+      await deleteTransaccion(selectedId);
 
-    setSelectedRows((prev) => {
-      const updated = { ...prev };
-      delete updated[selectedId];
-      return updated;
-    });
+      setTransacciones((prev) => prev.filter((item) => item.id !== selectedId));
 
-    setSelectedTransaction(null);
-    setSelectedId(null);
+      setSelectedRows((prev) => {
+        const updated = { ...prev };
+        delete updated[selectedId];
+        return updated;
+      });
 
-    showDeleteSuccessModal(
-      `Se eliminó con éxito ${deletedName}.`,
-      "deleteTransactionsModal"
-    );
+      setSelectedTransaction(null);
+      setSelectedId(null);
+
+      showDeleteSuccessModal(
+        `Se eliminó con éxito ${deletedName}.`,
+        "deleteTransactionsModal"
+      );
+    } catch (error) {
+      console.error("Error eliminando transacción:", error);
+      alert(error.message || "No se pudo eliminar la transacción.");
+    }
   };
 
-  const handleDeleteSelected = () => {
+  const handleDeleteSelected = async () => {
     const idsToDelete = Object.keys(selectedRows)
       .filter((id) => selectedRows[id])
       .map(Number);
 
-    const count = idsToDelete.length;
+    try {
+      await Promise.all(idsToDelete.map((id) => deleteTransaccion(id)));
 
-    setTransacciones((prev) =>
-      prev.filter((item) => !idsToDelete.includes(item.id))
-    );
+      const count = idsToDelete.length;
 
-    setSelectedRows({});
-    setSelectedTransaction(null);
-    setSelectedId(null);
+      setTransacciones((prev) =>
+        prev.filter((item) => !idsToDelete.includes(item.id))
+      );
 
-    showDeleteSuccessModal(
-      count === 1
-        ? "Se eliminó con éxito 1 transacción."
-        : `Se eliminaron con éxito ${count} transacciones.`,
-      "deleteTransactionsModal"
-    );
+      setSelectedRows({});
+      setSelectedTransaction(null);
+      setSelectedId(null);
+
+      showDeleteSuccessModal(
+        count === 1
+          ? "Se eliminó con éxito 1 transacción."
+          : `Se eliminaron con éxito ${count} transacciones.`,
+        "deleteTransactionsModal"
+      );
+    } catch (error) {
+      console.error("Error eliminando transacciones:", error);
+      alert(error.message || "No se pudieron eliminar las transacciones.");
+    }
   };
 
-  const handleDeleteAll = () => {
-    const total = transacciones.length;
+  const handleDeleteAll = async () => {
+    try {
+      const ids = transacciones.map((t) => t.id);
 
-    setTransacciones([]);
-    setSelectedRows({});
-    setSelectedTransaction(null);
-    setSelectedId(null);
+      await Promise.all(ids.map((id) => deleteTransaccion(id)));
 
-    showDeleteSuccessModal(
-      total === 1
-        ? "Se eliminó con éxito 1 transacción."
-        : `Se eliminaron con éxito ${total} transacciones.`,
-      "deleteAllTransactionsModal"
-    );
+      const total = transacciones.length;
+
+      setTransacciones([]);
+      setSelectedRows({});
+      setSelectedTransaction(null);
+      setSelectedId(null);
+
+      showDeleteSuccessModal(
+        total === 1
+          ? "Se eliminó con éxito 1 transacción."
+          : `Se eliminó con éxito ${total} transacciones.`,
+        "deleteAllTransactionsModal"
+      );
+    } catch (error) {
+      console.error("Error eliminando todas las transacciones:", error);
+      alert(error.message || "No se pudieron eliminar todas las transacciones.");
+    }
   };
 
-  const handleMarkPaid = () => {
+  const handleMarkPaid = async () => {
     const idsToUpdate = Object.keys(selectedRows)
       .filter((id) => selectedRows[id])
       .map(Number);
 
-    setTransacciones((prev) =>
-      prev.map((item) =>
-        idsToUpdate.includes(item.id)
-          ? {
-              ...item,
-              pagado: "Sí",
-              pagadoClass: "status-success",
-              pendiente: "No",
-              pendienteClass: "status-success",
-            }
-          : item
-      )
-    );
+    try {
+      const selectedTx = transacciones.filter((t) => idsToUpdate.includes(t.id));
 
-    setSelectedRows({});
+      const updatedItems = await Promise.all(
+        selectedTx.map((item) =>
+          updateTransaccion(item.id, {
+            ...item,
+            pagado: "Sí",
+            pendiente: "No",
+            reviso: item.revisoId,
+            atendio: item.atendioId,
+          })
+        )
+      );
 
-    hideModal("markPaidTransactionsModal", () => {
-      cleanupModalArtifacts();
-    });
+      setTransacciones((prev) =>
+        prev.map((item) => {
+          const updated = updatedItems.find((u) => u.id === item.id);
+          return updated || item;
+        })
+      );
+
+      setSelectedRows({});
+
+      hideModal("markPaidTransactionsModal", () => {
+        cleanupModalArtifacts();
+      });
+    } catch (error) {
+      console.error("Error marcando transacciones como pagadas:", error);
+      alert(error.message || "No se pudieron marcar como pagadas.");
+    }
   };
 
   const clearSearch = () => {
@@ -329,15 +389,13 @@ export default function Transacciones() {
 
         <div className={selectedCount > 0 ? "selection-toolbar" : "d-flex gap-2"}>
           {selectedCount === 0 ? (
-            <>
-              <button
-                className="primary-btn"
-                onClick={() => openModal("createTransactionModal")}
-                type="button"
-              >
-                <i className="bi bi-plus-lg"></i>&nbsp;Nueva transacción
-              </button>
-            </>
+            <button
+              className="primary-btn"
+              onClick={() => openModal("createTransactionModal")}
+              type="button"
+            >
+              <i className="bi bi-plus-lg"></i>&nbsp;Nueva transacción
+            </button>
           ) : (
             <>
               {isAllSelected && (
@@ -397,11 +455,17 @@ export default function Transacciones() {
             <i className="bi bi-search"></i>
             <input
               type="text"
-              placeholder="Buscar por cliente, tipo de verificación, encargado o empleado..."
+              placeholder="Buscar por nota, tipo de pago, factura, revisó o atendió..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
+
+          {hasActiveSearch && (
+            <button className="btn btn-light" onClick={clearSearch} type="button">
+              Reiniciar búsqueda
+            </button>
+          )}
         </div>
 
         <div className="table-shell">
@@ -432,7 +496,13 @@ export default function Transacciones() {
             </thead>
 
             <tbody>
-              {filteredTransactions.length > 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan="14" className="text-center py-4">
+                    Cargando transacciones...
+                  </td>
+                </tr>
+              ) : filteredTransactions.length > 0 ? (
                 filteredTransactions.map((item) => (
                   <TransactionRow
                     key={item.id}
@@ -466,10 +536,17 @@ export default function Transacciones() {
         </div>
       </div>
 
-      <CreateTransactionModal onCreate={handleCreate} />
+      <CreateTransactionModal
+        onCreate={handleCreate}
+        notas={notas}
+        usuarios={usuarios}
+      />
+
       <EditTransactionModal
         transaction={selectedTransaction}
         onSave={handleSaveEdit}
+        notas={notas}
+        usuarios={usuarios}
       />
 
       <DeleteTransactionsModal
