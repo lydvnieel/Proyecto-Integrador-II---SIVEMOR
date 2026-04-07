@@ -1,11 +1,11 @@
 import { useState } from "react";
 import Modal from "bootstrap/js/dist/modal";
 
-export default function CreateCedisModal({ onCreate }) {
+export default function CreateCedisModal({ onCreate, clientes = [], regiones = [] }) {
   const [formData, setFormData] = useState({
     nombre: "",
-    cliente: "",
-    region: "",
+    idCliente: "",
+    idRegion: "",
     direccion: "",
     encargado: "",
     correo: "",
@@ -20,8 +20,8 @@ export default function CreateCedisModal({ onCreate }) {
   const resetForm = () => {
     setFormData({
       nombre: "",
-      cliente: "",
-      region: "",
+      idCliente: "",
+      idRegion: "",
       direccion: "",
       encargado: "",
       correo: "",
@@ -48,11 +48,11 @@ export default function CreateCedisModal({ onCreate }) {
     if (error) setError("");
   };
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     const cleanedData = {
       nombre: formData.nombre.trim(),
-      cliente: formData.cliente.trim(),
-      region: formData.region.trim(),
+      idCliente: formData.idCliente ? Number(formData.idCliente) : "",
+      idRegion: formData.idRegion ? Number(formData.idRegion) : "",
       direccion: formData.direccion.trim(),
       encargado: formData.encargado.trim(),
       correo: formData.correo.trim(),
@@ -62,8 +62,8 @@ export default function CreateCedisModal({ onCreate }) {
 
     if (
       !cleanedData.nombre ||
-      !cleanedData.cliente ||
-      !cleanedData.region ||
+      !cleanedData.idCliente ||
+      !cleanedData.idRegion ||
       !cleanedData.direccion ||
       !cleanedData.encargado ||
       !cleanedData.telefonoPrincipal
@@ -90,28 +90,31 @@ export default function CreateCedisModal({ onCreate }) {
       return;
     }
 
-    onCreate(cleanedData);
+    try {
+      await onCreate(cleanedData);
 
-    const createModalElement = document.getElementById("createCedisModal");
-    const successModalElement = document.getElementById(
-      "createCedisSuccessModal"
-    );
+      const createModalElement = document.getElementById("createCedisModal");
+      const successModalElement = document.getElementById("createCedisSuccessModal");
 
-    if (!createModalElement || !successModalElement) return;
+      if (!createModalElement || !successModalElement) return;
 
-    const createModalInstance = Modal.getOrCreateInstance(createModalElement);
-    const successModalInstance = Modal.getOrCreateInstance(successModalElement);
+      const createModalInstance = Modal.getOrCreateInstance(createModalElement);
+      const successModalInstance = Modal.getOrCreateInstance(successModalElement);
 
-    createModalElement.addEventListener(
-      "hidden.bs.modal",
-      () => {
-        resetForm();
-        successModalInstance.show();
-      },
-      { once: true }
-    );
+      createModalElement.addEventListener(
+        "hidden.bs.modal",
+        () => {
+          resetForm();
+          successModalInstance.show();
+        },
+        { once: true }
+      );
 
-    createModalInstance.hide();
+      createModalInstance.hide();
+    } catch (err) {
+      setError("No se pudo crear el CEDIS.");
+      console.error(err);
+    }
   };
 
   return (
@@ -152,26 +155,36 @@ export default function CreateCedisModal({ onCreate }) {
 
               <div className="mb-3">
                 <label className="form-label">Cliente *</label>
-                <input
-                  type="text"
+                <select
                   className="form-control"
-                  name="cliente"
-                  value={formData.cliente}
+                  name="idCliente"
+                  value={formData.idCliente}
                   onChange={handleChange}
-                  placeholder="Ej: Pepsi"
-                />
+                >
+                  <option value="">Selecciona un cliente</option>
+                  {clientes.map((cliente) => (
+                    <option key={cliente.id} value={cliente.id}>
+                      {cliente.nombre}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div className="mb-3">
                 <label className="form-label">Región *</label>
-                <input
-                  type="text"
+                <select
                   className="form-control"
-                  name="region"
-                  value={formData.region}
+                  name="idRegion"
+                  value={formData.idRegion}
                   onChange={handleChange}
-                  placeholder="Ej: Norte"
-                />
+                >
+                  <option value="">Selecciona una región</option>
+                  {regiones.map((region) => (
+                    <option key={region.id} value={region.id}>
+                      {region.nombre}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div className="mb-3">
@@ -219,7 +232,7 @@ export default function CreateCedisModal({ onCreate }) {
                     name="telefonoPrincipal"
                     value={formData.telefonoPrincipal}
                     onChange={handleChange}
-                    placeholder="8112345678"
+                    placeholder="7771234567"
                     inputMode="numeric"
                   />
                 </div>
@@ -232,7 +245,7 @@ export default function CreateCedisModal({ onCreate }) {
                     name="telefonoAlternativo"
                     value={formData.telefonoAlternativo}
                     onChange={handleChange}
-                    placeholder="8187654321"
+                    placeholder="7777654321"
                     inputMode="numeric"
                   />
                 </div>

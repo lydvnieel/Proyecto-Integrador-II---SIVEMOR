@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import Modal from "bootstrap/js/dist/modal";
 
-export default function EditCedisModal({ cedis, onSave }) {
+export default function EditCedisModal({ cedis, onSave, clientes = [], regiones = [] }) {
   const [formData, setFormData] = useState({
     nombre: "",
-    cliente: "",
-    region: "",
+    idCliente: "",
+    idRegion: "",
     direccion: "",
     encargado: "",
     correo: "",
@@ -15,8 +15,8 @@ export default function EditCedisModal({ cedis, onSave }) {
 
   const [originalData, setOriginalData] = useState({
     nombre: "",
-    cliente: "",
-    region: "",
+    idCliente: "",
+    idRegion: "",
     direccion: "",
     encargado: "",
     correo: "",
@@ -32,8 +32,8 @@ export default function EditCedisModal({ cedis, onSave }) {
     if (cedis) {
       const cedisData = {
         nombre: cedis.nombre || "",
-        cliente: cedis.cliente || "",
-        region: cedis.region || "",
+        idCliente: cedis.idCliente ?? "",
+        idRegion: cedis.idRegion ?? "",
         direccion: cedis.direccion || "",
         encargado: cedis.encargado || "",
         correo: cedis.correo || "",
@@ -66,22 +66,22 @@ export default function EditCedisModal({ cedis, onSave }) {
 
   const isSameData = (cleanedData) => {
     return (
-      cleanedData.nombre === originalData.nombre.trim() &&
-      cleanedData.cliente === originalData.cliente.trim() &&
-      cleanedData.region === originalData.region.trim() &&
-      cleanedData.direccion === originalData.direccion.trim() &&
-      cleanedData.encargado === originalData.encargado.trim() &&
-      cleanedData.correo === originalData.correo.trim() &&
-      cleanedData.telefonoPrincipal === originalData.telefonoPrincipal.trim() &&
-      cleanedData.telefonoAlternativo === originalData.telefonoAlternativo.trim()
+      cleanedData.nombre === String(originalData.nombre).trim() &&
+      Number(cleanedData.idCliente) === Number(originalData.idCliente) &&
+      Number(cleanedData.idRegion) === Number(originalData.idRegion) &&
+      cleanedData.direccion === String(originalData.direccion).trim() &&
+      cleanedData.encargado === String(originalData.encargado).trim() &&
+      cleanedData.correo === String(originalData.correo).trim() &&
+      cleanedData.telefonoPrincipal === String(originalData.telefonoPrincipal).trim() &&
+      cleanedData.telefonoAlternativo === String(originalData.telefonoAlternativo).trim()
     );
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const cleanedData = {
       nombre: formData.nombre.trim(),
-      cliente: formData.cliente.trim(),
-      region: formData.region.trim(),
+      idCliente: formData.idCliente ? Number(formData.idCliente) : "",
+      idRegion: formData.idRegion ? Number(formData.idRegion) : "",
       direccion: formData.direccion.trim(),
       encargado: formData.encargado.trim(),
       correo: formData.correo.trim(),
@@ -91,8 +91,8 @@ export default function EditCedisModal({ cedis, onSave }) {
 
     if (
       !cleanedData.nombre ||
-      !cleanedData.cliente ||
-      !cleanedData.region ||
+      !cleanedData.idCliente ||
+      !cleanedData.idRegion ||
       !cleanedData.direccion ||
       !cleanedData.encargado ||
       !cleanedData.telefonoPrincipal
@@ -124,28 +124,31 @@ export default function EditCedisModal({ cedis, onSave }) {
       return;
     }
 
-    onSave(cleanedData);
-    setError("");
+    try {
+      await onSave(cleanedData);
+      setError("");
 
-    const editModalElement = document.getElementById("editCedisModal");
-    const successModalElement = document.getElementById(
-      "updateCedisSuccessModal"
-    );
+      const editModalElement = document.getElementById("editCedisModal");
+      const successModalElement = document.getElementById("updateCedisSuccessModal");
 
-    if (!editModalElement || !successModalElement) return;
+      if (!editModalElement || !successModalElement) return;
 
-    const editModalInstance = Modal.getOrCreateInstance(editModalElement);
-    const successModalInstance = Modal.getOrCreateInstance(successModalElement);
+      const editModalInstance = Modal.getOrCreateInstance(editModalElement);
+      const successModalInstance = Modal.getOrCreateInstance(successModalElement);
 
-    editModalElement.addEventListener(
-      "hidden.bs.modal",
-      () => {
-        successModalInstance.show();
-      },
-      { once: true }
-    );
+      editModalElement.addEventListener(
+        "hidden.bs.modal",
+        () => {
+          successModalInstance.show();
+        },
+        { once: true }
+      );
 
-    editModalInstance.hide();
+      editModalInstance.hide();
+    } catch (err) {
+      setError("No se pudo actualizar el CEDIS.");
+      console.error(err);
+    }
   };
 
   if (!cedis) return null;
@@ -187,24 +190,36 @@ export default function EditCedisModal({ cedis, onSave }) {
 
               <div className="mb-3">
                 <label className="form-label">Cliente *</label>
-                <input
-                  type="text"
+                <select
                   className="form-control"
-                  name="cliente"
-                  value={formData.cliente}
+                  name="idCliente"
+                  value={formData.idCliente}
                   onChange={handleChange}
-                />
+                >
+                  <option value="">Selecciona un cliente</option>
+                  {clientes.map((cliente) => (
+                    <option key={cliente.id} value={cliente.id}>
+                      {cliente.nombre}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div className="mb-3">
                 <label className="form-label">Región *</label>
-                <input
-                  type="text"
+                <select
                   className="form-control"
-                  name="region"
-                  value={formData.region}
+                  name="idRegion"
+                  value={formData.idRegion}
                   onChange={handleChange}
-                />
+                >
+                  <option value="">Selecciona una región</option>
+                  {regiones.map((region) => (
+                    <option key={region.id} value={region.id}>
+                      {region.nombre}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div className="mb-3">

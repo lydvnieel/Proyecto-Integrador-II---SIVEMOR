@@ -9,13 +9,16 @@ import UpdateCedisSuccessModal from "./components/UpdateCedisSuccessModal";
 import DeleteCedisModal from "./components/DeleteCedisModal";
 import DeleteCedisSuccessModal from "./components/DeleteCedisSuccessModal.jsx";
 import DeleteAllCedis from "./components/DeleteAllCedis";
-import cedisData from "../../data/cedis.json";
+import CreateRegionModal from "./components/CreateRegionModal";
+import { getClientes, getCedis, getRegiones, createCedis, updateCedis, deleteCedis, createRegion} from "../cedis/services/cedisService.js";
+
+
 
 export default function Cedis() {
-  const [cedisList, setCedisList] = useState(() => {
-    const savedCedis = localStorage.getItem("cedis");
-    return savedCedis ? JSON.parse(savedCedis) : cedisData;
-  });
+  const [cedisList, setCedisList] = useState([]);
+  const [clientes, setClientes] = useState([]);
+  const [regiones, setRegiones] = useState([]);
+  const [search, setSearch] = useState("");
 
   const [selectedRows, setSelectedRows] = useState({});
   const [selectedCedis, setSelectedCedis] = useState(null);
@@ -27,20 +30,41 @@ export default function Cedis() {
   const [searchRegion, setSearchRegion] = useState("");
 
   useEffect(() => {
-    localStorage.setItem("cedis", JSON.stringify(cedisList));
-  }, [cedisList]);
+  fetchCedis();
+  fetchClientes();
+  fetchRegiones();
+}, []);
 
-  const filteredCedis = useMemo(() => {
-    return cedisList.filter((item) => {
-      const cliente = (item.cliente || "").toLowerCase();
-      const region = (item.region || "").toLowerCase();
+const fetchRegiones = async () => {
+  try {
+    const data = await getRegiones();
+    setRegiones(data);
+  } catch (error) {
+    console.error("Error al cargar regiones:", error);
+    setRegiones([]);
+  }
+};
 
-      const matchesCliente = cliente.includes(searchCliente.trim().toLowerCase());
-      const matchesRegion = region.includes(searchRegion.trim().toLowerCase());
+const fetchClientes = async () => {
+  try {
+    const data = await getClientes();
+    setClientes(data);
+  } catch (error) {
+    console.error("Error al cargar clientes:", error);
+    setClientes([]);
+  }
+};
 
-      return matchesCliente && matchesRegion;
-    });
-  }, [cedisList, searchCliente, searchRegion]);
+
+const fetchCedis = async () => {
+  try {
+    const data = await getCedis();
+    setCedisList(data);
+  } catch (error) {
+    console.error("Error cargando cedis:", error);
+    setCedisList([]);
+  }
+};
 
   const cleanupModalArtifacts = () => {
     document.body.classList.remove("modal-open");
@@ -155,61 +179,55 @@ export default function Cedis() {
     openModal("deleteAllCedisModal");
   };
 
-  const handleCreate = (newCedis) => {
-    const createdCedis = {
-      id: Date.now(),
-      nombre: newCedis.nombre,
-      cliente: newCedis.cliente,
-      region: newCedis.region,
-      direccion: newCedis.direccion,
-      encargado: newCedis.encargado,
-      correo: newCedis.correo,
-      telefonoPrincipal: newCedis.telefonoPrincipal,
-      telefonoAlternativo: newCedis.telefonoAlternativo,
-    };
+  const handleCreateRegion = async (newRegion) => {
+  try {
+    await createRegion(newRegion);
+    await fetchRegiones();
+  } catch (error) {
+    console.error("Error al crear región:", error);
+    throw error;
+  }
+};
 
-    setCedisList((prev) => [...prev, createdCedis]);
+  const handleCreate = async (newCedis) => {
+  try {
+    await createCedis(newCedis);
+    await fetchCedis();
 
     showCreateSuccessModal(
-      `Se creó con éxito el CEDIS ${createdCedis.nombre}.`
+      `Se creó con éxito el CEDIS ${newCedis.nombre}.`
     );
-  };
+  } catch (error) {
+    console.error("Error al crear CEDIS:", error);
+  }
+};
 
-  const handleSaveEdit = (updatedCedis) => {
-    if (selectedId === null) return;
-
-    setCedisList((prev) =>
-      prev.map((item) =>
-        item.id === selectedId ? { ...item, ...updatedCedis } : item
-      )
-    );
+  const handleSaveEdit = async (updatedCedis) => {
+  try {
+    await updateCedis(selectedId, updatedCedis);
+    await fetchCedis();
 
     showUpdateSuccessModal(
       "Se actualizó correctamente la información del CEDIS."
     );
-  };
+  } catch (error) {
+    console.error("Error al actualizar:", error);
+  }
+};
 
-  const handleDeleteOne = () => {
-    if (selectedId === null) return;
-
-    const deletedName = selectedCedis?.nombre || "el CEDIS";
-
-    setCedisList((prev) => prev.filter((item) => item.id !== selectedId));
-
-    setSelectedRows((prev) => {
-      const updated = { ...prev };
-      delete updated[selectedId];
-      return updated;
-    });
-
-    setSelectedCedis(null);
-    setSelectedId(null);
+  const handleDeleteOne = async () => {
+  try {
+    await deleteCedis(selectedId);
+    await fetchCedis();
 
     showDeleteSuccessModal(
-      `Se eliminó con éxito ${deletedName}.`,
+      "Se eliminó correctamente.",
       "deleteCedisModal"
     );
-  };
+  } catch (error) {
+    console.error("Error al eliminar:", error);
+  }
+};
 
   const handleDeleteSelected = () => {
     const idsToDelete = Object.keys(selectedRows)
@@ -250,10 +268,32 @@ export default function Cedis() {
     );
   };
 
-  const clearFilters = () => {
-    setSearchCliente("");
-    setSearchRegion("");
-  };
+ const filteredCedis = useMemo(() => {
+  const term = search.trim().toLowerCase();
+
+  return cedisList.filter((item) => {
+    const nombre = String(item.nombre || "").toLowerCase();
+    const cliente = String(item.cliente || "").toLowerCase();
+    const region = String(item.region || "").toLowerCase();
+    const direccion = String(item.direccion || "").toLowerCase();
+    const encargado = String(item.encargado || "").toLowerCase();
+    const correo = String(item.correo || "").toLowerCase();
+    const telefonoPrincipal = String(item.telefonoPrincipal || "").toLowerCase();
+    const telefonoAlternativo = String(item.telefonoAlternativo || "").toLowerCase();
+
+    return (
+      !term ||
+      nombre.includes(term) ||
+      cliente.includes(term) ||
+      region.includes(term) ||
+      direccion.includes(term) ||
+      encargado.includes(term) ||
+      correo.includes(term) ||
+      telefonoPrincipal.includes(term) ||
+      telefonoAlternativo.includes(term)
+    );
+  });
+}, [cedisList, search]);
 
   const isAllSelected =
     filteredCedis.length > 0 &&
@@ -273,16 +313,14 @@ export default function Cedis() {
 
         <div className={selectedCount > 0 ? "selection-toolbar" : "d-flex gap-2"}>
           {selectedCount === 0 ? (
-            <>
-              <button
-                className="primary-btn"
-                onClick={() => openModal("createCedisModal")}
-                type="button"
-              >
-                <i className="bi bi-plus-lg"></i>&nbsp;Nuevo CEDIS
-              </button>
-            </>
-          ) : (
+          <>
+            <button className="primary-btn" onClick={() => openModal("createRegionModal")}type="button">
+              <i className="bi bi-geo-alt"></i>&nbsp;Nueva región</button>
+
+            <button className="primary-btn" onClick={() => openModal("createCedisModal")} type="button">
+              <i className="bi bi-plus-lg"></i>&nbsp;Nuevo CEDIS</button>
+          </>
+        ) : (
             <>
               {isAllSelected && (
                 <div className="selection-info">
@@ -326,26 +364,14 @@ export default function Cedis() {
       </div>
 
       <div className="panel-card">
-        <div className="toolbar-row flex-wrap gap-2">
-          <div className="search-box">
-            <i className="bi bi-search"></i>
-            <input
-              type="text"
-              placeholder="Filtrar por cliente..."
-              value={searchCliente}
-              onChange={(e) => setSearchCliente(e.target.value)}
-            />
-          </div>
-
-          <input
-            type="text"
-            className="form-control"
-            style={{ maxWidth: "260px" }}
-            placeholder="Filtrar por región..."
-            value={searchRegion}
-            onChange={(e) => setSearchRegion(e.target.value)}
+          <div className="toolbar-row flex-wrap gap-2">
+        <div className="search-box">
+          <i className="bi bi-search"></i>
+          <input type="text" placeholder="Buscar por nombre, cliente, región, encargado, correo o teléfono..." value={search}
+            onChange={(e) => setSearch(e.target.value)}
           />
         </div>
+      </div>
         <div className="table-shell">
           <table className="admin-table">
             <thead>
@@ -402,9 +428,9 @@ export default function Cedis() {
           </div>
         </div>
       </div>
-
-      <CreateCedisModal onCreate={handleCreate} />
-      <EditCedisModal cedis={selectedCedis} onSave={handleSaveEdit} />
+              
+      <CreateCedisModal onCreate={handleCreate} clientes={clientes} regiones={regiones} />
+      <EditCedisModal cedis={selectedCedis} onSave={handleSaveEdit} clientes={clientes} regiones={regiones} />
 
       <DeleteCedisModal
         cedis={selectedCedis}
@@ -418,6 +444,7 @@ export default function Cedis() {
       />
 
       <CreateCedisSuccessModal message={createMessage} />
+      <CreateRegionModal onCreate={handleCreateRegion} />
       <UpdateCedisSuccessModal message={updateMessage} />
       <DeleteCedisSuccessModal message={deleteMessage} />
     </Admin>

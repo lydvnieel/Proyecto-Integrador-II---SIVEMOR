@@ -1,3 +1,5 @@
+import Modal from "bootstrap/js/dist/modal"
+
 export default function CreateCedisSuccessModal({message}) {
   const handleClose = () => {
         const modalElement = document.getElementById("createCedisSuccessModal");
