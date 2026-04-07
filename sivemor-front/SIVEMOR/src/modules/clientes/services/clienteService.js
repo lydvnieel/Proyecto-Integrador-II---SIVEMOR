@@ -2,6 +2,14 @@ import { api } from "../../../../server/api";
 
 const BASE_URL = "/clientes";
 
+const unwrapData = (response) => response?.data?.data ?? response?.data;
+
+const getErrorMessage = (error) =>
+  error?.response?.data?.message ||
+  error?.response?.data?.mensaje ||
+  error?.response?.data?.error ||
+  "Ocurrió un error inesperado.";
+
 const mapCliente = (c) => ({
   id: c.id ?? c.idCliente,
   razonSocial: c.razonSocial ?? "",
@@ -15,39 +23,56 @@ const mapCliente = (c) => ({
 });
 
 export const getClientes = async () => {
-  const response = await api.get(BASE_URL);
-  const lista = Array.isArray(response?.data) ? response.data : [];
-  return lista.map(mapCliente);
+  try {
+    const response = await api.get(BASE_URL);
+    const data = unwrapData(response);
+    const lista = Array.isArray(data) ? data : [];
+    return lista.map(mapCliente);
+  } catch (error) {
+    throw new Error(getErrorMessage(error));
+  }
 };
 
 export const createCliente = async (cliente) => {
-  const body = {
-    razonSocial: cliente.razonSocial,
-    email: cliente.email,
-    telefono: cliente.telefono,
-    telefonoAlternativo: cliente.telefonoAlternativo,
-    gestor: cliente.gestor,
-  };
+  try {
+    const body = {
+      razonSocial: cliente.razonSocial?.trim(),
+      email: cliente.email?.trim(),
+      telefono: cliente.telefono?.trim(),
+      telefonoAlternativo: cliente.telefonoAlternativo?.trim() || "0",
+      gestor: cliente.gestor?.trim(),
+    };
 
-  const response = await api.post(BASE_URL, body);
-  return mapCliente(response.data);
+    const response = await api.post(BASE_URL, body);
+    return mapCliente(unwrapData(response));
+  } catch (error) {
+    throw new Error(getErrorMessage(error));
+  }
 };
 
 export const updateCliente = async (id, cliente) => {
-  const body = {
-    id,
-    razonSocial: cliente.razonSocial,
-    email: cliente.email,
-    telefono: cliente.telefono,
-    telefonoAlternativo: cliente.telefonoAlternativo,
-    gestor: cliente.gestor,
-    activo: cliente.estado === "Activo",
-  };
+  try {
+    const body = {
+      id,
+      razonSocial: cliente.razonSocial?.trim(),
+      email: cliente.email?.trim(),
+      telefono: cliente.telefono?.trim(),
+      telefonoAlternativo: cliente.telefonoAlternativo?.trim() || "0",
+      gestor: cliente.gestor?.trim(),
+      activo: cliente.estado === "Activo",
+    };
 
-  const response = await api.put(`${BASE_URL}/${id}`, body);
-  return mapCliente(response.data);
+    const response = await api.put(`${BASE_URL}/${id}`, body);
+    return mapCliente(unwrapData(response));
+  } catch (error) {
+    throw new Error(getErrorMessage(error));
+  }
 };
 
 export const deleteCliente = async (id) => {
-  return await api.delete(`${BASE_URL}/${id}`);
+  try {
+    return await api.delete(`${BASE_URL}/${id}`);
+  } catch (error) {
+    throw new Error(getErrorMessage(error));
+  }
 };

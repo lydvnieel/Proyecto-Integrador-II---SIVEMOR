@@ -12,6 +12,7 @@ const initialForm = {
 export default function CreateClientModal({ onCreate }) {
   const [formData, setFormData] = useState(initialForm);
   const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -22,6 +23,7 @@ export default function CreateClientModal({ onCreate }) {
     const handleHidden = () => {
       setFormData(initialForm);
       setError("");
+      setSaving(false);
     };
 
     modalElement.addEventListener("hidden.bs.modal", handleHidden);
@@ -47,7 +49,7 @@ export default function CreateClientModal({ onCreate }) {
     if (error) setError("");
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const cleanedData = {
@@ -86,8 +88,22 @@ export default function CreateClientModal({ onCreate }) {
       return;
     }
 
-    setError("");
-    onCreate(cleanedData);
+    try {
+      setSaving(true);
+      setError("");
+
+      await onCreate(cleanedData);
+
+      const modalElement = document.getElementById("createClientModal");
+      if (!modalElement) return;
+
+      const modalInstance = Modal.getOrCreateInstance(modalElement);
+      modalInstance.hide();
+    } catch (err) {
+      setError(err.message || "No se pudo crear el cliente.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleClose = () => {
@@ -116,6 +132,7 @@ export default function CreateClientModal({ onCreate }) {
                 type="button"
                 className="btn-close"
                 onClick={handleClose}
+                disabled={saving}
               ></button>
             </div>
 
@@ -130,6 +147,7 @@ export default function CreateClientModal({ onCreate }) {
                   name="razonSocial"
                   value={formData.razonSocial}
                   onChange={handleChange}
+                  disabled={saving}
                 />
               </div>
 
@@ -141,6 +159,7 @@ export default function CreateClientModal({ onCreate }) {
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
+                  disabled={saving}
                 />
               </div>
 
@@ -154,6 +173,7 @@ export default function CreateClientModal({ onCreate }) {
                     value={formData.telefono}
                     onChange={handleChange}
                     inputMode="numeric"
+                    disabled={saving}
                   />
                 </div>
 
@@ -166,6 +186,7 @@ export default function CreateClientModal({ onCreate }) {
                     value={formData.telefonoAlternativo}
                     onChange={handleChange}
                     inputMode="numeric"
+                    disabled={saving}
                   />
                 </div>
               </div>
@@ -178,17 +199,19 @@ export default function CreateClientModal({ onCreate }) {
                   name="gestor"
                   value={formData.gestor}
                   onChange={handleChange}
+                  disabled={saving}
                 />
               </div>
             </div>
 
             <div className="modal-footer">
-              <button type="button" className="btn btn-light" onClick={handleClose}>
+              <button type="button" className="btn btn-light" onClick={handleClose} disabled={saving}>
                 Cancelar
               </button>
 
-              <button type="submit" className="btn btn-primary">
-                <i className="bi bi-file-earmark-plus"></i>&nbsp;Crear Cliente
+              <button type="submit" className="btn btn-primary" disabled={saving}>
+                <i className="bi bi-file-earmark-plus"></i>&nbsp;
+                {saving ? "Creando..." : "Crear Cliente"}
               </button>
             </div>
           </form>

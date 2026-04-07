@@ -9,12 +9,7 @@ import DeleteAllClientsModal from "./components/DeleteAllClientsModal";
 import DeleteClientSuccessModal from "./components/DeleteClientSuccessModal";
 import EditClientModal from "./components/EditClientModal";
 import UpdateClientSuccessModal from "./components/UpdateClientSuccessModal";
-import {
-  getClientes,
-  createCliente,
-  updateCliente,
-  deleteCliente
-} from "../clientes/services/clienteService";
+import { getClientes,  createCliente, updateCliente, deleteCliente} from "../clientes/services/clienteService";
 
 export default function Clientes() {
   const [clientes, setClientes] = useState([]);
@@ -173,13 +168,22 @@ export default function Clientes() {
   };
 
   const handleCreateCliente = async (nuevoCliente) => {
-    try {
-      const created = await createCliente(nuevoCliente);
-      setClientes((prev) => [...prev, created]);
-    } catch (error) {
-      console.error("Error creando cliente:", error);
-    }
-  };
+  try {
+    const created = await createCliente(nuevoCliente);
+
+    setClientes((prev) => [...prev, created]);
+    setCreateMessage(`Se creó correctamente el cliente ${created.razonSocial}.`);
+
+    setTimeout(() => {
+      openModal("createClientSuccessModal");
+    }, 250);
+
+    return created;
+  } catch (error) {
+    console.error("Error creando cliente:", error);
+    throw error;
+  }
+};
 
   const handleSaveEdit = async (updatedCliente) => {
   try {
@@ -193,6 +197,7 @@ export default function Clientes() {
     showUpdateSuccessModal("Cliente actualizado correctamente.");
   } catch (error) {
     console.error("Error actualizando cliente:", error);
+    alert(error.message || "No se pudo actualizar el cliente.");
   }
 };
 
@@ -221,10 +226,11 @@ export default function Clientes() {
     );
   } catch (error) {
     console.error("Error eliminando cliente:", error);
+    alert(error.message || "No se pudo eliminar el cliente.");
   }
 };
 
-  const handleDeleteSelected = async () => {
+ const handleDeleteSelected = async () => {
   const idsToDelete = Object.keys(selectedRows)
     .filter((id) => selectedRows[id])
     .map(Number);
@@ -250,6 +256,7 @@ export default function Clientes() {
     );
   } catch (error) {
     console.error("Error eliminando múltiples clientes:", error);
+    alert(error.message || "No se pudieron eliminar los clientes.");
   }
 };
 
@@ -274,6 +281,7 @@ export default function Clientes() {
     );
   } catch (error) {
     console.error("Error eliminando todos los clientes:", error);
+    alert(error.message || "No se pudieron eliminar todos los clientes.");
   }
 };
 
