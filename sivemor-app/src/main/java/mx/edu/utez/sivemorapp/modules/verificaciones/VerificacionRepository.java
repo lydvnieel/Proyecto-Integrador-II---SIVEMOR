@@ -11,7 +11,7 @@ import java.util.Optional;
 public interface VerificacionRepository extends JpaRepository<Verificacion, Long> {
 
     List<Verificacion> findByActivoTrue();
-
+    boolean existsByNota_Cliente_IdAndMateriaAndActivoTrue(Long idCliente, Materia materia);
     Optional<Verificacion> findByIdAndActivoTrue(Long id);
 
     List<Verificacion> findByActivoTrueAndVehiculo_Id(Long idVehiculo);
@@ -85,6 +85,7 @@ public interface VerificacionRepository extends JpaRepository<Verificacion, Long
     Optional<Verificacion> findByFolioVerificacion(String folio);
 
     boolean existsByVehiculo_IdAndActivoTrue(Long idVehiculo);
+    boolean existsByNota_Verificentro_IdAndActivoTrue(Long  idNota);
 
     long countByNota_IdAndActivoTrue(Long idNota);
 }

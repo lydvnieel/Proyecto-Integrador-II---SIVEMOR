@@ -15,5 +15,6 @@ public class VerificacionRequestDTO {
     private String materia;
     private BigDecimal precio;
     private BigDecimal multa;
+    private Boolean pagado;
 
 }

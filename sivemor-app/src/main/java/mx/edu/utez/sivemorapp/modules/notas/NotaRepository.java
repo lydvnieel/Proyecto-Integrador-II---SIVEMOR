@@ -8,6 +8,7 @@ import java.util.Optional;
 
 public interface NotaRepository extends JpaRepository<Notas, Long> {
     boolean existsByCliente_IdAndActivoTrue(Long idCliente);
+    boolean existsByVerificentro_IdAndActivoTrue(Long idVerificentro);
     Optional<Notas> findByIdAndActivoTrue(Long id);
     Optional<Notas> findByFolioNotaAndActivoTrue(String folioNota);
 

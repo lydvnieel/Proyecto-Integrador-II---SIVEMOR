@@ -12,7 +12,7 @@ public class CedisMapper {
         return CedisResponseDTO.builder()
                 .id(cedis.getId())
                 .idCliente(cedis.getCliente() != null ? cedis.getCliente().getId() : null)
-                .cliente(cedis.getCliente() != null ? cedis.getCliente().getRazon_social() : null)
+                .cliente(cedis.getCliente() != null ? cedis.getCliente().getRazonSocial() : null)
                 .idRegion(cedis.getRegion() != null ? cedis.getRegion().getId() : null)
                 .region(cedis.getRegion() != null ? cedis.getRegion().getNombre() : null)
                 .nombre(cedis.getNombre())

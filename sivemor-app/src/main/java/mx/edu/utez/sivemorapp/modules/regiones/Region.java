@@ -3,6 +3,7 @@ package mx.edu.utez.sivemorapp.modules.regiones;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 import mx.edu.utez.sivemorapp.kernel.AuditFields;
 import mx.edu.utez.sivemorapp.modules.cedis.Cedis;
 import mx.edu.utez.sivemorapp.modules.verificentros.Verificentro;
@@ -13,9 +14,9 @@ import java.util.List;
 @Table(name = "regiones")
 @Getter
 @Setter
-@NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@NoArgsConstructor
+@SuperBuilder
 public class Region extends AuditFields {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

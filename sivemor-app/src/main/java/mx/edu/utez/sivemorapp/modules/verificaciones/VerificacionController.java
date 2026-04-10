@@ -6,6 +6,8 @@ import mx.edu.utez.sivemorapp.modules.verificaciones.dtos.VerificacionRequestDTO
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/sivemor/api/verificaciones")
 @RequiredArgsConstructor
@@ -47,4 +49,10 @@ public class VerificacionController {
     public ResponseEntity<ApiResponse> delete(@PathVariable Long id) {
         return verificacionService.delete(id);
     }
+
+    @PutMapping("/marcar-pagado")
+    public ResponseEntity<ApiResponse> marcarPagado(@RequestBody List<Long> ids) {
+        return verificacionService.marcarPagado(ids);
+    }
 }
+

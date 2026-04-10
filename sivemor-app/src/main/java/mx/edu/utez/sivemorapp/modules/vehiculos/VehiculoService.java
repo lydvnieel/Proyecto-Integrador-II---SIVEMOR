@@ -312,8 +312,7 @@ public class VehiculoService {
                 return new ResponseEntity<>(response, response.getStatus());
             }
 
-            boolean tieneEvaluaciones = evaluacionRepository.existsByVehiculo_IdAndActivoTrue(id);
-            if (tieneEvaluaciones) {
+            boolean tieneEvaluaciones = evaluacionRepository.existsByVerificacion_Vehiculo_IdAndActivoTrue(id);            if (tieneEvaluaciones) {
                 response = new ApiResponse(
                         "No se puede eliminar el vehículo porque tiene evaluaciones asociadas",
                         true,

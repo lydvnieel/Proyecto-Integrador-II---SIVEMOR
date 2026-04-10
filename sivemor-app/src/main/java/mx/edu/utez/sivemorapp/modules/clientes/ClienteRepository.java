@@ -8,6 +8,7 @@ import java.util.Optional;
 public interface ClienteRepository extends JpaRepository<Cliente, Long> {
     List<Cliente> findByActivoTrue();
 
+    Optional<Cliente> findByIdAndActivoTrue(Long id);
     Optional<Cliente> findByRazonSocialIgnoreCase(String razonSocial);
 
     List<Cliente> findByActivoTrueAndRazonSocialContainingIgnoreCase(String razonSocial);

@@ -2,6 +2,7 @@ package mx.edu.utez.sivemorapp.modules.usuarios;
 
 import lombok.RequiredArgsConstructor;
 import mx.edu.utez.sivemorapp.kernel.ApiResponse;
+import mx.edu.utez.sivemorapp.modules.usuarios.dtos.ChangePasswordDTO;
 import mx.edu.utez.sivemorapp.modules.usuarios.dtos.UsuarioRequestDTO;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -41,5 +42,10 @@ public class UsuarioController {
     @PostMapping("/{id}/regenerar-contrasena")
     public ResponseEntity<ApiResponse> regenerarContrasena(@PathVariable Long id) {
         return usuarioService.regenerarContrasena(id);
+    }
+
+    @PostMapping("/{id}/cambiar-contrasena")
+    public ResponseEntity<ApiResponse> cambiarContrasena(@PathVariable Long id,@RequestBody ChangePasswordDTO dto){
+        return usuarioService.cambiarContrasena(id, dto);
     }
 }

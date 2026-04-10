@@ -3,6 +3,7 @@ package mx.edu.utez.sivemorapp.modules.cedis;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 import mx.edu.utez.sivemorapp.kernel.AuditFields;
 import mx.edu.utez.sivemorapp.modules.clientes.Cliente;
 import mx.edu.utez.sivemorapp.modules.regiones.Region;
@@ -17,7 +18,7 @@ import java.util.List;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-@Builder
+@SuperBuilder
 public class Cedis extends AuditFields {
 
     @Id

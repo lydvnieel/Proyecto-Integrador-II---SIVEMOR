@@ -33,6 +33,7 @@ public class CedisController {
 
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse> updateCedis(@PathVariable("id") Long id, @RequestBody CedisRequestDTO dto) {
+        dto.setId(id);
         return cedisService.updateCedis(dto);
     }
 

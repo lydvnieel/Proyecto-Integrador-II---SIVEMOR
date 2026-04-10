@@ -20,4 +20,13 @@ public class VerificacionResponseDTO {
     private LocalDate fechaVerificacion;
     private String dictamen;
     private Boolean activo;
+    private Boolean pagado;
+
+    private String numeroNota;
+    private String placa;
+    private String serie;
+    private String razonSocial;
+    private String gestor;
+    private String verificentro;
+    private String tipoPago;
 }

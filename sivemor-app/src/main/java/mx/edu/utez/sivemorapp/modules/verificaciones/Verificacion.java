@@ -59,5 +59,9 @@ public class Verificacion extends AuditFields {
     @OneToOne(mappedBy = "verificacion", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private Evaluacion evaluacion;
 
+    @Builder.Default
+    @Column(name = "pagado")
+    private Boolean pagado = false;
+
 
 }

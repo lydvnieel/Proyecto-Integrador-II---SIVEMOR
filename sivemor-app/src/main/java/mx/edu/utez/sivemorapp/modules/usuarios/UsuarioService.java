@@ -2,9 +2,11 @@ package mx.edu.utez.sivemorapp.modules.usuarios;
 
 import lombok.RequiredArgsConstructor;
 import mx.edu.utez.sivemorapp.kernel.ApiResponse;
+import mx.edu.utez.sivemorapp.modules.usuarios.dtos.ChangePasswordDTO;
 import mx.edu.utez.sivemorapp.modules.usuarios.dtos.UsuarioRequestDTO;
 import mx.edu.utez.sivemorapp.modules.usuarios.dtos.UsuarioResponseDTO;
 import mx.edu.utez.sivemorapp.modules.usuarios.dtos.utils.UsuarioMapper;
+import mx.edu.utez.sivemorapp.services.EmailService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -20,6 +22,7 @@ public class UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
+    private final EmailService emailService;
 
     @Transactional(readOnly = true)
     public ResponseEntity<ApiResponse> getAll(String nombreUsuario, String email, String tipoUsuario) {
@@ -76,7 +79,7 @@ public class UsuarioService {
         return sb.toString();
     }
 
-    @Transactional(rollbackFor = {SQLException.class, Exception.class})
+    @Transactional(rollbackFor = {SQLException.class})
     public ResponseEntity<ApiResponse> save(UsuarioRequestDTO dto) {
         if (dto.getNombreUsuario() == null || dto.getNombreUsuario().isBlank()
                 || dto.getEmail() == null || dto.getEmail().isBlank()
@@ -109,11 +112,33 @@ public class UsuarioService {
 
         Usuario saved = usuarioRepository.save(usuario);
 
-        UsuarioResponseDTO responseDTO = UsuarioMapper.toDto(saved);
-        responseDTO.setContrasenaTemporal(contrasenaTemporal);
+        try {
+            emailService.enviarCredenciales(
+                    saved.getEmail(),
+                    saved.getNombreUsuario(),
+                    contrasenaTemporal,
+                    saved.getTipoUsuario().name()
+            );
 
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(new ApiResponse("Usuario creado. Comparta la contraseña temporal por un medio externo.", responseDTO, HttpStatus.CREATED));
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(new ApiResponse(
+                            "Usuario creado y credenciales enviadas por correo.",
+                            UsuarioMapper.toDto(saved),
+                            HttpStatus.CREATED
+                    ));
+        } catch (Exception e) {
+            e.printStackTrace();
+
+            UsuarioResponseDTO responseDTO = UsuarioMapper.toDto(saved);
+            responseDTO.setContrasenaTemporal(contrasenaTemporal);
+
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(new ApiResponse(
+                            "Usuario creado, pero no se pudo enviar el correo. Comparta la contraseña temporal por un medio externo.",
+                            responseDTO,
+                            HttpStatus.CREATED
+                    ));
+        }
     }
 
     @Transactional(rollbackFor = {SQLException.class, Exception.class})
@@ -181,6 +206,37 @@ public class UsuarioService {
                         responseDTO,
                         HttpStatus.OK
                 )
+        );
+    }
+
+    @Transactional
+    public ResponseEntity<ApiResponse> cambiarContrasena(Long id, ChangePasswordDTO dto) {
+        Usuario usuario = usuarioRepository.findByIdAndActivoTrue(id).orElse(null);
+
+        if (usuario == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ApiResponse("Usuario no encontrado", true, HttpStatus.NOT_FOUND));
+        }
+
+        if (dto.getPasswordActual() == null || dto.getPasswordActual().isBlank()
+                || dto.getPasswordNueva() == null || dto.getPasswordNueva().isBlank()) {
+            return ResponseEntity.badRequest()
+                    .body(new ApiResponse("Todos los campos son obligatorios", true, HttpStatus.BAD_REQUEST));
+        }
+
+        if (!passwordEncoder.matches(dto.getPasswordActual(), usuario.getContrasenaHash())) {
+            return ResponseEntity.badRequest()
+                    .body(new ApiResponse("La contraseña actual es incorrecta", true, HttpStatus.BAD_REQUEST));
+        }
+
+        usuario.setContrasenaHash(passwordEncoder.encode(dto.getPasswordNueva()));
+        usuario.setIntentosFallidos(0);
+        usuario.setBloqueadoHasta(null);
+
+        usuarioRepository.save(usuario);
+
+        return ResponseEntity.ok(
+                new ApiResponse("Contraseña actualizada correctamente", null, HttpStatus.OK)
         );
     }
 }

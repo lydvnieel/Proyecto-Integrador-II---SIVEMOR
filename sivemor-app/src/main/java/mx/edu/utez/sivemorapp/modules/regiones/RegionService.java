@@ -78,7 +78,12 @@ public class RegionService {
             }
 
             Region region = Region.builder()
-                    .nombre(dto.getNombre())
+                    .nombre(dto.getNombre().trim())
+                    .descripcion(
+                            dto.getDescripcion() == null || dto.getDescripcion().isBlank()
+                                    ? ""
+                                    : dto.getDescripcion().trim()
+                    )
                     .build();
 
             region.setActivo(true);

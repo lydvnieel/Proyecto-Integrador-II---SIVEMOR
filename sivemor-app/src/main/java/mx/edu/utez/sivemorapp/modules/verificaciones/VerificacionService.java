@@ -255,6 +255,7 @@ public class VerificacionService {
                     .build();
 
             v.setActivo(true);
+            v.setPagado(false);
 
             Verificacion saved = verificacionRepository.save(v);
 
@@ -299,6 +300,10 @@ public class VerificacionService {
             } catch (Exception e) {
                 return ResponseEntity.badRequest()
                         .body(new ApiResponse("Materia inválida", true, HttpStatus.BAD_REQUEST));
+            }
+
+            if (dto.getPagado() != null) {
+                found.setPagado(dto.getPagado());
             }
 
             found.setMateria(materia);
@@ -357,6 +362,28 @@ public class VerificacionService {
             e.printStackTrace();
             return ResponseEntity.internalServerError()
                     .body(new ApiResponse("Error al eliminar", true, HttpStatus.INTERNAL_SERVER_ERROR));
+        }
+    }
+
+    @Transactional
+    public ResponseEntity<ApiResponse> marcarPagado(List<Long> ids) {
+        try {
+            List<Verificacion> lista = verificacionRepository.findAllById(ids);
+
+            for (Verificacion v : lista) {
+                v.setPagado(true);
+            }
+
+            verificacionRepository.saveAll(lista);
+
+            return ResponseEntity.ok(
+                    new ApiResponse("Verificaciones marcadas como pagadas", HttpStatus.OK)
+            );
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError()
+                    .body(new ApiResponse("Error al marcar como pagado", true, HttpStatus.INTERNAL_SERVER_ERROR));
         }
     }
 }
