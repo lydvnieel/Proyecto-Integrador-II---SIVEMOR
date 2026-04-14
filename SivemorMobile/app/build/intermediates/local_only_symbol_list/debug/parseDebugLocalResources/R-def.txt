@@ -1,0 +1,6 @@
+R_DEF: Internal format may change without notice
+local
+drawable logo
+string app_name
+style Theme.Sivemor
+xml file_paths
