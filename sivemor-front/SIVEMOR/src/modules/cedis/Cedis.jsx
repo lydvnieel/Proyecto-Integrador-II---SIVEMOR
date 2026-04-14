@@ -212,6 +212,8 @@ const fetchCedis = async () => {
     );
   } catch (error) {
     console.error("Error al actualizar:", error);
+    console.error("Respuesta backend:", error?.response?.data);
+    throw error;
   }
 };
 

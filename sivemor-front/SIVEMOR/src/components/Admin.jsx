@@ -62,7 +62,7 @@ export default function AdminLayout({
           <div className="sidebar-user-info">
             <div className="sidebar-avatar">D</div>
             <div>
-              <div className="sidebar-user-name">Daniel</div>
+              <div className="sidebar-user-name">Admin</div>
               <div className="sidebar-user-role">Admin</div>
             </div>
           </div>

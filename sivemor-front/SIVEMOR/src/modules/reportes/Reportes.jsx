@@ -1,22 +1,33 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 import Admin from "../../components/Admin";
 import ReportFilters from "./components/ReportFilters";
 import RecentReportsList from "./components/RecentReportsList";
 import ReportPreviewTable from "./components/ReportPreviewTable";
 import GenerateReportSuccessModal from "./components/GenerateReportSuccessModal";
 import GenerateReportErrorModal from "./components/GenerateReportErrorModal";
+import AllReportsModal from "./components/AllReportsModal";
+import { api } from "../../../server/api";
 
 export default function Reportes() {
   const [filters, setFilters] = useState({
     tipo: "cliente",
-    cliente: "",
-    region: "",
-    nota: "",
+    clienteId: "",
+    regionId: "",
+    notaId: "",
     tipoVerificacion: "",
     estadoDictamen: "",
     fechaInicio: "",
     fechaFin: "",
+  });
+
+  const [filterOptions, setFilterOptions] = useState({
+    clientes: [],
+    regiones: [],
+    notas: [],
+    tiposVerificacion: [],
+    dictamenes: [],
   });
 
   const [isGenerating, setIsGenerating] = useState(false);
@@ -25,207 +36,35 @@ export default function Reportes() {
     const saved = localStorage.getItem("recentReports");
     return saved ? JSON.parse(saved) : [];
   });
+  const [showAllReports, setShowAllReports] = useState(false);
 
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
-  const data = JSON.parse(localStorage.getItem("evaluaciones")) || [];
+  useEffect(() => {
+    fetchOptions();
+  }, []);
 
-  const normalizeText = (value) =>
-    String(value || "")
-      .trim()
-      .toUpperCase();
+  const fetchOptions = async () => {
+  try {
+    const payload = await api.get("/reportes/opciones");
 
-  const getEvaluationDate = (item) =>
-    item.fecha ||
-    item.fechaEvaluacion ||
-    item.fecha_verificacion ||
-    item.createdAt ||
-    "";
+    console.log("Clientes desde backend:", payload.clientes);
+    console.log("Regiones desde backend:", payload.regiones);
+    console.log("Notas desde backend:", payload.notas);
 
-  const parseDate = (dateString) => {
-    if (!dateString) return null;
-
-    if (dateString.includes("-")) {
-      const date = new Date(dateString);
-      return Number.isNaN(date.getTime()) ? null : date;
-    }
-
-    if (dateString.includes("/")) {
-      const [day, month, year] = dateString.split("/");
-      const date = new Date(`${year}-${month}-${day}`);
-      return Number.isNaN(date.getTime()) ? null : date;
-    }
-
-    const date = new Date(dateString);
-    return Number.isNaN(date.getTime()) ? null : date;
-  };
-
-  const getFilterOptions = () => {
-    const uniqueSorted = (values) =>
-      [...new Set(values.filter(Boolean).map((v) => String(v).trim()))].sort(
-        (a, b) => a.localeCompare(b, "es", { sensitivity: "base" }),
-      );
-
-    return {
-      clientes: uniqueSorted(data.map((item) => item.cliente)),
-      regiones: uniqueSorted(data.map((item) => item.region)),
-      notas: uniqueSorted(data.map((item) => item.nota)),
-      dictamenes: uniqueSorted(data.map((item) => item.dictamen)),
-      tiposVerificacion: uniqueSorted(
-        data.map((item) => item.tipoVerificacion),
-      ),
-    };
-  };
-
-  const buildReportData = (formFilters) => {
-    const currentFilters = {
-      tipo: formFilters.tipo || "cliente",
-      cliente: (formFilters.cliente || "").trim(),
-      region: (formFilters.region || "").trim(),
-      nota: (formFilters.nota || "").trim(),
-      tipoVerificacion: (formFilters.tipoVerificacion || "").trim(),
-      estadoDictamen: (formFilters.estadoDictamen || "").trim(),
-      fechaInicio: formFilters.fechaInicio || "",
-      fechaFin: formFilters.fechaFin || "",
-    };
-
-    if (currentFilters.tipo === "cliente" && !currentFilters.region) {
-      return {
-        ok: false,
-        error: "La región es obligatoria para el reporte por cliente.",
-      };
-    }
-
-    if (currentFilters.tipo === "region" && !currentFilters.cliente) {
-      return {
-        ok: false,
-        error: "El cliente es obligatorio para el reporte por región.",
-      };
-    }
-
-    if (currentFilters.tipo === "nota" && !currentFilters.region) {
-      return {
-        ok: false,
-        error: "La región es obligatoria para el reporte por nota.",
-      };
-    }
-
-    const filtered = data.filter((item) => {
-      const itemRegion = String(item.region || "").trim();
-      const itemCliente = String(item.cliente || "").trim();
-      const itemNota = String(item.nota || "").trim();
-      const itemTipoVerificacion = String(item.tipoVerificacion || "").trim();
-      const itemDictamen = normalizeText(item.dictamen);
-
-      const itemFecha = parseDate(getEvaluationDate(item));
-      const fechaInicio = parseDate(currentFilters.fechaInicio);
-      const fechaFin = parseDate(currentFilters.fechaFin);
-
-      const matchFechaInicio =
-        fechaInicio && itemFecha ? itemFecha >= fechaInicio : !fechaInicio;
-      const matchFechaFin =
-        fechaFin && itemFecha ? itemFecha <= fechaFin : !fechaFin;
-
-      const matchRegion = currentFilters.region
-        ? itemRegion.toLowerCase() === currentFilters.region.toLowerCase()
-        : true;
-
-      const matchCliente = currentFilters.cliente
-        ? itemCliente.toLowerCase() === currentFilters.cliente.toLowerCase()
-        : true;
-
-      const matchNota = currentFilters.nota
-        ? itemNota.toLowerCase() === currentFilters.nota.toLowerCase()
-        : true;
-
-      const matchTipoVerificacion = currentFilters.tipoVerificacion
-        ? itemTipoVerificacion.toLowerCase() ===
-          currentFilters.tipoVerificacion.toLowerCase()
-        : true;
-
-      const matchDictamen = currentFilters.estadoDictamen
-        ? itemDictamen === normalizeText(currentFilters.estadoDictamen)
-        : true;
-
-      return (
-        matchRegion &&
-        matchCliente &&
-        matchNota &&
-        matchTipoVerificacion &&
-        matchDictamen &&
-        matchFechaInicio &&
-        matchFechaFin
-      );
+    setFilterOptions({
+      clientes: payload.clientes || [],
+      regiones: payload.regiones || [],
+      notas: payload.notas || [],
+      tiposVerificacion: payload.tiposVerificacion || [],
+      dictamenes: payload.dictamenes || [],
     });
-
-    if (filtered.length === 0) {
-      return {
-        ok: false,
-        error: "No hay datos para generar el reporte.",
-      };
-    }
-
-    const grouped = {};
-
-    filtered.forEach((item) => {
-      let key = "";
-
-      if (currentFilters.tipo === "cliente") {
-        key = item.cliente || "SIN CLIENTE";
-      } else if (currentFilters.tipo === "region") {
-        key = item.region || "SIN REGIÓN";
-      } else {
-        key = item.nota || "SIN NOTA";
-      }
-
-      if (!grouped[key]) {
-        grouped[key] = {
-          agrupacion: key,
-          region: item.region || "-",
-          cliente: item.cliente || "-",
-          nota: item.nota || "-",
-          dictamen: item.dictamen || "-",
-          vehiculo:
-            item.vehiculo ||
-            item.placa ||
-            item.unidad ||
-            item.numeroEconomico ||
-            "-",
-          numeroVerificaciones: 0,
-          aprobadas: 0,
-          reprobadas: 0,
-        };
-      }
-
-      grouped[key].numeroVerificaciones += 1;
-
-      if (normalizeText(item.dictamen) === "APROBADO") {
-        grouped[key].aprobadas += 1;
-      } else {
-        grouped[key].reprobadas += 1;
-      }
-    });
-
-    const finalData = Object.values(grouped).map((group) => ({
-      ...group,
-      porcentajeAprobacion:
-        group.numeroVerificaciones > 0
-          ? ((group.aprobadas / group.numeroVerificaciones) * 100).toFixed(2)
-          : "0.00",
-    }));
-
-    const reportName = `Reporte_${currentFilters.tipo}_${new Date()
-      .toISOString()
-      .slice(0, 10)}.pdf`;
-
-    return {
-      ok: true,
-      filters: currentFilters,
-      data: finalData,
-      reportName,
-    };
-  };
+  } catch (err) {
+    console.error("Error al cargar opciones de reportes:", err);
+    setError("No se pudieron cargar las opciones del reporte.");
+  }
+};
 
   const saveRecentReport = (reportName, currentFilters, finalData) => {
     const newRecent = {
@@ -242,33 +81,59 @@ export default function Reportes() {
   };
 
   const generateReport = async (formFilters, autoDownload = false) => {
-    setError("");
-    setSuccessMessage("");
-    setReportData([]);
+  setError("");
+  setSuccessMessage("");
+  setReportData([]);
 
-    const result = buildReportData(formFilters);
+  try {
+    setIsGenerating(true);
 
-    if (!result.ok) {
-      setError(result.error);
+    const params = {
+      tipo: formFilters.tipo || "cliente",
+      clienteId: formFilters.clienteId || undefined,
+      regionId: formFilters.regionId || undefined,
+      notaId: formFilters.notaId || undefined,
+      tipoVerificacion: formFilters.tipoVerificacion || undefined,
+      estadoDictamen: formFilters.estadoDictamen || undefined,
+      fechaInicio: formFilters.fechaInicio || undefined,
+      fechaFin: formFilters.fechaFin || undefined,
+    };
+
+    console.log("Filtros enviados:", params);
+
+    const payload = await api.get("/reportes/generar", { params });
+    const finalData = Array.isArray(payload.data) ? payload.data : [];
+
+    console.log("Respuesta reporte:", payload);
+    console.log("Datos finales:", finalData);
+
+    if (finalData.length === 0) {
+      setError("No hay datos para generar el reporte.");
       return;
     }
 
-    setFilters(result.filters);
-    setReportData(result.data);
-    saveRecentReport(result.reportName, result.filters, result.data);
+    setFilters(params);
+    setReportData(finalData);
+    saveRecentReport(payload.reportName || "reporte.pdf", params, finalData);
 
     if (autoDownload) {
-      await downloadPDF(result.data, result.filters, result.reportName);
+      await downloadPDF(finalData, params, payload.reportName || "reporte.pdf");
       return;
     }
 
     setSuccessMessage("Reporte generado correctamente.");
-  };
+  } catch (err) {
+    console.error("Error al generar reporte:", err);
+    setError(err.message || "No se pudo generar el reporte.");
+  } finally {
+    setIsGenerating(false);
+  }
+};
 
   const downloadPDF = async (
     customData = reportData,
     customFilters = filters,
-    fileName = "reporte_evaluaciones.pdf",
+    fileName = "reporte_evaluaciones.pdf"
   ) => {
     setError("");
     setSuccessMessage("");
@@ -281,56 +146,310 @@ export default function Reportes() {
     try {
       setIsGenerating(true);
 
-      const doc = new jsPDF();
+      const doc = new jsPDF("p", "mm", "a4");
+      const now = new Date();
+      const fechaGeneracion = now.toLocaleString("es-MX");
+      const folioReporte = `RPT-${now.getFullYear()}-${String(
+        now.getMonth() + 1
+      ).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}-${String(
+        now.getHours()
+      ).padStart(2, "0")}${String(now.getMinutes()).padStart(2, "0")}`;
 
-      doc.setFontSize(16);
-      doc.text("REPORTE DE EVALUACIONES", 14, 16);
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
 
-      doc.setFontSize(10);
-      doc.text(`Fecha de generación: ${new Date().toLocaleString()}`, 14, 24);
-      doc.text(`Tipo: ${customFilters.tipo || "-"}`, 14, 30);
-      doc.text(`Cliente: ${customFilters.cliente || "Todos"}`, 14, 36);
-      doc.text(`Región: ${customFilters.region || "Todas"}`, 14, 42);
-      doc.text(`Nota: ${customFilters.nota || "Todas"}`, 14, 48);
-      doc.text(
-        `Dictamen: ${customFilters.estadoDictamen || "Todos"}`,
-        14,
-        54,
-      );
+      const drawHeader = (pageNumber) => {
+        doc.setFillColor(17, 79, 168);
+        doc.rect(0, 0, pageWidth, 24, "F");
 
-      let y = 66;
+        doc.setTextColor(255, 255, 255);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(16);
+        doc.text("SIVEMOR", 8, 10);
 
-      customData.forEach((row, index) => {
-        if (y > 260) {
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8);
+        doc.text("Sistema de Verificación Morelos", 8, 15);
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(14);
+        doc.text("REPORTE DE EVALUACIONES VEHICULARES", pageWidth / 2, 10, {
+          align: "center",
+        });
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8);
+        doc.text(
+          `Región: ${customFilters.regionId || "Todas"} | Periodo: ${
+            customFilters.fechaInicio || "-"
+          } — ${customFilters.fechaFin || "-"}`,
+          pageWidth / 2,
+          15,
+          { align: "center" }
+        );
+
+        doc.setFontSize(8);
+        doc.text(`Folio de reporte: ${folioReporte}`, pageWidth - 8, 9, {
+          align: "right",
+        });
+        doc.text(`Generado: ${fechaGeneracion}`, pageWidth - 8, 14, {
+          align: "right",
+        });
+
+        doc.setFillColor(229, 160, 34);
+        doc.rect(0, 24, pageWidth, 1.5, "F");
+
+        doc.setDrawColor(60, 130, 200);
+        doc.line(10, pageHeight - 10, pageWidth - 10, pageHeight - 10);
+
+        doc.setTextColor(90, 90, 90);
+        doc.setFontSize(7);
+        doc.text(
+          "SIVEMOR — Documento generado automáticamente. No requiere firma.",
+          10,
+          pageHeight - 6
+        );
+        doc.text(
+          "Administrador: Daniel Lugo Valenzuela",
+          pageWidth / 2,
+          pageHeight - 6,
+          { align: "center" }
+        );
+        doc.text(`Página ${pageNumber}`, pageWidth - 10, pageHeight - 6, {
+          align: "right",
+        });
+      };
+
+      drawHeader(1);
+
+      autoTable(doc, {
+        startY: 34,
+        theme: "grid",
+        styles: {
+          fontSize: 8,
+          cellPadding: 2.5,
+          lineColor: [200, 210, 220],
+          lineWidth: 0.3,
+        },
+        headStyles: {
+          fillColor: [230, 238, 247],
+          textColor: [30, 30, 30],
+          fontStyle: "bold",
+        },
+        body: [
+          [
+            "Tipo de reporte:",
+            customFilters.tipo || "cliente",
+            "Región:",
+            customFilters.regionId || "Todas",
+          ],
+          [
+            "Periodo:",
+            `${customFilters.fechaInicio || "-"} — ${customFilters.fechaFin || "-"}`,
+            "Tipo verificación:",
+            customFilters.tipoVerificacion || "Todos",
+          ],
+          [
+            "Administrador:",
+            "Daniel Lugo Valenzuela",
+            "Folio de reporte:",
+            folioReporte,
+          ],
+        ],
+        columnStyles: {
+          0: { fontStyle: "bold", cellWidth: 35 },
+          1: { cellWidth: 50 },
+          2: { fontStyle: "bold", cellWidth: 35 },
+          3: { cellWidth: 50 },
+        },
+        margin: { left: 14, right: 14 },
+      });
+
+      let currentY = doc.lastAutoTable.finalY + 8;
+
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(28, 73, 129);
+      doc.setFontSize(12);
+      doc.text("Detalle de Evaluaciones por Cliente", 14, currentY);
+      currentY += 6;
+
+      const agrupadoPorCliente = customData.reduce((acc, item) => {
+        const key = item.cliente || "Sin cliente";
+        if (!acc[key]) acc[key] = [];
+        acc[key].push(item);
+        return acc;
+      }, {});
+
+      Object.entries(agrupadoPorCliente).forEach(([cliente, items]) => {
+        const first = items[0];
+
+        if (currentY > 235) {
           doc.addPage();
-          y = 20;
+          drawHeader(doc.getNumberOfPages());
+          currentY = 34;
         }
 
-        doc.setFontSize(12);
-        doc.text(`${index + 1}. ${row.agrupacion}`, 14, y);
-        y += 7;
+        const total = items.length;
+        const aprobadas = items.filter(
+          (i) => String(i.dictamen || "").toUpperCase() === "APROBADO"
+        ).length;
+        const reprobadas = items.filter(
+          (i) => String(i.dictamen || "").toUpperCase() === "REPROBADO"
+        ).length;
+        const porcentaje = total > 0 ? ((aprobadas * 100) / total).toFixed(1) : "0.0";
 
+        doc.setFillColor(33, 111, 195);
+        doc.rect(14, currentY, 182, 8, "F");
+
+        doc.setTextColor(255, 255, 255);
+        doc.setFont("helvetica", "bold");
         doc.setFontSize(10);
-        doc.text(`Cliente: ${row.cliente}`, 18, y);
-        y += 6;
-        doc.text(`Región: ${row.region}`, 18, y);
-        y += 6;
-        doc.text(`Vehículo: ${row.vehiculo}`, 18, y);
-        y += 6;
-        doc.text(`Verificaciones: ${row.numeroVerificaciones}`, 18, y);
-        y += 6;
-        doc.text(`Aprobadas: ${row.aprobadas}`, 18, y);
-        y += 6;
-        doc.text(`Reprobadas: ${row.reprobadas}`, 18, y);
-        y += 6;
-        doc.text(`% Aprobación: ${row.porcentajeAprobacion}%`, 18, y);
-        y += 10;
+        doc.text(cliente, 16, currentY + 5.5);
+        doc.text(`${first.cedis || "-"} — ${first.region || "-"}`, 194, currentY + 5.5, {
+          align: "right",
+        });
+
+        currentY += 8;
+
+        autoTable(doc, {
+          startY: currentY,
+          theme: "grid",
+          styles: {
+            fontSize: 8,
+            cellPadding: 2,
+            lineColor: [220, 225, 230],
+            lineWidth: 0.2,
+          },
+          body: [[
+            `Total: ${total}`,
+            `Aprobadas: ${aprobadas}`,
+            `Reprobadas: ${reprobadas}`,
+            `% Aprobación: ${porcentaje}%`,
+          ]],
+          columnStyles: {
+            0: { textColor: [60, 60, 60], cellWidth: 45 },
+            1: { textColor: [56, 142, 60], cellWidth: 45, fontStyle: "bold" },
+            2: { textColor: [211, 47, 47], cellWidth: 45, fontStyle: "bold" },
+            3: { textColor: [230, 126, 34], cellWidth: 47, fontStyle: "bold" },
+          },
+          margin: { left: 14, right: 14 },
+        });
+
+        currentY = doc.lastAutoTable.finalY + 4;
+
+        doc.setTextColor(60, 60, 60);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(9);
+        doc.text(
+          `Placa: ${first.placa || "-"} | Serie: ${first.serie || "-"} | Tipo: ${first.tipoVehiculo || "-"}`,
+          14,
+          currentY + 4
+        );
+
+        currentY += 6;
+
+        autoTable(doc, {
+          startY: currentY,
+          theme: "grid",
+          head: [["Folio", "Materia", "Dictamen", "Fecha Verif.", "Técnico"]],
+          body: items.map((item) => [
+            item.folioVerificacion || "-",
+            item.materia || "-",
+            item.dictamen || "-",
+            item.fecha || "-",
+            item.tecnico || "-",
+          ]),
+          headStyles: {
+            fillColor: [42, 134, 220],
+            textColor: [255, 255, 255],
+            fontStyle: "bold",
+          },
+          styles: {
+            fontSize: 8,
+            cellPadding: 2.5,
+            lineColor: [220, 225, 230],
+            lineWidth: 0.2,
+          },
+          didParseCell: (data) => {
+            if (data.section === "body" && data.column.index === 2) {
+              const value = String(data.cell.raw || "").toUpperCase();
+              if (value.includes("APROBADO")) {
+                data.cell.styles.textColor = [56, 142, 60];
+                data.cell.styles.fontStyle = "bold";
+              }
+              if (value.includes("REPROBADO")) {
+                data.cell.styles.textColor = [211, 47, 47];
+                data.cell.styles.fontStyle = "bold";
+              }
+            }
+          },
+          margin: { left: 14, right: 14 },
+        });
+
+        currentY = doc.lastAutoTable.finalY + 8;
+      });
+
+      doc.addPage();
+      drawHeader(doc.getNumberOfPages());
+
+      const totalVerificaciones = customData.length;
+      const totalAprobadas = customData.filter(
+        (item) => String(item.dictamen || "").toUpperCase() === "APROBADO"
+      ).length;
+      const totalReprobadas = customData.filter(
+        (item) => String(item.dictamen || "").toUpperCase() === "REPROBADO"
+      ).length;
+      const porcentajeGlobal =
+        totalVerificaciones > 0
+          ? ((totalAprobadas * 100) / totalVerificaciones).toFixed(1)
+          : "0.0";
+
+      autoTable(doc, {
+        startY: 44,
+        theme: "grid",
+        head: [["Indicador", "Valor", "Observación"]],
+        body: [
+          [
+            "Total de verificaciones en el periodo",
+            `${totalVerificaciones}`,
+            "Todas las materias incluidas",
+          ],
+          [
+            "Verificaciones aprobadas",
+            `${totalAprobadas}`,
+            `${porcentajeGlobal}% del total`,
+          ],
+          [
+            "Verificaciones reprobadas",
+            `${totalReprobadas}`,
+            "Requieren seguimiento",
+          ],
+          [
+            "Clientes atendidos",
+            `${Object.keys(agrupadoPorCliente).length}`,
+            "Con datos activos en el reporte",
+          ],
+          ["Generado por", "Daniel Lugo Valenzuela", "Administrador"],
+          ["Fecha", fechaGeneracion, "Sistema SIVEMOR"],
+        ],
+        headStyles: {
+          fillColor: [230, 238, 247],
+          textColor: [20, 20, 20],
+          fontStyle: "bold",
+        },
+        styles: {
+          fontSize: 8.5,
+          cellPadding: 3,
+          lineColor: [220, 225, 230],
+          lineWidth: 0.2,
+        },
+        margin: { left: 14, right: 14 },
       });
 
       doc.save(fileName);
       setSuccessMessage("PDF generado correctamente.");
     } catch (err) {
-      console.error(err);
+      console.error("Error al descargar PDF:", err);
       setError("Error al generar el PDF.");
     } finally {
       setIsGenerating(false);
@@ -341,15 +460,11 @@ export default function Reportes() {
     downloadPDF(report.data, report.filters, report.nombre);
   };
 
-  const filterOptions = getFilterOptions();
-
   return (
     <Admin>
       <div>
         <h2 className="page-heading">Centro de Reportes</h2>
-        <p className="page-title">
-          Generación de informes ejecutivos y operativos
-        </p>
+        <p className="page-title">Generación de informes ejecutivos y operativos</p>
       </div>
 
       <div className="reports-grid mt-4">
@@ -372,6 +487,7 @@ export default function Reportes() {
           <RecentReportsList
             reports={recentReports}
             onDownload={handleDownloadRecent}
+            onViewAll={() => setShowAllReports(true)}
           />
         </div>
       </div>
@@ -380,6 +496,13 @@ export default function Reportes() {
 
       <GenerateReportSuccessModal message={successMessage} />
       <GenerateReportErrorModal message={error} />
+
+      <AllReportsModal
+        isOpen={showAllReports}
+        reports={recentReports}
+        onClose={() => setShowAllReports(false)}
+        onDownload={handleDownloadRecent}
+      />
     </Admin>
   );
 }

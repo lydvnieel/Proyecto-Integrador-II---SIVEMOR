@@ -1,36 +1,95 @@
-import Admin from  "../../components/Admin"
+import { useEffect, useMemo, useState } from "react";
+import Admin from "../../components/Admin";
+import { dashboardService } from "./services/dashboardService";
 
 function Dashboard() {
+  const [resumen, setResumen] = useState({
+    pagosPendientes: 0,
+    totalVerificaciones: 0,
+    aprobadas: 0,
+    reprobadas: 0,
+    conMulta: 0,
+    notas: 0,
+    pedidos: 0,
+    pedidosEntregados: 0,
+    regiones: [],
+  });
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    loadDashboard();
+  }, []);
+
+  const loadDashboard = async () => {
+    try {
+      setLoading(true);
+      setError("");
+
+      const data = await dashboardService.getResumen();
+
+      setResumen({
+        pagosPendientes: data.pagosPendientes ?? 0,
+        totalVerificaciones: data.totalVerificaciones ?? 0,
+        aprobadas: data.aprobadas ?? 0,
+        reprobadas: data.reprobadas ?? 0,
+        conMulta: data.conMulta ?? 0,
+        notas: data.notas ?? 0,
+        pedidos: data.pedidos ?? 0,
+        pedidosEntregados: data.pedidosEntregados ?? 0,
+        regiones: Array.isArray(data.regiones) ? data.regiones : [],
+      });
+    } catch (err) {
+      console.error("Error cargando dashboard:", err);
+      setError("No se pudieron cargar las métricas del dashboard.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatNumber = (value) => {
+    return Number(value || 0).toLocaleString("es-MX");
+  };
+
+  const formatCurrency = (value) => {
+    return new Intl.NumberFormat("es-MX", {
+      style: "currency",
+      currency: "MXN",
+      minimumFractionDigits: 2,
+    }).format(Number(value || 0));
+  };
+
   const metricasTop = [
     {
       titulo: "Total Verificaciones",
-      valor: "1,245",
-      cambio: "+12% vs mes anterior",
+      valor: loading ? "..." : formatNumber(resumen.totalVerificaciones),
+      cambio: "Registros activos",
       cambioClass: "text-success",
       icono: "bi-truck",
       iconBg: "metric-icon-blue",
     },
     {
       titulo: "Aprobadas",
-      valor: "980",
-      cambio: "+5% vs mes anterior",
+      valor: loading ? "..." : formatNumber(resumen.aprobadas),
+      cambio: "Dictamen aprobado",
       cambioClass: "text-success",
       icono: "bi-check-circle",
       iconBg: "metric-icon-green",
     },
     {
       titulo: "Reprobadas",
-      valor: "145",
-      cambio: "-2% vs mes anterior",
+      valor: loading ? "..." : formatNumber(resumen.reprobadas),
+      cambio: "Dictamen reprobado",
       cambioClass: "text-danger",
       icono: "bi-x-circle",
       iconBg: "metric-icon-red",
     },
     {
       titulo: "Con Multa",
-      valor: "45",
-      cambio: "+1% vs mes anterior",
-      cambioClass: "text-success",
+      valor: loading ? "..." : formatNumber(resumen.conMulta),
+      cambio: "Verificaciones con multa",
+      cambioClass: resumen.conMulta > 0 ? "text-success" : "text-muted",
       icono: "bi-exclamation-triangle",
       iconBg: "metric-icon-orange",
     },
@@ -39,28 +98,40 @@ function Dashboard() {
   const metricasBottom = [
     {
       titulo: "Pagos Pendientes",
-      valor: "$ 125,400.00",
+      valor: loading ? "..." : formatCurrency(resumen.pagosPendientes),
       extra: "MXN",
       icono: "bi-credit-card",
       iconBg: "metric-icon-purple",
     },
     {
       titulo: "Notas Activas",
-      valor: "24",
+      valor: loading ? "..." : formatNumber(resumen.notas),
       extra: "En proceso",
       icono: "bi-file-earmark-text",
       iconBg: "metric-icon-indigo",
     },
   ];
 
-  const regiones = [
-    { nombre: "Norte", valor: 400 },
-    { nombre: "Sur", valor: 300 },
-    { nombre: "Centro", valor: 550 },
-    { nombre: "Bajío", valor: 200 },
-  ];
+  const regiones = useMemo(() => {
+    if (!Array.isArray(resumen.regiones) || resumen.regiones.length === 0) {
+      return [
+        { nombre: "Norte", valor: 0 },
+        { nombre: "Sur", valor: 0 },
+        { nombre: "Centro", valor: 0 },
+        { nombre: "Bajío", valor: 0 },
+      ];
+    }
 
-  const maxValor = 600;
+    return resumen.regiones.map((region) => ({
+      nombre: region.nombre ?? "Sin región",
+      valor: Number(region.valor ?? 0),
+    }));
+  }, [resumen.regiones]);
+
+  const maxValor = useMemo(() => {
+    const mayor = Math.max(...regiones.map((r) => Number(r.valor || 0)), 0);
+    return mayor > 0 ? Math.ceil(mayor / 50) * 50 : 100;
+  }, [regiones]);
 
   return (
     <Admin>
@@ -69,19 +140,9 @@ function Dashboard() {
           <h2 className="page-heading">Dashboard General</h2>
           <p className="page-title">Resumen de actividad y métricas clave</p>
         </div>
-
-        <div className="d-flex gap-3 flex-wrap">
-          <button className="outline-btn">
-            <i className="bi bi-calendar3"></i>
-            Feb 2026
-          </button>
-
-          <button className="outline-btn">
-            <i className="bi bi-search"></i>
-            Filtrar
-          </button>
-        </div>
       </div>
+
+      {error && <div className="alert alert-danger">{error}</div>}
 
       <div className="metrics-grid-top">
         {metricasTop.map((item, index) => (
@@ -122,10 +183,10 @@ function Dashboard() {
 
         <div className="chart-shell">
           <div className="chart-y-axis">
-            <span>600</span>
-            <span>450</span>
-            <span>300</span>
-            <span>150</span>
+            <span>{maxValor}</span>
+            <span>{Math.round(maxValor * 0.75)}</span>
+            <span>{Math.round(maxValor * 0.5)}</span>
+            <span>{Math.round(maxValor * 0.25)}</span>
             <span>0</span>
           </div>
 
@@ -143,7 +204,10 @@ function Dashboard() {
                 <div className="chart-bar-item" key={index}>
                   <div
                     className="chart-bar"
-                    style={{ height: `${(region.valor / maxValor) * 280}px` }}
+                    style={{
+                      height: `${maxValor > 0 ? (region.valor / maxValor) * 280 : 0}px`,
+                    }}
+                    title={`${region.nombre}: ${region.valor}`}
                   ></div>
                   <span className="chart-label">{region.nombre}</span>
                 </div>

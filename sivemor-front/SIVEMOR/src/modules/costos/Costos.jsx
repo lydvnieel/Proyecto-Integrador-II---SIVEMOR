@@ -9,15 +9,16 @@ import DeleteAllCost from "./components/DeleteAllCost";
 import DeleteCostSuccessModal from "./components/DeleteCostSuccessModal";
 import CreateCostModal from "./components/CreateCostModal";
 import CreateCostSuccessModal from "./components/CreateCostSuccessModal";
-import costosData from "../../data/costos.json";
+import {getCostos,  createCosto, updateCosto,  deleteCosto} from "../costos/services/costosService"
+import {getClientes} from "../clientes/services/clienteService"
+import {getUsuarios} from "../usuarios/services/usuarioService"
 
 const ALLOWED_MATERIAS = ["MOTRIZ", "ARRASTRE", "GASOLINA", "HUMO"];
 
 export default function Costos() {
-  const [costos, setCostos] = useState(() => {
-    const saved = localStorage.getItem("costos");
-    return saved ? JSON.parse(saved) : costosData;
-  });
+  const [costos, setCostos] = useState([]);
+  const [clientesOptions, setClientesOptions] = useState([]);
+  const [usuariosOptions, setUsuariosOptions] = useState([]);
 
   const [selectedRows, setSelectedRows] = useState({});
   const [selectedCost, setSelectedCost] = useState(null);
@@ -26,8 +27,24 @@ export default function Costos() {
   const [deleteMessage, setDeleteMessage] = useState("");
 
   useEffect(() => {
-    localStorage.setItem("costos", JSON.stringify(costos));
-  }, [costos]);
+  loadInitialData();
+}, []);
+
+const loadInitialData = async () => {
+  try {
+    const [costosData, clientesData, usuariosData] = await Promise.all([
+      getCostos(),
+      getClientes(),
+      getUsuarios(),
+    ]);
+
+    setCostos(costosData);
+    setClientesOptions(clientesData);
+    setUsuariosOptions(usuariosData);
+  } catch (error) {
+    console.error("Error cargando datos de costos:", error);
+  }
+};
 
   const cleanupModalArtifacts = () => {
     document.body.classList.remove("modal-open");
@@ -112,28 +129,34 @@ export default function Costos() {
     }, 0);
   };
 
-  const handleCreateCost = (newCost) => {
-    setCostos((prev) => [
-      ...prev,
-      {
-        ...newCost,
-        id: Date.now(),
-      },
-    ]);
-  };
+  const handleCreateCost = async (newCost) => {
+  try {
+    const created = await createCosto(newCost);
+    setCostos((prev) => [...prev, created]);
+  } catch (error) {
+    console.error("Error creando costo:", error);
+  }
+};
 
-  const handleSaveEdit = (updatedCost) => {
+  const handleSaveEdit = async (updatedCost) => {
+  try {
+    const updated = await updateCosto(selectedCost.id, updatedCost);
+
     setCostos((prev) =>
-      prev.map((item) =>
-        item.id === updatedCost.id ? updatedCost : item
-      )
+      prev.map((item) => (item.id === updated.id ? updated : item))
     );
-  };
+  } catch (error) {
+    console.error("Error actualizando costo:", error);
+  }
+};
 
-  const handleDeleteSelected = () => {
-    const idsToDelete = Object.keys(selectedRows)
-      .filter((id) => selectedRows[id])
-      .map(Number);
+  const handleDeleteSelected = async () => {
+  const idsToDelete = Object.keys(selectedRows)
+    .filter((id) => selectedRows[id])
+    .map(Number);
+
+  try {
+    await Promise.all(idsToDelete.map((id) => deleteCosto(id)));
 
     const count = idsToDelete.length;
 
@@ -163,10 +186,16 @@ export default function Costos() {
     );
 
     modalInstance.hide();
-  };
+  } catch (error) {
+    console.error("Error eliminando múltiples costos:", error);
+  }
+};
 
-  const handleDeleteOne = () => {
-    if (!selectedCost) return;
+  const handleDeleteOne = async () => {
+  if (!selectedCost) return;
+
+  try {
+    await deleteCosto(selectedCost.id);
 
     const deletedClient = selectedCost.cliente || "el costo";
 
@@ -201,9 +230,17 @@ export default function Costos() {
     );
 
     modalInstance.hide();
-  };
+  } catch (error) {
+    console.error("Error eliminando costo:", error);
+  }
+};
 
-  const handleDeleteAll = () => {
+  const handleDeleteAll = async () => {
+  try {
+    const ids = costos.map((c) => c.id);
+
+    await Promise.all(ids.map((id) => deleteCosto(id)));
+
     const total = costos.length;
 
     setCostos([]);
@@ -233,7 +270,10 @@ export default function Costos() {
     );
 
     modalInstance.hide();
-  };
+  } catch (error) {
+    console.error("Error eliminando todos los costos:", error);
+  }
+};
 
   const isAllSelected =
     filteredCostos.length > 0 &&
@@ -385,7 +425,7 @@ export default function Costos() {
         </div>
       </div>
 
-      <EditCostModal cost={selectedCost} onSave={handleSaveEdit} costos={costos} />
+      <EditCostModal cost={selectedCost} onSave={handleSaveEdit} costos={costos} usuarios={usuariosOptions}/>
       <UpdateCostSuccessModal />
       <DeleteCostsModal
         cost={selectedCost}
@@ -398,7 +438,7 @@ export default function Costos() {
         onConfirmDelete={handleDeleteAll}
       />
       <DeleteCostSuccessModal message={deleteMessage} />
-      <CreateCostModal onCreate={handleCreateCost} costos={costos} />
+      <CreateCostModal onCreate={handleCreateCost} costos={costos} clientes={clientesOptions} usuarios={usuariosOptions}/>
       <CreateCostSuccessModal />
     </Admin>
   );

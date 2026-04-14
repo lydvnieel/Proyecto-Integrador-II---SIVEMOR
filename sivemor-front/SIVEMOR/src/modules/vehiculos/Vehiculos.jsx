@@ -27,12 +27,22 @@ export default function Vehiculos() {
   cargarVehiculos();
 }, []);
 
+const extractArray = (res) => {
+  if (Array.isArray(res?.data)) return res.data;
+  if (Array.isArray(res?.data?.data)) return res.data.data;
+  if (Array.isArray(res?.data?.content)) return res.data.content;
+  return [];
+};
+
 const cargarVehiculos = async () => {
   try {
     const res = await api.get("/vehiculos");
-    setVehicles(res.data || res);
+    const lista = extractArray(res);
+    console.log("Vehículos cargados:", lista);
+    setVehicles(lista);
   } catch (error) {
     console.error("Error al cargar vehículos:", error);
+    setVehicles([]);
   }
 };
 
@@ -125,25 +135,33 @@ const cargarVehiculos = async () => {
     setCurrentIndex(index);
   };
 
-  const handleOpenHistory = async (vehicle) => {
+ const handleOpenHistory = async (vehicle) => {
   try {
-    const res = await api.get(`/evaluaciones?placa=${vehicle.placa}`);
+    console.log("TIPO:", Array.isArray(vehicle) ? "ARRAY" : "OBJETO");
+    console.log("VALOR:", vehicle);
 
-    const evaluaciones = res.data?.data || [];
+    const res = await api.get(`/evaluaciones/vehiculo/${vehicle.id}`);
+
+    console.log("RESPUESTA COMPLETA:", res);
+    console.log("RESPUESTA DATA:", res.data);
+
+    const evaluaciones = Array.isArray(res?.data) ? res.data : [];
+
+    console.log("Evaluaciones encontradas:", evaluaciones);
 
     if (evaluaciones.length > 0) {
-      navigate(`/evaluaciones/vehiculo/${vehicle.id}`);
+      const evaluacion = evaluaciones[0];
+      navigate(`/evaluaciones/${evaluacion.id}`);
       return;
     }
 
     alert(`El vehículo ${vehicle.placa} no tiene evaluación registrada.`);
   } catch (error) {
     console.error("Error al consultar historial:", error);
+    console.error("Detalle:", error?.response?.data);
     alert("Error al consultar historial del vehículo.");
   }
 };
-
-  
 
   const handleDeleteSelected = async () => {
   try {
@@ -182,21 +200,47 @@ const cargarVehiculos = async () => {
 
   const handleCreateVehicle = async (newVehicle) => {
   try {
-    await api.post("/vehiculos", newVehicle);
-    cargarVehiculos(); 
+    const payload = {
+      idCliente: Number(newVehicle.idCliente),
+      idCedis: Number(newVehicle.idCedis),
+      placa: String(newVehicle.placa || "").trim().toUpperCase(),
+      serie: String(newVehicle.serie || "").trim().toUpperCase(),
+      tipo: String(newVehicle.tipo || "").trim(),
+    };
+
+    console.log("Payload vehículo:", payload);
+
+    const res = await api.post("/vehiculos", payload);
+    console.log("Respuesta crear vehículo:", res?.data);
+
+    await cargarVehiculos();
   } catch (error) {
     console.error("Error al crear vehículo:", error);
+    console.error("Detalle backend:", error?.response?.data);
+    throw error;
   }
-  };
+};
 
   const handleUpdateVehicle = async (updatedVehicle) => {
   try {
-    await api.put(`/vehiculos/${updatedVehicle.id}`, updatedVehicle);
+    const payload = {
+      id: updatedVehicle.id,
+      idCliente: Number(updatedVehicle.idCliente),
+      idCedis: Number(updatedVehicle.idCedis),
+      placa: String(updatedVehicle.placa || "").trim().toUpperCase(),
+      serie: String(updatedVehicle.serie || "").trim().toUpperCase(),
+      tipo: String(updatedVehicle.tipo || "").trim(),
+    };
+
+    console.log("Payload actualizar vehículo:", payload);
+
+    await api.put(`/vehiculos/${updatedVehicle.id}`, payload);
     await cargarVehiculos();
     setCurrentVehicle(null);
     setCurrentIndex(null);
   } catch (error) {
     console.error("Error al actualizar vehículo:", error);
+    console.error("Detalle backend:", error?.response?.data);
     throw error;
   }
 };
@@ -335,21 +379,21 @@ const handleDeleteOne = async () => {
                 </tr>
               ) : (
                 filteredVehicles.map((vehicle) => {
-                  const realIndex = vehicles.findIndex((v) => v.id === vehicle.id);
+                const realIndex = vehicles.findIndex((v) => v.id === vehicle.id);
 
-                  return (
-                    <VehicleRow
-                      key={vehicle.id ?? vehicle.placa}
-                      vehicle={vehicle}
-                      index={realIndex}
-                      isSelected={!!selectedRows[realIndex]}
-                      onSelect={() => handleSelectRow(realIndex)}
-                      onDeleteClick={() => handleOpenDeleteOne(vehicle, realIndex)}
-                      onEditClick={() => handleOpenEdit(vehicle, realIndex)}
-                      onHistoryClick={() => handleOpenHistory(vehicle)}
-                    />
-                  );
-                })
+                return (
+                  <VehicleRow
+                    key={vehicle.id ?? vehicle.placa}
+                    vehicle={vehicle}
+                    index={realIndex}
+                    isSelected={!!selectedRows[realIndex]}
+                    onSelect={() => handleSelectRow(realIndex)}
+                    onDeleteClick={() => handleOpenDeleteOne(vehicle, realIndex)}
+                    onEditClick={() => handleOpenEdit(vehicle, realIndex)}
+                    onHistoryClick={() => handleOpenHistory(vehicle)}
+                  />
+                );
+              })
               )}
             </tbody>
           </table>

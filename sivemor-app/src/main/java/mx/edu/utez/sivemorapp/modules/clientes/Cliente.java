@@ -1,4 +1,4 @@
-package mx.edu.utez.sivemorapp.modules.clientes;
+package mx.edu.utez.sivemorapp.modules.cedis.clientes;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;

@@ -1,19 +1,20 @@
 import { useEffect, useState } from "react";
 import Modal from "bootstrap/js/dist/modal";
 
-export default function EditNoteModal({ note, onSave }) {
+export default function EditNoteModal({ note, onSave, usuarios = [] }) {
   const [formData, setFormData] = useState(null);
   const [originalData, setOriginalData] = useState(null);
   const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (note) {
       const noteData = {
-        ...note,
-        metodo: note.metodo || "",
+        tipoPago: note.metodo || "",
         anticipo: note.anticipo || "",
-        atendio: note.atendio || "",
-        reviso: note.reviso || "",
+        pagadoCompleto: note.pagadoCompleto || false,
+        atendio: note.atendioId || "",
+        reviso: note.revisoId || "",
         comentario: note.comentario || "",
       };
 
@@ -24,39 +25,24 @@ export default function EditNoteModal({ note, onSave }) {
   }, [note]);
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
 
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: type === "checkbox" ? checked : value,
     }));
 
     if (error) setError("");
   };
 
   const isSameData = () => {
-    return (
-      formData.metodo.trim() === (originalData.metodo || "").trim() &&
-      formData.anticipo.trim() === (originalData.anticipo || "").trim() &&
-      formData.atendio.trim() === (originalData.atendio || "").trim() &&
-      formData.reviso.trim() === (originalData.reviso || "").trim() &&
-      formData.comentario.trim() === (originalData.comentario || "").trim()
-    );
+    return JSON.stringify(formData) === JSON.stringify(originalData);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formData) return;
 
-    const cleanedData = {
-      ...formData,
-      metodo: formData.metodo.trim(),
-      anticipo: formData.anticipo.trim(),
-      atendio: formData.atendio.trim(),
-      reviso: formData.reviso.trim(),
-      comentario: formData.comentario.trim(),
-    };
-
-    if (!cleanedData.metodo || !cleanedData.atendio || !cleanedData.reviso) {
+    if (!formData.tipoPago || !formData.atendio) {
       setError("Faltan campos obligatorios por llenar.");
       return;
     }
@@ -66,13 +52,68 @@ export default function EditNoteModal({ note, onSave }) {
       return;
     }
 
-    onSave(cleanedData);
+    const payload = {
+      tipoPago: formData.tipoPago,
+      anticipo: formData.anticipo === "" ? 0 : Number(formData.anticipo),
+      pagadoCompleto: formData.pagadoCompleto,
+      atendio: Number(formData.atendio),
+      reviso: formData.reviso ? Number(formData.reviso) : null,
+      comentario: formData.comentario.trim(),
+    };
 
-    const editModalElement = document.getElementById("editNoteModal");
-    if (!editModalElement) return;
+        try {
+      setSaving(true);
+      await onSave(payload);
 
-    const editModalInstance = Modal.getOrCreateInstance(editModalElement);
-    editModalInstance.hide();
+      const editModalElement = document.getElementById("editNoteModal");
+      const successModalElement = document.getElementById("updateSuccessModal");
+
+      if (!editModalElement) return;
+
+      const editModalInstance = Modal.getOrCreateInstance(editModalElement);
+
+      const cleanupModalArtifacts = () => {
+        document.body.classList.remove("modal-open");
+        document.body.style.removeProperty("padding-right");
+        document.body.style.removeProperty("overflow");
+
+        document.querySelectorAll(".modal-backdrop").forEach((backdrop) => {
+          backdrop.remove();
+        });
+      };
+
+      if (successModalElement) {
+        const successModalInstance = Modal.getOrCreateInstance(successModalElement);
+
+        editModalElement.addEventListener(
+          "hidden.bs.modal",
+          () => {
+            cleanupModalArtifacts();
+            setError("");
+            successModalInstance.show();
+          },
+          { once: true }
+        );
+      } else {
+        editModalElement.addEventListener(
+          "hidden.bs.modal",
+          () => {
+            cleanupModalArtifacts();
+            setError("");
+          },
+          { once: true }
+        );
+      }
+
+      editModalInstance.hide();
+    } catch (err) {
+      console.error("Error al actualizar nota:", err);
+      setError(
+        err?.response?.data?.message || "No se pudo actualizar la nota."
+      );
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (!note || !formData) return null;
@@ -102,19 +143,26 @@ export default function EditNoteModal({ note, onSave }) {
 
             <div className="mb-3">
               <label className="form-label">Método de pago *</label>
-              <input
-                type="text"
-                className="form-control"
-                name="metodo"
-                value={formData.metodo}
+              <select
+                className="form-select"
+                name="tipoPago"
+                value={formData.tipoPago}
                 onChange={handleChange}
-              />
+              >
+                <option value="">Selecciona un método</option>
+                <option value="EFECTIVO">EFECTIVO</option>
+                <option value="DEPOSITO">DEPOSITO</option>
+                <option value="TRANSFERENCIA">TRANSFERENCIA</option>
+                <option value="TARJETA">TARJETA</option>
+              </select>
             </div>
 
             <div className="mb-3">
               <label className="form-label">Anticipo</label>
               <input
-                type="text"
+                type="number"
+                min="0"
+                step="0.01"
                 className="form-control"
                 name="anticipo"
                 value={formData.anticipo}
@@ -122,26 +170,58 @@ export default function EditNoteModal({ note, onSave }) {
               />
             </div>
 
-            <div className="mb-3">
-              <label className="form-label">Atendió *</label>
+            <div className="form-check mb-3">
               <input
-                type="text"
-                className="form-control"
-                name="atendio"
-                value={formData.atendio}
+                className="form-check-input"
+                type="checkbox"
+                id="editPagadoCompleto"
+                name="pagadoCompleto"
+                checked={formData.pagadoCompleto}
                 onChange={handleChange}
               />
+              <label className="form-check-label" htmlFor="editPagadoCompleto">
+                Pagado completo
+              </label>
             </div>
 
             <div className="mb-3">
-              <label className="form-label">Revisó *</label>
-              <input
-                type="text"
-                className="form-control"
+              <label className="form-label">Atendió *</label>
+              <select
+                className="form-select"
+                name="atendio"
+                value={formData.atendio}
+                onChange={handleChange}
+              >
+                <option value="">Selecciona un usuario</option>
+                {usuarios.map((usuario) => (
+                  <option
+                    key={usuario.id ?? usuario.idUsuario}
+                    value={usuario.id ?? usuario.idUsuario}
+                  >
+                    {usuario.nombre ?? usuario.nombreUsuario}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="mb-3">
+              <label className="form-label">Revisó</label>
+              <select
+                className="form-select"
                 name="reviso"
                 value={formData.reviso}
                 onChange={handleChange}
-              />
+              >
+                <option value="">Selecciona un usuario</option>
+                {usuarios.map((usuario) => (
+                  <option
+                    key={usuario.id ?? usuario.idUsuario}
+                    value={usuario.id ?? usuario.idUsuario}
+                  >
+                    {usuario.nombre ?? usuario.nombreUsuario}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="mb-3">
@@ -160,8 +240,8 @@ export default function EditNoteModal({ note, onSave }) {
             <button type="button" className="btn btn-light" data-bs-dismiss="modal">
               Cancelar
             </button>
-            <button type="button" className="btn btn-primary" onClick={handleSave}>
-              Guardar cambios
+            <button type="button" className="btn btn-primary" onClick={handleSave} disabled={saving}>
+              {saving ? "Guardando..." : "Guardar cambios"}
             </button>
           </div>
         </div>

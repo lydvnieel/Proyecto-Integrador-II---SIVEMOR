@@ -37,11 +37,7 @@ export default function VerificationRow({
 
       <td>
         <div className="d-flex gap-2 align-items-center">
-          <button
-            className="icon-btn"
-            onClick={onEdit}
-            type="button"
-          >
+          <button className="icon-btn" onClick={onEdit} type="button">
             <i className="bi bi-pencil-square"></i>
           </button>
 

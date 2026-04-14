@@ -1,22 +1,18 @@
 export default function EvaluationStatusBadge({ value }) {
   const text = String(value || "").trim();
-
   const normalized = text.toLowerCase();
 
-  let className = "badge rounded-pill px-3 py-2 fw-semibold";
-  let style = {
-    fontSize: "0.8rem",
-  };
+  let textColor = "#5E9CE6";
+  let backgroundColor = "#E8F2FF";
 
   if (
     normalized.includes("aprobado") ||
     normalized.includes("aprobada") ||
-    normalized.includes("aprobadas") ||
-    normalized.includes("aprobados") ||
-    normalized.includes("funcionando")
+    normalized.includes("funcionando") ||
+    normalized.includes("funciona")
   ) {
-    className += " text-success";
-    style.backgroundColor = "#DDF7E7";
+    textColor = "#63C784";
+    backgroundColor = "#E7F8EC";
   } else if (
     normalized.includes("reprobado") ||
     normalized.includes("reprobada") ||
@@ -25,20 +21,25 @@ export default function EvaluationStatusBadge({ value }) {
     normalized.includes("rota") ||
     normalized.includes("faltante") ||
     normalized.includes("faltan") ||
+    normalized.includes("no funciona") ||
     normalized.includes("fuga") ||
     normalized.includes("flojo") ||
-    normalized.includes("no funciona") ||
     normalized.includes("estrellado")
   ) {
-    className += " text-danger";
-    style.backgroundColor = "#FCE4E4";
-  } else {
-    className += " text-primary";
-    style.backgroundColor = "#E3F0FF";
+    textColor = "#E06767";
+    backgroundColor = "#FDECEC";
   }
 
   return (
-    <span className={className} style={style}>
+    <span
+      className="badge rounded-pill px-3 py-2 fw-semibold"
+      style={{
+        backgroundColor,
+        color: textColor,
+        fontSize: "0.85rem",
+        minWidth: "96px",
+      }}
+    >
       {text || "Sin dato"}
     </span>
   );

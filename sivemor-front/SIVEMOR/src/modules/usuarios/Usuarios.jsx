@@ -6,8 +6,7 @@ import EditUserModal from "./components/EditUserModal";
 import CreateUserSuccessModal from "./components/CreateUserSuccessModal";
 import UpdateUserSuccessModal from "./components/UpdateUserSuccessModal";
 import EmailSentModal from "./components/EmailSentModal";
-import { api } from "../../../server/api";
-
+import { getUsuarios, createUsuario, updateUsuario, regenerarContrasenaUsuario} from "./services/usuarioService";
 export default function Usuarios() {
   const [users, setUsers] = useState([]);
 
@@ -20,20 +19,14 @@ export default function Usuarios() {
   }, []);
 
   const fetchUsers = async () => {
-    try {
-      const res = await api.get("/usuarios");
-      const data = Array.isArray(res.data)
-        ? res.data
-        : Array.isArray(res.data?.data)
-          ? res.data.data
-          : [];
-
-      setUsers(data);
-    } catch (error) {
-      console.error("Error al cargar usuarios:", error);
-      setUsers([]);
-    }
-  };
+  try {
+    const data = await getUsuarios();
+    setUsers(data);
+  } catch (error) {
+    console.error("Error al cargar usuarios:", error);
+    setUsers([]);
+  }
+};
 
   const filteredUsers = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -61,48 +54,37 @@ export default function Usuarios() {
   };
 
   const handleCreateUser = async (newUser) => {
-    try {
-      await api.post("/usuarios", {
-        nombreUsuario: newUser.nombre,
-        email: newUser.email,
-        tipoUsuario: newUser.rol === "Admin" ? "ADMIN" : "TECNICO",
-      });
-
-      await fetchUsers();
-    } catch (error) {
-      console.error("Error al crear usuario:", error);
-      throw error;
-    }
-  };
+  try {
+    await createUsuario(newUser);
+    await fetchUsers();
+  } catch (error) {
+    console.error("Error al crear usuario:", error);
+    throw error;
+  }
+};
 
   const handleOpenEdit = (user) => {
     setSelectedUser(user);
   };
 
   const handleSaveEdit = async (updatedUser) => {
-    try {
-      await api.put(`/usuarios/${selectedUser.id}`, {
-        nombreUsuario: updatedUser.nombre,
-        email: updatedUser.email,
-        tipoUsuario: updatedUser.rol === "Admin" ? "ADMIN" : "TECNICO",
-        activo: updatedUser.estado === "Activo",
-      });
-
-      await fetchUsers();
-    } catch (error) {
-      console.error("Error al actualizar usuario:", error);
-      throw error;
-    }
-  };
+  try {
+    await updateUsuario(selectedUser.id, updatedUser);
+    await fetchUsers();
+  } catch (error) {
+    console.error("Error al actualizar usuario:", error);
+    throw error;
+  }
+};
 
   const handleSendEmail = async (user) => {
-    try {
-      await api.post(`/usuarios/${user.id}/regenerar-contrasena`);
-      setEmailUser(user);
-    } catch (error) {
-      console.error("Error al enviar correo:", error);
-    }
-  };
+  try {
+    await regenerarContrasenaUsuario(user.id);
+    setEmailUser(user);
+  } catch (error) {
+    console.error("Error al enviar correo:", error);
+  }
+};
 
   const handleOpenEmail = (user) => {
     setEmailUser(user);

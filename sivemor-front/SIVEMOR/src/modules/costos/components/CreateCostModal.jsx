@@ -3,24 +3,24 @@ import Modal from "bootstrap/js/dist/modal";
 
 const ALLOWED_MATERIAS = ["ARRASTRE", "HUMO", "GASOLINA", "MOTRIZ"];
 
-export default function CreateCostModal({ onCreate, costos = [] }) {
+export default function CreateCostModal({ onCreate, costos = [], clientes = [], usuarios = [] }) {
   const [formData, setFormData] = useState({
-    cliente: "",
+    idCliente: "",
     materia: "",
     costo: "",
     encargado: "",
-    atiendeCobra: "",
+    atiendeYCobra: "",
   });
 
   const [error, setError] = useState("");
 
   const resetForm = () => {
     setFormData({
-      cliente: "",
+      idCliente: "",
       materia: "",
       costo: "",
       encargado: "",
-      atiendeCobra: "",
+      atiendeYCobra: "",
     });
     setError("");
   };
@@ -28,10 +28,6 @@ export default function CreateCostModal({ onCreate, costos = [] }) {
   const handleChange = (e) => {
     const { name, value } = e.target;
     let newValue = value;
-
-    if (name === "materia") {
-      newValue = value.toUpperCase();
-    }
 
     if (name === "costo") {
       newValue = value.replace(/[^0-9.]/g, "");
@@ -41,11 +37,7 @@ export default function CreateCostModal({ onCreate, costos = [] }) {
       }
     }
 
-    setFormData((prev) => ({
-      ...prev,
-      [name]: newValue,
-    }));
-
+    setFormData((prev) => ({ ...prev, [name]: newValue }));
     if (error) setError("");
   };
 
@@ -53,26 +45,21 @@ export default function CreateCostModal({ onCreate, costos = [] }) {
     e.preventDefault();
 
     const cleaned = {
-      cliente: formData.cliente.trim(),
-      materia: formData.materia.trim().toUpperCase(),
+      idCliente: formData.idCliente,
+      materia: formData.materia,
       costo: String(formData.costo).trim(),
-      encargado: formData.encargado.trim(),
-      atiendeCobra: formData.atiendeCobra.trim(),
+      encargado: formData.encargado,
+      atiendeYCobra: formData.atiendeYCobra,
     };
 
     if (
-      !cleaned.cliente ||
+      !cleaned.idCliente ||
       !cleaned.materia ||
       !cleaned.costo ||
       !cleaned.encargado ||
-      !cleaned.atiendeCobra
+      !cleaned.atiendeYCobra
     ) {
       setError("Todos los campos son obligatorios.");
-      return;
-    }
-
-    if (!ALLOWED_MATERIAS.includes(cleaned.materia)) {
-      setError("La materia solo puede ser: ARRASTRE, HUMO, GASOLINA o MOTRIZ.");
       return;
     }
 
@@ -84,7 +71,7 @@ export default function CreateCostModal({ onCreate, costos = [] }) {
 
     const duplicated = costos.some(
       (item) =>
-        String(item.cliente || "").trim().toLowerCase() === cleaned.cliente.toLowerCase() &&
+        Number(item.idCliente) === Number(cleaned.idCliente) &&
         String(item.materia || "").trim().toUpperCase() === cleaned.materia
     );
 
@@ -93,10 +80,7 @@ export default function CreateCostModal({ onCreate, costos = [] }) {
       return;
     }
 
-    onCreate({
-      ...cleaned,
-      costo: costoNumber,
-    });
+    onCreate({ ...cleaned, costo: costoNumber });
 
     const modalElement = document.getElementById("createCostModal");
     const successElement = document.getElementById("createCostSuccessModal");
@@ -136,6 +120,7 @@ export default function CreateCostModal({ onCreate, costos = [] }) {
                 type="button"
                 className="btn-close"
                 data-bs-dismiss="modal"
+                onClick={resetForm}
               ></button>
             </div>
 
@@ -148,26 +133,36 @@ export default function CreateCostModal({ onCreate, costos = [] }) {
 
               <div className="mb-3">
                 <label className="form-label">Cliente *</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  name="cliente"
-                  value={formData.cliente}
+                <select
+                  className="form-select"
+                  name="idCliente"
+                  value={formData.idCliente}
                   onChange={handleChange}
-                  placeholder="Ej: Pedro Cabrera"
-                />
+                >
+                  <option value="">Selecciona un cliente</option>
+                  {clientes.map((cliente) => (
+                    <option key={cliente.id} value={cliente.id}>
+                      {cliente.razonSocial}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div className="mb-3">
                 <label className="form-label">Materia *</label>
-                <input
-                  type="text"
-                  className="form-control"
+                <select
+                  className="form-select"
                   name="materia"
                   value={formData.materia}
                   onChange={handleChange}
-                  placeholder="Ej. MOTRIZ"
-                />
+                >
+                  <option value="">Selecciona una materia</option>
+                  {ALLOWED_MATERIAS.map((m) => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div className="mb-3">
@@ -185,26 +180,36 @@ export default function CreateCostModal({ onCreate, costos = [] }) {
               <div className="row">
                 <div className="col-md-6 mb-3">
                   <label className="form-label">Encargado *</label>
-                  <input
-                    type="text"
-                    className="form-control"
+                  <select
+                    className="form-select"
                     name="encargado"
                     value={formData.encargado}
                     onChange={handleChange}
-                    placeholder="Ej. Renato Baez"
-                  />
+                  >
+                    <option value="">Selecciona un usuario</option>
+                    {usuarios.map((usuario) => (
+                      <option key={usuario.id} value={usuario.id}>
+                        {usuario.nombre}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="col-md-6 mb-3">
                   <label className="form-label">Atiende y cobra *</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    name="atiendeCobra"
-                    value={formData.atiendeCobra}
+                  <select
+                    className="form-select"
+                    name="atiendeYCobra"
+                    value={formData.atiendeYCobra}
                     onChange={handleChange}
-                    placeholder="Ej. Juan Carlos"
-                  />
+                  >
+                    <option value="">Selecciona un usuario</option>
+                    {usuarios.map((usuario) => (
+                      <option key={usuario.id} value={usuario.id}>
+                        {usuario.nombre}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
             </div>
@@ -214,14 +219,11 @@ export default function CreateCostModal({ onCreate, costos = [] }) {
                 type="button"
                 className="btn btn-light"
                 data-bs-dismiss="modal"
+                onClick={resetForm}
               >
                 Cancelar
               </button>
-
-              <button
-                type="submit"
-                className="btn btn-primary"
-              >
+              <button type="submit" className="btn btn-primary">
                 Crear costo
               </button>
             </div>

@@ -1,9 +1,28 @@
 const API_URL = "http://localhost:8080/sivemor/api";
 
+const buildQueryString = (params = {}) => {
+  const searchParams = new URLSearchParams();
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== "") {
+      searchParams.append(key, value);
+    }
+  });
+
+  const query = searchParams.toString();
+  return query ? `?${query}` : "";
+};
+
 export const api = {
-  get: async (endpoint) => {
-    const res = await fetch(`${API_URL}${endpoint}`);
-    if (!res.ok) throw new Error("Error en GET");
+  get: async (endpoint, options = {}) => {
+    const queryString = buildQueryString(options.params);
+    const res = await fetch(`${API_URL}${endpoint}${queryString}`);
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(errorText || "Error en GET");
+    }
+
     return res.json();
   },
 
@@ -15,7 +34,12 @@ export const api = {
       },
       body: JSON.stringify(data),
     });
-    if (!res.ok) throw new Error("Error en POST");
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(errorText || "Error en POST");
+    }
+
     return res.json();
   },
 
@@ -27,7 +51,12 @@ export const api = {
       },
       body: JSON.stringify(data),
     });
-    if (!res.ok) throw new Error("Error en PUT");
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(errorText || "Error en PUT");
+    }
+
     return res.json();
   },
 
@@ -35,7 +64,12 @@ export const api = {
     const res = await fetch(`${API_URL}${endpoint}`, {
       method: "DELETE",
     });
-    if (!res.ok) throw new Error("Error en DELETE");
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(errorText || "Error en DELETE");
+    }
+
     return res.json();
   },
 };

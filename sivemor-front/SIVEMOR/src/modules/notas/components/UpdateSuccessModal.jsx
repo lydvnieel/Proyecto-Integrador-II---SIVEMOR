@@ -1,3 +1,5 @@
+import Modal from "bootstrap/js/dist/modal";
+
 export default function UpdateSuccessModal() {
   return (
     <div className="modal fade" id="updateSuccessModal" tabIndex="-1" aria-hidden="true">

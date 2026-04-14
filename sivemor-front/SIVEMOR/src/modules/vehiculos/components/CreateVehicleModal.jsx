@@ -170,14 +170,25 @@ export default function CreateVehicleModal({ onSave }) {
     const createModalInstance = Modal.getOrCreateInstance(createModalElement);
     const successModalInstance = Modal.getOrCreateInstance(successModalElement);
 
-    createModalElement.addEventListener(
-      "hidden.bs.modal",
-      () => {
-        resetForm();
-        successModalInstance.show();
-      },
-      { once: true },
-    );
+    const cleanupModalArtifacts = () => {
+    document.body.classList.remove("modal-open");
+    document.body.style.removeProperty("padding-right");
+    document.body.style.removeProperty("overflow");
+
+    document.querySelectorAll(".modal-backdrop").forEach((backdrop) => {
+      backdrop.remove();
+    });
+  };
+
+  createModalElement.addEventListener(
+    "hidden.bs.modal",
+    () => {
+      cleanupModalArtifacts();
+      resetForm();
+      successModalInstance.show();
+    },
+    { once: true }
+  );
 
     createModalInstance.hide();
   };

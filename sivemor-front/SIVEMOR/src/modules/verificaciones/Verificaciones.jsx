@@ -13,6 +13,9 @@ import MarkPaidVerificationsModal from "./components/MarkPaidVerificationsModal"
 import DeleteSuccessfulModal from "./components/DeleteSuccessfulModal";
 import DeleteAllVerificationModal from "./components/DeleteAllVerificationModal";
 import { verificacionService } from "../verificaciones/services/verificacionesService";
+import { createCosto } from "../costos/services/costosService";
+import { getClientes } from "../clientes/services/clienteService";
+import { getUsuarios } from "../usuarios/services/usuarioService";
 
 const ALLOWED_MATERIAS = ["MOTRIZ", "ARRASTRE", "GASOLINA", "HUMO"];
 
@@ -25,10 +28,27 @@ export default function Verificaciones() {
   const [deleteMessage, setDeleteMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [clientesOptions, setClientesOptions] = useState([]);
+  const [usuariosOptions, setUsuariosOptions] = useState([]);
+  const [costosList, setCostosList] = useState([]);
 
-  useEffect(() => {
+    useEffect(() => {
     fetchVerificaciones();
+    loadCostasData();
   }, []);
+
+  const loadCostasData = async () => {
+    try {
+      const [clientesData, usuariosData] = await Promise.all([
+        getClientes(),
+        getUsuarios(),
+      ]);
+      setClientesOptions(clientesData);
+      setUsuariosOptions(usuariosData);
+    } catch (err) {
+      console.error("Error cargando datos para costos:", err);
+    }
+  };
 
   const fetchVerificaciones = async (filters = {}) => {
     try {
@@ -116,9 +136,18 @@ export default function Verificaciones() {
   };
 
   const handleCreateVerification = async (payload) => {
-    const created = await verificacionService.create(payload);
-    setVerificaciones((prev) => [...prev, created]);
-  };
+  await verificacionService.create(payload);
+  await fetchVerificaciones();
+};
+
+const handleCreateCost = async (newCost) => {
+  try {
+    const created = await createCosto(newCost);
+    setCostosList((prev) => [...prev, created]);
+  } catch (error) {
+    console.error("Error creando costo:", error);
+  }
+};
 
   const handleSaveEdit = async (payload) => {
     const updated = await verificacionService.update(payload.id, payload);
@@ -287,26 +316,23 @@ export default function Verificaciones() {
     }
   };
 
-  const handleMarkPaid = () => {
-    const idsToUpdate = Object.keys(selectedRows)
-      .filter((id) => selectedRows[id])
-      .map(Number);
+  const handleMarkPaid = async () => {
+  const idsToUpdate = Object.keys(selectedRows)
+    .filter((id) => selectedRows[id])
+    .map(Number);
 
-    setVerificaciones((prev) =>
-      prev.map((item) =>
-        idsToUpdate.includes(item.id)
-          ? {
-              ...item,
-              pagado: "Sí",
-              pagadoClass: "status-success",
-              pendiente: "$0",
-            }
-          : item
-      )
-    );
-
+  try {
+    await verificacionService.marcarPagado(idsToUpdate);
+    await fetchVerificaciones();
     setSelectedRows({});
-  };
+  } catch (err) {
+    console.error("Error al marcar como pagado:", err);
+    alert(
+      err?.response?.data?.message ||
+        "No se pudieron marcar las verificaciones como pagadas."
+    );
+  }
+};
 
   const isAllSelected =
     filteredVerificaciones.length > 0 &&
@@ -496,24 +522,14 @@ export default function Verificaciones() {
         verification={selectedVerification}
         onSave={handleSaveEdit}
       />
-      <CreateCostModal />
+      <CreateCostModal onCreate={handleCreateCost} costos={costosList} clientes={clientesOptions} usuarios={usuariosOptions}/>
       <CreateVerificationSuccessModal />
       <UpdateVerificationSuccessModal />
       <CreateCostSuccessModal />
-      <DeleteVerificationsModal
-        verification={selectedVerification}
-        selectedCount={selectedCount}
-        totalCount={filteredVerificaciones.length}
-        onDelete={selectedVerification ? handleDeleteOne : handleDeleteSelected}
-      />
-      <MarkPaidVerificationsModal
-        selectedCount={selectedCount}
-        onConfirm={handleMarkPaid}
-      />
-      <DeleteAllVerificationModal
-        totalCount={verificaciones.length}
-        onConfirmDelete={handleDeleteAll}
-      />
+      <DeleteVerificationsModal verification={selectedVerification} selectedCount={selectedCount} totalCount={filteredVerificaciones.length}
+        onDelete={selectedVerification ? handleDeleteOne : handleDeleteSelected}/>
+      <MarkPaidVerificationsModal selectedCount={selectedCount} onConfirm={handleMarkPaid}/>
+      <DeleteAllVerificationModal totalCount={verificaciones.length} onConfirmDelete={handleDeleteAll}/>
       <DeleteSuccessfulModal message={deleteMessage} />
     </Admin>
   );

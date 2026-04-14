@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Modal from "bootstrap/js/dist/modal";
 import Admin from "../../components/Admin";
 import NoteRow from "./components/NoteRow";
@@ -8,23 +8,71 @@ import DeleteNotesModal from "./components/DeleteNotesModal";
 import DeleteAllNotesModal from "./components/DeleteAllNotesModal";
 import CreateSuccessModal from "./components/CreateSuccessModal";
 import DeleteSuccessModal from "./components/DeleteSuccessModal";
-import notasData from "../../data/notas.json";
+import UpdateSuccessModal from "./components/UpdateSuccessModal";
+import { notasService } from "./services/notasServices";
+import { api } from "../../../server/api";
 
 export default function Notas() {
-  const [notas, setNotas] = useState(() => {
-    const savedNotas = localStorage.getItem("notas");
-    return savedNotas ? JSON.parse(savedNotas) : notasData;
-  });
+  const [notas, setNotas] = useState([]);
+  const [clientes, setClientes] = useState([]);
+  const [verificentros, setVerificentros] = useState([]);
+  const [usuarios, setUsuarios] = useState([]);
 
   const [selectedRows, setSelectedRows] = useState({});
   const [currentNote, setCurrentNote] = useState(null);
   const [currentId, setCurrentId] = useState(null);
   const [deleteMessage, setDeleteMessage] = useState("");
   const [createMessage, setCreateMessage] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
-    localStorage.setItem("notas", JSON.stringify(notas));
-  }, [notas]);
+    loadInitialData();
+  }, []);
+
+  const loadInitialData = async () => {
+    try {
+      setLoading(true);
+
+      const [notasData, clientesRes, verificentrosRes, usuariosRes] =
+        await Promise.all([
+          notasService.getAll(),
+          api.get("/clientes"),
+          api.get("/verificentros"),
+          api.get("/usuarios"),
+        ]);
+
+      setNotas(notasData);
+
+      setClientes(
+        Array.isArray(clientesRes.data?.data)
+          ? clientesRes.data.data
+          : Array.isArray(clientesRes.data)
+          ? clientesRes.data
+          : []
+      );
+
+      setVerificentros(
+        Array.isArray(verificentrosRes.data?.data)
+          ? verificentrosRes.data.data
+          : Array.isArray(verificentrosRes.data)
+          ? verificentrosRes.data
+          : []
+      );
+
+      setUsuarios(
+        Array.isArray(usuariosRes.data?.data)
+          ? usuariosRes.data.data
+          : Array.isArray(usuariosRes.data)
+          ? usuariosRes.data
+          : []
+      );
+    } catch (error) {
+      console.error("Error al cargar notas:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const cleanupModalArtifacts = () => {
     document.body.classList.remove("modal-open");
@@ -41,7 +89,7 @@ export default function Notas() {
 
     const sourceModalElement = document.getElementById(sourceModalId);
     const successModalElement = document.getElementById(
-      "successfulDeleteNoteModal",
+      "successfulDeleteNoteModal"
     );
 
     if (!sourceModalElement || !successModalElement) return;
@@ -55,18 +103,39 @@ export default function Notas() {
         cleanupModalArtifacts();
         successModalInstance.show();
       },
-      { once: true },
+      { once: true }
     );
 
     sourceModalInstance.hide();
   };
 
+  const filteredNotas = useMemo(() => {
+    const term = search.trim().toLowerCase();
+
+    if (!term) return notas;
+
+    return notas.filter((note) =>
+      [
+        note.nota,
+        note.cliente,
+        note.verificentro,
+        note.metodo,
+        note.atendio,
+        note.reviso,
+        note.comentario,
+      ]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(term))
+    );
+  }, [notas, search]);
+
   const handleSelectAll = () => {
     const allSelected =
-      notas.length > 0 && notas.every((note) => selectedRows[note.id]);
+      filteredNotas.length > 0 &&
+      filteredNotas.every((note) => selectedRows[note.id]);
 
     const newSelected = {};
-    notas.forEach((note) => {
+    filteredNotas.forEach((note) => {
       newSelected[note.id] = !allSelected;
     });
 
@@ -94,107 +163,133 @@ export default function Notas() {
     setCurrentId(note.id);
   };
 
-  const handleCreateNote = (newNote) => {
-    const createdNote = {
-      ...newNote,
-      id: Date.now(),
-    };
-
-    setNotas((prev) => [...prev, createdNote]);
-    setCreateMessage(`Se creó con éxito la nota ${createdNote.nota}.`);
+  const handleCreateNote = async (formData) => {
+    try {
+      const createdNote = await notasService.create(formData);
+      setNotas((prev) => [...prev, createdNote]);
+      setCreateMessage(`Se creó con éxito la nota ${createdNote.nota}.`);
+    } catch (error) {
+      console.error("Error al crear nota:", error);
+      throw error;
+    }
   };
-  
-  const handleMarkPaid = () => {
-  const idsToUpdate = Object.keys(selectedRows)
-    .filter((id) => selectedRows[id])
-    .map(Number);
 
-  setNotas((prev) =>
-    prev.map((note) =>
-      idsToUpdate.includes(note.id)
-        ? {
-            ...note,
-            pagado: "Pagado",
-            pagadoClass: "status-success",
-          }
-        : note
-    )
-  );
+  const handleMarkPaid = async () => {
+    try {
+      const selectedNotes = notas.filter((note) => selectedRows[note.id]);
 
-  setSelectedRows({});
+      const updatedNotes = await Promise.all(
+        selectedNotes.map((note) => notasService.markAsPaid(note.id, note))
+      );
+
+      setNotas((prev) =>
+        prev.map((note) => {
+          const updated = updatedNotes.find((u) => u.id === note.id);
+          return updated || note;
+        })
+      );
+
+      setSelectedRows({});
+    } catch (error) {
+      console.error("Error al marcar notas como pagadas:", error);
+    }
+  };
+
+  const handleUpdateNote = async (updatedPayload) => {
+  if (currentId === null) return;
+
+  try {
+    await notasService.update(currentId, updatedPayload);
+    await loadInitialData();
+
+    const refreshedNote = await notasService.getById(currentId);
+    setCurrentNote(refreshedNote);
+  } catch (error) {
+    console.error("Error al actualizar nota:", error);
+    throw error;
+  }
 };
 
-  const handleUpdateNote = (updatedNote) => {
+  const handleDeleteOne = async () => {
     if (currentId === null) return;
 
-    const updatedNotes = notas.map((note) =>
-      note.id === currentId ? { ...note, ...updatedNote } : note,
-    );
+    try {
+      const deletedNote = currentNote?.nota || "la nota";
 
-    setNotas(updatedNotes);
-    setCurrentNote(updatedNotes.find((note) => note.id === currentId) || null);
+      await notasService.remove(currentId);
+
+      setNotas((prev) => prev.filter((note) => note.id !== currentId));
+
+      setSelectedRows((prev) => {
+        const updated = { ...prev };
+        delete updated[currentId];
+        return updated;
+      });
+
+      setCurrentNote(null);
+      setCurrentId(null);
+
+      showDeleteSuccessModal(
+        `Se eliminó con éxito la nota ${deletedNote}.`,
+        "deleteNotesModal"
+      );
+    } catch (error) {
+      console.error("Error al eliminar nota:", error);
+    }
   };
 
-  const handleDeleteOne = () => {
-    if (currentId === null) return;
+  const handleDeleteSelected = async () => {
+    try {
+      const idsToDelete = Object.keys(selectedRows)
+        .filter((id) => selectedRows[id])
+        .map(Number);
 
-    const deletedNote = currentNote?.nota || "la nota";
+      await Promise.all(idsToDelete.map((id) => notasService.remove(id)));
 
-    setNotas((prev) => prev.filter((note) => note.id !== currentId));
+      const count = idsToDelete.length;
 
-    setSelectedRows((prev) => {
-      const updated = { ...prev };
-      delete updated[currentId];
-      return updated;
-    });
+      setNotas((prev) => prev.filter((note) => !idsToDelete.includes(note.id)));
+      setSelectedRows({});
+      setCurrentNote(null);
+      setCurrentId(null);
 
-    setCurrentNote(null);
-    setCurrentId(null);
-
-    showDeleteSuccessModal(
-      `Se eliminó con éxito la nota ${deletedNote}.`,
-      "deleteNotesModal",
-    );
+      showDeleteSuccessModal(
+        count === 1
+          ? "Se eliminó con éxito 1 nota seleccionada."
+          : `Se eliminaron con éxito ${count} notas seleccionadas.`,
+        "deleteNotesModal"
+      );
+    } catch (error) {
+      console.error("Error al eliminar notas:", error);
+    }
   };
 
-  const handleDeleteSelected = () => {
-    const idsToDelete = Object.keys(selectedRows)
-      .filter((id) => selectedRows[id])
-      .map(Number);
+  const handleDeleteAll = async () => {
+    try {
+      const idsToDelete = notas.map((note) => note.id);
+      await Promise.all(idsToDelete.map((id) => notasService.remove(id)));
 
-    const count = idsToDelete.length;
+      const total = notas.length;
 
-    setNotas((prev) => prev.filter((note) => !idsToDelete.includes(note.id)));
-    setSelectedRows({});
-    setCurrentNote(null);
-    setCurrentId(null);
+      setNotas([]);
+      setSelectedRows({});
+      setCurrentNote(null);
+      setCurrentId(null);
 
-    showDeleteSuccessModal(
-      count === 1
-        ? "Se eliminó con éxito 1 nota seleccionada."
-        : `Se eliminaron con éxito ${count} notas seleccionadas.`,
-      "deleteNotesModal",
-    );
-  };
-
-  const handleDeleteAll = () => {
-    const total = notas.length;
-
-    setNotas([]);
-    setSelectedRows({});
-    setCurrentNote(null);
-    setCurrentId(null);
-
-    showDeleteSuccessModal(
-      total === 1
-        ? "Se eliminó con éxito 1 nota."
-        : `Se eliminaron con éxito ${total} notas.`,
-      "deleteAllNotesModal",
-    );
+      showDeleteSuccessModal(
+        total === 1
+          ? "Se eliminó con éxito 1 nota."
+          : `Se eliminaron con éxito ${total} notas.`,
+        "deleteAllNotesModal"
+      );
+    } catch (error) {
+      console.error("Error al eliminar todas las notas:", error);
+    }
   };
 
   const isAllSelected =
-    notas.length > 0 && notas.every((note) => selectedRows[note.id]);
+    filteredNotas.length > 0 &&
+    filteredNotas.every((note) => selectedRows[note.id]);
 
   const selectedCount = Object.values(selectedRows).filter(Boolean).length;
 
@@ -222,12 +317,13 @@ export default function Notas() {
             </button>
           ) : (
             <>
-            {isAllSelected && (
+              {isAllSelected && (
                 <div className="selection-info">
                   <i className="bi bi-info-circle"></i>
                   ¡Seleccionaste todo!
                 </div>
               )}
+
               <button
                 className="selection-paid"
                 type="button"
@@ -239,7 +335,7 @@ export default function Notas() {
                   : ` Marcar ${selectedCount} notas pagadas`}
               </button>
 
-              {selectedCount === notas.length ? (
+              {selectedCount === filteredNotas.length ? (
                 <button
                   className="btn btn-danger"
                   type="button"
@@ -285,12 +381,10 @@ export default function Notas() {
             <input
               type="text"
               placeholder="Buscar por nota, cliente, verificentro..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-
-          <button className="outline-btn" type="button">
-            <i className="bi bi-funnel"></i> Filtros
-          </button>
         </div>
 
         <div className="table-shell">
@@ -319,21 +413,36 @@ export default function Notas() {
             </thead>
 
             <tbody>
-              {notas.map((note) => (
-                <NoteRow
-                  key={note.id}
-                  note={note}
-                  isSelected={!!selectedRows[note.id]}
-                  onSelect={() => handleSelectRow(note.id)}
-                  onEditClick={() => handleOpenEdit(note)}
-                  onDeleteClick={() => handleOpenDeleteOne(note)}
-                />
-              ))}
+              {loading ? (
+                <tr>
+                  <td colSpan="12" className="text-center py-4">
+                    Cargando notas...
+                  </td>
+                </tr>
+              ) : filteredNotas.length === 0 ? (
+                <tr>
+                  <td colSpan="12" className="text-center py-4">
+                    No hay notas registradas.
+                  </td>
+                </tr>
+              ) : (
+                filteredNotas.map((note) => (
+                  <NoteRow
+                    key={note.id}
+                    note={note}
+                    isSelected={!!selectedRows[note.id]}
+                    onSelect={() => handleSelectRow(note.id)}
+                    onEditClick={() => handleOpenEdit(note)}
+                    onDeleteClick={() => handleOpenDeleteOne(note)}
+                  />
+                ))
+              )}
             </tbody>
           </table>
         </div>
+
         <div className="d-flex justify-content-between align-items-center mt-3">
-          <small>Mostrando {notas.length} registros</small>
+          <small>Mostrando {filteredNotas.length} registros</small>
 
           <div className="d-flex gap-2">
             <button className="btn btn-light" disabled>
@@ -344,19 +453,33 @@ export default function Notas() {
         </div>
       </div>
 
-      <CreateNoteModal onCreate={handleCreateNote} />
-      <EditNoteModal note={currentNote} onSave={handleUpdateNote} />
+      <CreateNoteModal
+        onCreate={handleCreateNote}
+        clientes={clientes}
+        verificentros={verificentros}
+        usuarios={usuarios}
+      />
+
+      <EditNoteModal
+        note={currentNote}
+        onSave={handleUpdateNote}
+        usuarios={usuarios}
+      />
+
       <DeleteNotesModal
         note={currentNote}
         selectedCount={selectedCount}
         onConfirmDelete={currentNote ? handleDeleteOne : handleDeleteSelected}
       />
+
       <DeleteAllNotesModal
         totalCount={notas.length}
         onConfirmDelete={handleDeleteAll}
       />
+
       <CreateSuccessModal message={createMessage} />
       <DeleteSuccessModal message={deleteMessage} />
+      <UpdateSuccessModal />
     </Admin>
   );
 }

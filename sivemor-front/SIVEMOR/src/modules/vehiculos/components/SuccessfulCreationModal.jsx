@@ -1,36 +1,37 @@
 import Modal from "bootstrap/js/dist/modal";
-export default function SuccessfulCreationModal({message}) {
+
+export default function SuccessfulCreationModal({ message }) {
+  const cleanupModalArtifacts = () => {
+    document.body.classList.remove("modal-open");
+    document.body.style.removeProperty("padding-right");
+    document.body.style.removeProperty("overflow");
+
+    document.querySelectorAll(".modal-backdrop").forEach((backdrop) => {
+      backdrop.remove();
+    });
+  };
+
   const handleClose = () => {
-      const modalElement = document.getElementById("successfulCreateVehicleModal");
-      if (!modalElement) return;
-  
-      const modalInstance = Modal.getOrCreateInstance(modalElement);
-  
-      modalElement.addEventListener(
-        "hidden.bs.modal",
-        () => {
-          document.body.classList.remove("modal-open");
-          document.body.style.removeProperty("padding-right");
-          document.body.style.removeProperty("overflow");
-  
-          document.querySelectorAll(".modal-backdrop").forEach((backdrop) => {
-            backdrop.remove();
-          });
-        },
-        { once: true }
-      );
-  
-      modalInstance.hide();
-    };
+    const modalElement = document.getElementById("successfulCreateVehicleModal");
+    if (!modalElement) return;
+
+    const modalInstance = Modal.getOrCreateInstance(modalElement);
+    modalInstance.hide();
+
+    setTimeout(() => {
+      cleanupModalArtifacts();
+    }, 200);
+  };
+
   return (
     <div
       className="modal fade"
-      data-bs-backdrop="static"
-      data-bs-keyboard="false"
       id="successfulCreateVehicleModal"
       tabIndex={-1}
       aria-labelledby="successfulCreateVehicleModalLabel"
       aria-hidden="true"
+      data-bs-backdrop="static"
+      data-bs-keyboard="false"
     >
       <div className="modal-dialog modal-dialog-centered">
         <div className="modal-content border-0 rounded-3">
@@ -48,7 +49,10 @@ export default function SuccessfulCreationModal({message}) {
           </div>
 
           <div className="modal-footer text-end mt-3">
-            <button type="button" className="btn btn-primary btn-lg mt-3" onClick={handleClose}
+            <button
+              type="button"
+              className="btn btn-primary btn-lg mt-3"
+              onClick={handleClose}
             >
               Continuar
             </button>

@@ -1,8 +1,7 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Admin from "../../components/Admin";
-import evaluacionesData from "../../data/evaluaciones.json";
-import usuariosData from "../../data/usuarios.json";
+import { api } from "../../../server/api";
 import EvaluationSummaryCard from "./components/EvaluationSummaryCard";
 import EvaluationSection from "./components/EvaluationSection";
 import EvaluationEvidenceGrid from "./components/EvaluationEvidenceGrid";
@@ -12,19 +11,41 @@ export default function EvaluacionDetalle() {
   const { evaluationId } = useParams();
   const navigate = useNavigate();
 
-  const evaluacion = useMemo(() => {
-    const saved = localStorage.getItem("evaluaciones");
-    const data = saved ? JSON.parse(saved) : evaluacionesData;
-    return data.find((item) => String(item.id) === String(evaluationId));
+  const [evaluacion, setEvaluacion] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const cargarEvaluacion = async () => {
+    try {
+      setLoading(true);
+      const res = await api.get(`/evaluaciones/${evaluationId}`);
+      console.log("Detalle evaluación:", res);
+      setEvaluacion(res?.data ?? null);
+    } catch (error) {
+      console.error("Error al cargar evaluación:", error);
+      setEvaluacion(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    cargarEvaluacion();
   }, [evaluationId]);
 
   const tecnicoNombre = useMemo(() => {
     if (!evaluacion) return "";
-    const tecnico = usuariosData.find(
-      (user) => user.email === evaluacion.tecnico
-    );
-    return tecnico ? tecnico.nombre : evaluacion.tecnico;
+    return evaluacion.tecnico || evaluacion.nombreTecnico || evaluacion.correoTecnico || "";
   }, [evaluacion]);
+
+  if (loading) {
+    return (
+      <Admin>
+        <div className="container py-4">
+          <p>Cargando evaluación...</p>
+        </div>
+      </Admin>
+    );
+  }
 
   if (!evaluacion) {
     return (
@@ -38,32 +59,40 @@ export default function EvaluacionDetalle() {
 
   return (
     <Admin>
-      <div className="container py-4" style={{ maxWidth: "950px" }}>
+      <div className="container py-4" style={{ maxWidth: "760px" }}>
         <div className="d-flex justify-content-between align-items-center mb-4">
-          <div>
-            <h3 className="mb-1 fw-bold">Detalle de Evaluación</h3>
-            <p className="text-muted mb-0">{evaluacion.placa}</p>
-          </div>
+  <div>
+    <h3 className="mb-1 fw-bold" style={{ color: "#163A63" }}>
+      Detalle de Evaluación
+    </h3>
+    <p className="text-muted mb-0">{evaluacion.placa || "Sin placa"}</p>
+  </div>
 
-          <div className="d-flex gap-2">
-            <button
-              className="btn btn-outline-secondary rounded-pill px-4"
-              onClick={() => navigate("/vehiculos")}
-            >
-              Volver
-            </button>
+  <div className="d-flex gap-2">
+    <button
+      className="btn rounded-pill px-4"
+      style={{border: "1px solid #E0E6ED", backgroundColor: "#fff", color: "#6B7280", fontWeight: "500",}}
+      onClick={() => navigate("/vehiculos")}
+    >
+      Salir
+    </button>
 
-            <button
-              className="btn btn-primary rounded-pill px-4"
-              onClick={() => navigate(`/evaluaciones/${evaluacion.id}/editar`)}
-            >
-              Editar evaluación
-            </button>
-          </div>
-        </div>
+    <button
+      className="btn rounded-pill px-4"
+      style={{
+        backgroundColor: "#163A63",
+        color: "#fff",
+        border: "none",
+      }}
+      onClick={() => navigate(`/evaluaciones/${evaluacion.id}/editar`)}
+    >
+      Editar evaluación
+    </button>
+  </div>
+</div>
 
         <EvaluationSummaryCard
-          dictamen={evaluacion.dictamen}
+          dictamen={evaluacion.dictamen || evaluacion.resultadoFinal}
           evaluationId={evaluacion.id}
         />
 
@@ -73,13 +102,29 @@ export default function EvaluacionDetalle() {
           fields={[
             {
               label: "Fecha de evaluación",
-              value: evaluacion.fechaEvaluacion,
-              type: "badge",
+              value: evaluacion.fechaEvaluacion || evaluacion.fechaVerificacion || "Sin fecha",
+              type: "info",
             },
-            { label: "Técnico", value: tecnicoNombre, type: "badge" },
-            { label: "Vehículo", value: evaluacion.placa, type: "badge" },
-            { label: "Tipo", value: evaluacion.tipo, type: "badge" },
-            { label: "Serie", value: evaluacion.serie, type: "badge" },
+            {
+              label: "Técnico",
+              value: tecnicoNombre || "Sin técnico",
+              type: "info",
+            },
+            {
+              label: "Vehículo",
+              value: evaluacion.placa || "Sin placa",
+              type: "info",
+            },
+            {
+              label: "Tipo",
+              value: evaluacion.tipo || "Sin tipo",
+              type: "info",
+            },
+            {
+              label: "Serie",
+              value: evaluacion.serie || "Sin serie",
+              type: "info",
+            },
           ]}
         />
 
@@ -87,59 +132,27 @@ export default function EvaluacionDetalle() {
           title="Sistema de Luces"
           icon="bi-lightbulb"
           fields={[
-            { label: "Luces de gálibo", value: evaluacion.luces_galibo, type: "badge" },
-            { label: "Luces altas", value: evaluacion.luces_altas, type: "badge" },
-            { label: "Luces bajas", value: evaluacion.luces_bajas, type: "badge" },
-            {
-              label: "Luces demarcadoras delanteras",
-              value: evaluacion.luces_demarcadoras_delanteras,
-              type: "badge",
-            },
-            {
-              label: "Luces demarcadoras traseras",
-              value: evaluacion.luces_demarcadoras_traseras,
-              type: "badge",
-            },
-            { label: "Luces indicadoras", value: evaluacion.luces_indicadoras, type: "badge" },
-            { label: "Faro izquierdo", value: evaluacion.faro_izquierdo, type: "badge" },
-            { label: "Faro derecho", value: evaluacion.faro_derecho, type: "badge" },
-            {
-              label: "Direccionales delanteras",
-              value: evaluacion.luces_direccionales_delanteras,
-              type: "badge",
-            },
-            {
-              label: "Direccionales traseras",
-              value: evaluacion.luces_direccionales_traseras,
-              type: "badge",
-            },
+            { label: "Luces de gálibo", value: evaluacion.lucesGalibo, type: "status" },
+            { label: "Luces altas", value: evaluacion.lucesAltas, type: "status" },
+            { label: "Luces bajas", value: evaluacion.lucesBajas, type: "status" },
+            { label: "Luces demarcadoras delanteras", value: evaluacion.lucesDemarcadorasDelanteras, type: "status" },
+            { label: "Luces demarcadoras traseras", value: evaluacion.lucesDemarcadorasTraseras, type: "status" },
+            { label: "Luces indicadoras", value: evaluacion.lucesIndicadoras, type: "status" },
+            { label: "Faro izquierdo", value: evaluacion.faroIzquierdo, type: "status" },
+            { label: "Faro derecho", value: evaluacion.faroDerecho, type: "status" },
+            { label: "Direccionales delanteras", value: evaluacion.lucesDireccionalesDelanteras, type: "status" },
+            { label: "Direccionales traseras", value: evaluacion.lucesDireccionalesTraseras, type: "status" },
           ]}
         />
 
         <EvaluationSection
           title="Llantas y Rines"
-          icon="bi-circle-square"
+          icon="bi-truck"
           fields={[
-            {
-              label: "Rines delanteros",
-              value: evaluacion.llantas_rines_delanteros,
-              type: "badge",
-            },
-            {
-              label: "Rines traseros",
-              value: evaluacion.llantas_rines_traseros,
-              type: "badge",
-            },
-            {
-              label: "Masas delanteras",
-              value: evaluacion.llantas_masas_delanteras,
-              type: "badge",
-            },
-            {
-              label: "Masas traseras",
-              value: evaluacion.llantas_masas_traseras,
-              type: "badge",
-            },
+            { label: "Rines delanteros", value: evaluacion.llantasRinesDelanteros, type: "status" },
+            { label: "Rines traseros", value: evaluacion.llantasRinesTraseros, type: "status" },
+            { label: "Masas delanteras", value: evaluacion.llantasMasasDelanteras, type: "status" },
+            { label: "Masas traseras", value: evaluacion.llantasMasasTraseras, type: "status" },
           ]}
         />
 
@@ -147,155 +160,92 @@ export default function EvaluacionDetalle() {
           title="Presión de Llantas (PSI)"
           icon="bi-speedometer2"
           fields={[
-            {
-              label: "Delantera izquierda",
-              value: evaluacion.llantas_presion_delantera_izquierda,
-              type: "badge",
-            },
-            {
-              label: "Delantera derecha",
-              value: evaluacion.llantas_presion_delantera_derecha,
-              type: "badge",
-            },
-            {
-              label: "Trasera izquierda 1",
-              value: evaluacion.llantas_presion_trasera_izquierda_1,
-              type: "badge",
-            },
-            {
-              label: "Trasera izquierda 2",
-              value: evaluacion.llantas_presion_trasera_izquierda_2,
-              type: "badge",
-            },
-            {
-              label: "Trasera derecha 1",
-              value: evaluacion.llantas_presion_trasera_derecha_1,
-              type: "badge",
-            },
-            {
-              label: "Trasera derecha 2",
-              value: evaluacion.llantas_presion_trasera_derecha_2,
-              type: "badge",
-            },
+            { label: "Delantera izquierda", value: `${evaluacion.llantasPresionDelanteraIzquierda ?? "0"} PSI`, type: "info" },
+            { label: "Delantera derecha", value: `${evaluacion.llantasPresionDelanteraDerecha ?? "0"} PSI`, type: "info" },
+            { label: "Trasera izquierda 1", value: `${evaluacion.llantasPresionTraseraIzquierda1 ?? "0"} PSI`, type: "info" },
+            { label: "Trasera izquierda 2", value: `${evaluacion.llantasPresionTraseraIzquierda2 ?? "0"} PSI`, type: "info" },
+            { label: "Trasera derecha 1", value: `${evaluacion.llantasPresionTraseraDerecha1 ?? "0"} PSI`, type: "info" },
+            { label: "Trasera derecha 2", value: `${evaluacion.llantasPresionTraseraDerecha2 ?? "0"} PSI`, type: "info" },
           ]}
         />
 
         <EvaluationSection
           title="Profundidad de Llantas (mm)"
-          icon="bi-disc"
+          icon="bi-rulers"
           fields={[
-            {
-              label: "Delantera izquierda",
-              value: evaluacion.llantas_profundidad_delantera_izquierda,
-              type: "badge",
-            },
-            {
-              label: "Delantera derecha",
-              value: evaluacion.llantas_profundidad_delantera_derecha,
-              type: "badge",
-            },
-            {
-              label: "Trasera izquierda 1",
-              value: evaluacion.llantas_profundidad_trasera_izquierda_1,
-              type: "badge",
-            },
-            {
-              label: "Trasera izquierda 2",
-              value: evaluacion.llantas_profundidad_trasera_izquierda_2,
-              type: "badge",
-            },
-            {
-              label: "Trasera derecha 1",
-              value: evaluacion.llantas_profundidad_trasera_derecha_1,
-              type: "badge",
-            },
-            {
-              label: "Trasera derecha 2",
-              value: evaluacion.llantas_profundidad_trasera_derecha_2,
-              type: "badge",
-            },
+            { label: "Delantera izquierda", value: `${evaluacion.llantasProfundidadDelanteraIzquierda ?? "0"} mm`, type: "info" },
+            { label: "Delantera derecha", value: `${evaluacion.llantasProfundidadDelanteraDerecha ?? "0"} mm`, type: "info" },
+            { label: "Trasera izquierda 1", value: `${evaluacion.llantasProfundidadTraseraIzquierda1 ?? "0"} mm`, type: "info" },
+            { label: "Trasera izquierda 2", value: `${evaluacion.llantasProfundidadTraseraIzquierda2 ?? "0"} mm`, type: "info" },
+            { label: "Trasera derecha 1", value: `${evaluacion.llantasProfundidadTraseraDerecha1 ?? "0"} mm`, type: "info" },
+            { label: "Trasera derecha 2", value: `${evaluacion.llantasProfundidadTraseraDerecha2 ?? "0"} mm`, type: "info" },
           ]}
         />
 
         <EvaluationSection
-          title="Dirección, estructura y accesos"
-          icon="bi-diagram-3"
+          title="Birlos y Tuercas Faltantes"
+          icon="bi-nut"
           fields={[
-            { label: "Brazo pitman", value: evaluacion.brazo_pitman, type: "badge" },
-            {
-              label: "Manijas de puertas",
-              value: evaluacion.manijas_de_puertas,
-              type: "badge",
-            },
-            {
-              label: "Chavetas",
-              value: `${evaluacion.chavetas} (${evaluacion.chavetas_num})`,
-              type: "badge",
-            },
+            { label: "Birlos delantera izquierda", value: `${evaluacion.llantasBirlosDelanteraIzquierdaNum ?? 0} faltantes`, type: "info" },
+            { label: "Birlos delantera derecha", value: `${evaluacion.llantasBirlosDelanteraDerechaNum ?? 0} faltantes`, type: "info" },
+            { label: "Birlos trasera izquierda", value: `${evaluacion.llantasBirlosTraseraIzquierdaNum ?? 0} faltantes`, type: "info" },
+            { label: "Birlos trasera derecha", value: `${evaluacion.llantasBirlosTraseraDerechaNum ?? 0} faltantes`, type: "info" },
+            { label: "Tuercas delantera izquierda", value: `${evaluacion.llantasTuercasDelanteraIzquierdaNum ?? 0} faltantes`, type: "info" },
+            { label: "Tuercas delantera derecha", value: `${evaluacion.llantasTuercasDelanteraDerechaNum ?? 0} faltantes`, type: "info" },
+            { label: "Tuercas trasera izquierda", value: `${evaluacion.llantasTuercasTraseraIzquierdaNum ?? 0} faltantes`, type: "info" },
+            { label: "Tuercas trasera derecha", value: `${evaluacion.llantasTuercasTraseraDerechaNum ?? 0} faltantes`, type: "info" },
           ]}
         />
 
         <EvaluationSection
-          title="Sistema de aire / frenos"
-          icon="bi-wrench-adjustable-circle"
+          title="Sistema de Dirección"
+          icon="bi-sign-turn-right"
           fields={[
-            { label: "Compresor", value: evaluacion.compresor, type: "badge" },
-            {
-              label: "Tanques de aire",
-              value: evaluacion.tanques_de_aire,
-              type: "badge",
-            },
-            {
-              label: "Tiempo de carga PSI",
-              value: evaluacion.tiempo_de_carga_psi,
-              type: "badge",
-            },
-            {
-              label: "Tiempo de carga tiempo",
-              value: evaluacion.tiempo_de_carga_tiempo,
-              type: "badge",
-            },
+            { label: "Brazo Pitman", value: evaluacion.brazoPitman, type: "status" },
+            { label: "Manijas de puertas", value: evaluacion.manijasDePuertas, type: "status" },
+            { label: "Chavetas", value: evaluacion.chavetas, type: "status" },
           ]}
         />
 
         <EvaluationSection
-          title="Motor y otros"
-          icon="bi-tools"
+          title="Sistema de Aire"
+          icon="bi-wind"
           fields={[
-            { label: "Humo", value: evaluacion.humo, type: "badge" },
-            { label: "Gobernado", value: evaluacion.gobernado, type: "badge" },
-            {
-              label: "Caja de dirección",
-              value: evaluacion.caja_direccion,
-              type: "badge",
-            },
-            {
-              label: "Depósito de aceite",
-              value: evaluacion.deposito_aceite,
-              type: "badge",
-            },
-            { label: "Parabrisas", value: evaluacion.parabrisas, type: "badge" },
-            {
-              label: "Limpiaparabrisas",
-              value: evaluacion.limpiaparabrisas,
-              type: "badge",
-            },
-            { label: "Huelgo", value: evaluacion.huelgo, type: "badge" },
-            {
-              label: "Huelgo (mm)",
-              value: evaluacion.huelgo_cuanto,
-              type: "badge",
-            },
-            { label: "Escape", value: evaluacion.escape, type: "badge" },
+            { label: "Compresor", value: evaluacion.compresor, type: "status" },
+            { label: "Tanques de aire", value: evaluacion.tanquesDeAire, type: "status" },
+            { label: "Tiempo de carga (PSI)", value: `${evaluacion.tiempoDeCargaPsi ?? 0} PSI`, type: "info" },
+            { label: "Tiempo de carga (segundos)", value: `${evaluacion.tiempoDeCargaTiempo ?? 0} s`, type: "info" },
           ]}
         />
 
-        <EvaluationEvidenceGrid evidences={evaluacion.evidencias || []} />
+        <EvaluationSection
+          title="Motor"
+          icon="bi-gear-wide-connected"
+          fields={[
+            { label: "Humo", value: evaluacion.humo, type: "status" },
+            { label: "Gobernado", value: evaluacion.gobernado, type: "status" },
+          ]}
+        />
+
+        <EvaluationSection
+          title="Otros Sistemas"
+          icon="bi-file-earmark-medical"
+          fields={[
+            { label: "Caja de dirección", value: evaluacion.cajaDireccion, type: "status" },
+            { label: "Depósito de aceite", value: evaluacion.depositoAceite, type: "status" },
+            { label: "Parabrisas", value: evaluacion.parabrisas, type: "status" },
+            { label: "Limpiaparabrisas", value: evaluacion.limpiaparabrisas, type: "status" },
+            { label: "Huelgo", value: evaluacion.huelgo, type: "status" },
+            { label: "Escape", value: evaluacion.escape, type: "status" },
+          ]}
+        />
 
         <EvaluationCommentsCard
           comments={evaluacion.comentarios}
           observations={evaluacion.observaciones}
         />
+
+        <EvaluationEvidenceGrid evidences={evaluacion.evidencias || []} />
       </div>
     </Admin>
   );

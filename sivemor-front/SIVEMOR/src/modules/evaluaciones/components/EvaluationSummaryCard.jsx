@@ -10,7 +10,8 @@ export default function EvaluationSummaryCard({
     <div
       className="rounded-4 p-4 mb-4 text-white"
       style={{
-        background: "linear-gradient(135deg, #163A63 0%, #1F4E85 100%)",
+        background: "linear-gradient(135deg, #173B67 0%, #224F83 100%)",
+        boxShadow: "0 12px 28px rgba(23, 59, 103, 0.18)",
       }}
     >
       <div className="d-flex justify-content-between align-items-center flex-wrap gap-3">
@@ -18,9 +19,9 @@ export default function EvaluationSummaryCard({
           <div
             className="d-flex align-items-center justify-content-center rounded-circle"
             style={{
-              width: "54px",
-              height: "54px",
-              backgroundColor: isApproved ? "#2DBE60" : "#D9534F",
+              width: "56px",
+              height: "56px",
+              backgroundColor: isApproved ? "#7BE495" : "#F16C6C",
             }}
           >
             <i className={`bi ${isApproved ? "bi-check-lg" : "bi-x-lg"} fs-4`}></i>

@@ -1,4 +1,4 @@
-package mx.edu.utez.sivemorapp.modules.clientes;
+package mx.edu.utez.sivemorapp.modules.cedis.clientes;
 
 import lombok.RequiredArgsConstructor;
 import mx.edu.utez.sivemorapp.kernel.ApiResponse;

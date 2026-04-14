@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function ReportFilters({
   onGenerate,
@@ -9,9 +9,9 @@ export default function ReportFilters({
 }) {
   const [form, setForm] = useState({
     tipo: "cliente",
-    cliente: "",
-    region: "",
-    nota: "",
+    clienteId: "",
+    regionId: "",
+    notaId: "",
     tipoVerificacion: "",
     estadoDictamen: "",
     fechaInicio: "",
@@ -21,22 +21,33 @@ export default function ReportFilters({
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    setForm((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    console.log("CAMBIO:", name, value);
+
+    setForm((prev) => {
+      const updated = {
+        ...prev,
+        [name]: value,
+      };
+
+      console.log("FORM ACTUALIZADO:", updated);
+      return updated;
+    });
   };
+
+  useEffect(() => {
+    console.log("FORM EN RENDER:", form);
+  }, [form]);
 
   return (
     <>
       <div className="form-grid-2">
         <div className="form-field">
           <label>Cliente</label>
-          <select name="cliente" value={form.cliente} onChange={handleChange}>
+          <select name="clienteId" value={form.clienteId} onChange={handleChange}>
             <option value="">Todos</option>
             {options?.clientes?.map((cliente) => (
-              <option key={cliente} value={cliente}>
-                {cliente}
+              <option key={cliente.id} value={String(cliente.id)}>
+                {cliente.nombre}
               </option>
             ))}
           </select>
@@ -44,11 +55,11 @@ export default function ReportFilters({
 
         <div className="form-field">
           <label>Región</label>
-          <select name="region" value={form.region} onChange={handleChange}>
+          <select name="regionId" value={form.regionId} onChange={handleChange}>
             <option value="">Todas</option>
             {options?.regiones?.map((region) => (
-              <option key={region} value={region}>
-                {region}
+              <option key={region.id} value={String(region.id)}>
+                {region.nombre}
               </option>
             ))}
           </select>
@@ -97,11 +108,11 @@ export default function ReportFilters({
 
         <div className="form-field">
           <label>Nota</label>
-          <select name="nota" value={form.nota} onChange={handleChange}>
+          <select name="notaId" value={form.notaId} onChange={handleChange}>
             <option value="">Todas</option>
             {options?.notas?.map((nota) => (
-              <option key={nota} value={nota}>
-                {nota}
+              <option key={nota.id} value={String(nota.id)}>
+                {nota.nombre}
               </option>
             ))}
           </select>
@@ -132,7 +143,10 @@ export default function ReportFilters({
         <button
           className="primary-btn"
           type="button"
-          onClick={() => onGenerate(form, true)}
+          onClick={() => {
+            console.log("ENVIANDO FORM:", form);
+            onGenerate(form, true);
+          }}
           disabled={isGenerating}
         >
           <i className="bi bi-file-earmark-pdf"></i>

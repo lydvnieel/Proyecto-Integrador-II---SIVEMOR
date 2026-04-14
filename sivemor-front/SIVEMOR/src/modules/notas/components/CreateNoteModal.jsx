@@ -1,97 +1,111 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Modal from "bootstrap/js/dist/modal";
 
 const initialForm = {
-  nota: "",
-  cliente: "",
-  verificaciones: 1,
-  verificentro: "",
-  metodo: "",
+  idCliente: "",
+  idVerificentro: "",
+  tipoPago: "",
   anticipo: "",
-  pagado: "Pendiente",
-  pagadoClass: "status-warning",
-  reviso: "",
+  pagadoCompleto: false,
   atendio: "",
+  reviso: "",
   comentario: "",
 };
 
-export default function CreateNoteModal({ onCreate }) {
+export default function CreateNoteModal({
+  onCreate,
+  clientes = [],
+  verificentros = [],
+  usuarios = [],
+}) {
   const [formData, setFormData] = useState(initialForm);
   const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const resetForm = () => {
     setFormData(initialForm);
     setError("");
+    setSaving(false);
   };
+
+  useEffect(() => {
+    const modalEl = document.getElementById("createNoteModal");
+    if (!modalEl) return;
+
+    const handleHidden = () => resetForm();
+    modalEl.addEventListener("hidden.bs.modal", handleHidden);
+
+    return () => {
+      modalEl.removeEventListener("hidden.bs.modal", handleHidden);
+    };
+  }, []);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
 
-    if (name === "pagadoCheck") {
-      setFormData((prev) => ({
-        ...prev,
-        pagado: checked ? "Pagado" : "Pendiente",
-        pagadoClass: checked ? "status-success" : "status-warning",
-      }));
-      return;
-    }
-
     setFormData((prev) => ({
       ...prev,
-      [name]: type === "number" ? Number(value) : value,
+      [name]: type === "checkbox" ? checked : value,
     }));
 
     if (error) setError("");
   };
 
-  const handleCreate = () => {
-    const cleanedData = {
-      ...formData,
-      nota: formData.nota.trim(),
-      cliente: formData.cliente.trim(),
-      verificentro: formData.verificentro.trim(),
-      metodo: formData.metodo.trim(),
-      anticipo: formData.anticipo.trim(),
-      reviso: formData.reviso.trim(),
-      atendio: formData.atendio.trim(),
-      comentario: formData.comentario.trim(),
-    };
-
+  const handleCreate = async () => {
     if (
-      !cleanedData.nota ||
-      !cleanedData.cliente ||
-      !cleanedData.verificentro ||
-      !cleanedData.metodo ||
-      !cleanedData.reviso ||
-      !cleanedData.atendio ||
-      !cleanedData.verificaciones
+      !formData.idCliente ||
+      !formData.idVerificentro ||
+      !formData.tipoPago ||
+      !formData.atendio
     ) {
       setError("Faltan campos obligatorios por llenar.");
       return;
     }
 
-    onCreate(cleanedData);
+    const payload = {
+      idCliente: Number(formData.idCliente),
+      idVerificentro: Number(formData.idVerificentro),
+      tipoPago: formData.tipoPago,
+      anticipo:
+        formData.anticipo === "" ? 0 : Number(formData.anticipo),
+      pagadoCompleto: formData.pagadoCompleto,
+      atendio: Number(formData.atendio),
+      reviso: formData.reviso ? Number(formData.reviso) : null,
+      comentario: formData.comentario.trim(),
+    };
 
-    const createModalElement = document.getElementById("createNoteModal");
-    const successModalElement = document.getElementById(
-      "successfulCreateNoteModal"
-    );
+    try {
+      setSaving(true);
+      await onCreate(payload);
 
-    if (!createModalElement || !successModalElement) return;
+      const createModalElement = document.getElementById("createNoteModal");
+      const successModalElement = document.getElementById(
+        "successfulCreateNoteModal"
+      );
 
-    const createModalInstance = Modal.getOrCreateInstance(createModalElement);
-    const successModalInstance = Modal.getOrCreateInstance(successModalElement);
+      if (!createModalElement || !successModalElement) return;
 
-    createModalElement.addEventListener(
-      "hidden.bs.modal",
-      () => {
-        resetForm();
-        successModalInstance.show();
-      },
-      { once: true }
-    );
+      const createModalInstance = Modal.getOrCreateInstance(createModalElement);
+      const successModalInstance = Modal.getOrCreateInstance(successModalElement);
 
-    createModalInstance.hide();
+      createModalElement.addEventListener(
+        "hidden.bs.modal",
+        () => {
+          resetForm();
+          successModalInstance.show();
+        },
+        { once: true }
+      );
+
+      createModalInstance.hide();
+    } catch (err) {
+      console.error("Error al crear nota:", err);
+      setError(
+        err?.response?.data?.message || "No se pudo crear la nota."
+      );
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -118,95 +132,129 @@ export default function CreateNoteModal({ onCreate }) {
             )}
 
             <div className="mb-3">
-              <label className="form-label">Folio *</label>
-              <input
-                type="text"
-                className="form-control"
-                name="nota"
-                value={formData.nota}
-                onChange={handleChange}
-                placeholder="Ej. N-1003"
-              />
-            </div>
-
-            <div className="mb-3">
               <label className="form-label">Cliente *</label>
-              <input
-                type="text"
-                className="form-control"
-                name="cliente"
-                value={formData.cliente}
+              <select
+                className="form-select"
+                name="idCliente"
+                value={formData.idCliente}
                 onChange={handleChange}
-              />
+              >
+                <option value="">Selecciona un cliente</option>
+                {clientes.map((cliente) => (
+                  <option
+                    key={cliente.id ?? cliente.idCliente}
+                    value={cliente.id ?? cliente.idCliente}
+                  >
+                    {cliente.razonSocial ?? cliente.nombre ?? cliente.nombreCliente}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="mb-3">
               <label className="form-label">Verificentro *</label>
-              <input
-                type="text"
-                className="form-control"
-                name="verificentro"
-                value={formData.verificentro}
+              <select
+                className="form-select"
+                name="idVerificentro"
+                value={formData.idVerificentro}
                 onChange={handleChange}
-              />
+              >
+                <option value="">Selecciona un verificentro</option>
+                {verificentros.map((verificentro) => (
+                  <option
+                    key={verificentro.id ?? verificentro.idVerificentro}
+                    value={verificentro.id ?? verificentro.idVerificentro}
+                  >
+                    {verificentro.nombre ?? verificentro.nombreVerificentro}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="row">
               <div className="col-md-6 mb-3">
                 <label className="form-label">Método de pago *</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  name="metodo"
-                  value={formData.metodo}
+                <select
+                  className="form-select"
+                  name="tipoPago"
+                  value={formData.tipoPago}
                   onChange={handleChange}
-                />
+                >
+                  <option value="">Selecciona un método</option>
+                  <option value="EFECTIVO">EFECTIVO</option>
+                  <option value="DEPOSITO">DEPOSITO</option>
+                  <option value="TRANSFERENCIA">TRANSFERENCIA</option>
+                  <option value="TARJETA">TARJETA</option>
+                </select>
               </div>
 
               <div className="col-md-6 mb-3">
-                <label className="form-label">Verificaciones *</label>
+                <label className="form-label">Anticipo</label>
                 <input
                   type="number"
-                  min="1"
+                  min="0"
+                  step="0.01"
                   className="form-control"
-                  name="verificaciones"
-                  value={formData.verificaciones}
+                  name="anticipo"
+                  value={formData.anticipo}
                   onChange={handleChange}
+                  placeholder="0.00"
                 />
               </div>
-            </div>
-
-            <div className="mb-3">
-              <label className="form-label">Anticipo</label>
-              <input
-                type="text"
-                className="form-control"
-                name="anticipo"
-                value={formData.anticipo}
-                onChange={handleChange}
-              />
             </div>
 
             <div className="mb-3">
               <label className="form-label">Atendió *</label>
-              <input
-                type="text"
-                className="form-control"
+              <select
+                className="form-select"
                 name="atendio"
                 value={formData.atendio}
                 onChange={handleChange}
-              />
+              >
+                <option value="">Selecciona un usuario</option>
+                {usuarios.map((usuario) => (
+                  <option
+                    key={usuario.id ?? usuario.idUsuario}
+                    value={usuario.id ?? usuario.idUsuario}
+                  >
+                    {usuario.nombre ?? usuario.nombreUsuario}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="mb-3">
-              <label className="form-label">Revisó *</label>
-              <input
-                type="text"
-                className="form-control"
+              <label className="form-label">Revisó</label>
+              <select
+                className="form-select"
                 name="reviso"
                 value={formData.reviso}
                 onChange={handleChange}
+              >
+                <option value="">Selecciona un usuario</option>
+                {usuarios.map((usuario) => (
+                  <option
+                    key={usuario.id ?? usuario.idUsuario}
+                    value={usuario.id ?? usuario.idUsuario}
+                  >
+                    {usuario.nombre ?? usuario.nombreUsuario}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-check mb-3">
+              <input
+                className="form-check-input"
+                type="checkbox"
+                id="pagadoCompleto"
+                name="pagadoCompleto"
+                checked={formData.pagadoCompleto}
+                onChange={handleChange}
               />
+              <label className="form-check-label" htmlFor="pagadoCompleto">
+                Pagado completo
+              </label>
             </div>
 
             <div className="mb-3">
@@ -225,8 +273,8 @@ export default function CreateNoteModal({ onCreate }) {
             <button type="button" className="btn btn-light" data-bs-dismiss="modal">
               Cancelar
             </button>
-            <button type="button" className="btn btn-primary" onClick={handleCreate}>
-              Crear nota
+            <button type="button" className="btn btn-primary" onClick={handleCreate} disabled={saving}>
+              {saving ? "Creando..." : "Crear nota"}
             </button>
           </div>
         </div>

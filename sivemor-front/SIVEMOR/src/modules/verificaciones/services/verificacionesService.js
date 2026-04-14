@@ -14,49 +14,41 @@ const normalizeDate = (value) => {
   return String(value).slice(0, 10);
 };
 
-export const mapVerificacion = (v) => ({
-  id: v.id ?? v.idVerificacion,
-  gestor: v.gestor ?? v.clienteGestor ?? "Pendiente",
-  razonSocial: v.razonSocial ?? v.cliente ?? "Pendiente",
-  placa: v.placa ?? v.vehiculoPlaca ?? "Pendiente",
-  serie: v.serie ?? v.vehiculoSerie ?? "Pendiente",
-  materia: v.materia ?? "",
-  verificentro: v.verificentro ?? v.nombreVerificentro ?? "Pendiente",
-  precio: normalizeMoney(v.precio),
-  tipoPago: v.tipoPago ?? "Pendiente",
-  numeroNota: v.numeroNota ?? v.folioNota ?? "Pendiente",
-  cotizacion: v.cotizacion ?? "Pendiente",
-  fechaFolio: normalizeDate(v.fechaVerificacion),
-  folio: v.folio ?? v.folioVerificacion ?? "Pendiente",
-  cuentaDeposito: v.cuentaDeposito ?? "Pendiente",
-  numeroFactura: v.numeroFactura ?? "Pendiente",
-  pagado:
-    v.pagado === true || v.pagado === "Sí"
-      ? "Sí"
-      : v.pagado === false || v.pagado === "No"
-      ? "No"
-      : "Pendiente",
-  pagadoClass:
-    v.pagado === true || v.pagado === "Sí"
-      ? "status-success"
-      : "status-warning",
-  pendiente:
-    v.pendienteMonto != null
-      ? normalizeMoney(v.pendienteMonto)
-      : v.pendiente != null && typeof v.pendiente === "number"
-      ? normalizeMoney(v.pendiente)
-      : v.pendiente === true
-      ? "Sí"
-      : v.pendiente === false
-      ? "No"
-      : "Pendiente",
-  pendienteClass: "text-danger fw-semibold",
-  fechaPedido: normalizeDate(v.fechaPedido),
-  multa: v.multa != null ? normalizeMoney(v.multa) : "",
-  dictamen: v.dictamen ?? "",
-  idNota: v.idNota ?? v.notaId ?? v.nota?.id ?? null,
-  idVehiculo: v.idVehiculo ?? v.vehiculoId ?? v.vehiculo?.id ?? null,
-});
+export const mapVerificacion = (v) => {
+  const isPagado = v.pagado === true || v.pagado === "Sí" || v.pagado === "Si";
+
+  return {
+    id: v.id ?? v.idVerificacion,
+    gestor: v.gestor ?? v.clienteGestor ?? "Pendiente",
+    razonSocial: v.razonSocial ?? v.cliente ?? "Pendiente",
+    placa: v.placa ?? v.vehiculoPlaca ?? "Pendiente",
+    serie: v.serie ?? v.vehiculoSerie ?? "Pendiente",
+    materia: v.materia ?? "",
+    verificentro: v.verificentro ?? v.nombreVerificentro ?? "Pendiente",
+    precio: normalizeMoney(v.precio),
+    tipoPago: v.tipoPago ?? "Pendiente",
+    numeroNota: v.numeroNota ?? v.folioNota ?? "Pendiente",
+    cotizacion: v.cotizacion ?? "Pendiente",
+    fechaFolio: normalizeDate(v.fechaVerificacion),
+    folio: v.folio ?? v.folioVerificacion ?? "Pendiente",
+    cuentaDeposito: v.cuentaDeposito ?? "Pendiente",
+    numeroFactura: v.numeroFactura ?? "Pendiente",
+
+    pagado: isPagado ? "Sí" : "Pendiente",
+    pagadoClass: isPagado ? "status-success" : "status-warning",
+
+    pendiente: isPagado ? "No" : "Sí",
+    pendienteClass: isPagado
+      ? "text-success fw-semibold"
+      : "text-danger fw-semibold",
+
+    fechaPedido: normalizeDate(v.fechaPedido),
+    multa: v.multa != null ? normalizeMoney(v.multa) : "",
+    dictamen: v.dictamen ?? "",
+    idNota: v.idNota ?? v.notaId ?? v.nota?.id ?? null,
+    idVehiculo: v.idVehiculo ?? v.vehiculoId ?? v.vehiculo?.id ?? null,
+  };
+};
 
 const extractArray = (res) => {
   if (Array.isArray(res?.data)) return res.data;
@@ -100,5 +92,10 @@ export const verificacionService = {
   async remove(id) {
     const res = await api.delete(`${BASE_URL}/${id}`);
     return res.data;
+  },
+
+  async marcarPagado(ids) {
+  const res = await api.put(`${BASE_URL}/marcar-pagado`, ids);
+  return res.data;
   },
 };

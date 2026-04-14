@@ -23,27 +23,29 @@ export default function CreateUserModal({ onCreate }) {
     }
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    const cleanedData = {
-      nombre: formData.nombre.trim(),
-      email: formData.email.trim(),
-      rol: formData.rol.trim(),
-    };
+  const cleanedData = {
+    nombre: formData.nombre.trim(),
+    email: formData.email.trim(),
+    rol: formData.rol.trim(),
+  };
 
-    if (!cleanedData.nombre || !cleanedData.email || !cleanedData.rol) {
-      setError("Faltan campos obligatorios por llenar.");
-      return;
-    }
+  if (!cleanedData.nombre || !cleanedData.email || !cleanedData.rol) {
+    setError("Faltan campos obligatorios por llenar.");
+    return;
+  }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(cleanedData.email)) {
-      setError("Ingresa un correo electrónico válido.");
-      return;
-    }
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-    onCreate(cleanedData);
+  if (!emailRegex.test(cleanedData.email)) {
+    setError("Ingresa un correo electrónico válido.");
+    return;
+  }
+
+  try {
+    await onCreate(cleanedData);
 
     const createModalElement = document.getElementById("createUserModal");
     const successModalElement = document.getElementById("createUserSuccessModal");
@@ -61,14 +63,20 @@ export default function CreateUserModal({ onCreate }) {
           email: "",
           rol: "Técnico",
         });
+
         setError("");
+
         successModalInstance.show();
       },
       { once: true }
     );
 
     createModalInstance.hide();
-  };
+
+  } catch (err) {
+    setError(err.message);
+  }
+};
 
   return (
     <div
