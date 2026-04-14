@@ -5,7 +5,7 @@ import mx.edu.utez.sivemorapp.kernel.ApiResponse;
 import mx.edu.utez.sivemorapp.kernel.enums.Dictamen;
 import mx.edu.utez.sivemorapp.modules.evaluaciones.dtos.EvaluacionRequestDTO;
 import mx.edu.utez.sivemorapp.modules.evaluaciones.dtos.EvidenciaEvaluacionDTO;
-import mx.edu.utez.sivemorapp.modules.evaluaciones.dtos.utils.EvidenciaMapper;
+import mx.edu.utez.sivemorapp.modules.evaluaciones.dtos.utils.EvaluacionMapper;
 import mx.edu.utez.sivemorapp.modules.evidencias_evaluacion.EvidenciaEvaluacion;
 import mx.edu.utez.sivemorapp.modules.evidencias_evaluacion.EvidenciaEvaluacionRepository;
 import mx.edu.utez.sivemorapp.modules.usuarios.Usuario;
@@ -83,7 +83,7 @@ public class EvaluacionService {
             }
 
             return ResponseEntity.ok(
-                    new ApiResponse("Operación exitosa", EvidenciaMapper.toDtoList(result), HttpStatus.OK)
+                    new ApiResponse("Operación exitosa", EvaluacionMapper.toDtoList(result), HttpStatus.OK)
             );
         } catch (Exception e) {
             e.printStackTrace();
@@ -102,8 +102,24 @@ public class EvaluacionService {
         }
 
         return ResponseEntity.ok(
-                new ApiResponse("Operación exitosa", EvidenciaMapper.toDto(found), HttpStatus.OK)
+                new ApiResponse("Operación exitosa", EvaluacionMapper.toDto(found), HttpStatus.OK)
         );
+    }
+
+    @Transactional(readOnly = true)
+    public ResponseEntity<ApiResponse> findByVehiculo(Long vehicleId) {
+        try {
+            List<Evaluacion> evaluaciones =
+                    evaluacionRepository.findActivasByVehiculoId(vehicleId);
+
+            return ResponseEntity.ok(
+                    new ApiResponse("Operación exitosa", EvaluacionMapper.toDtoList(evaluaciones), HttpStatus.OK)
+            );
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError()
+                    .body(new ApiResponse("Error al consultar evaluaciones del vehículo", true, HttpStatus.INTERNAL_SERVER_ERROR));
+        }
     }
 
     @Transactional(rollbackFor = {SQLException.class, Exception.class})
@@ -221,7 +237,7 @@ public class EvaluacionService {
             verificacionRepository.save(verificacion);
 
             return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(new ApiResponse("Evaluación creada", EvidenciaMapper.toDto(saved), HttpStatus.CREATED));
+                    .body(new ApiResponse("Evaluación creada", EvaluacionMapper.toDto(saved), HttpStatus.CREATED));
 
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -342,7 +358,7 @@ public class EvaluacionService {
             verificacionRepository.save(verificacion);
 
             return ResponseEntity.ok(
-                    new ApiResponse("Evaluación actualizada", EvidenciaMapper.toDto(updated), HttpStatus.OK)
+                    new ApiResponse("Evaluación actualizada", EvaluacionMapper.toDto(updated), HttpStatus.OK)
             );
 
         } catch (Exception ex) {

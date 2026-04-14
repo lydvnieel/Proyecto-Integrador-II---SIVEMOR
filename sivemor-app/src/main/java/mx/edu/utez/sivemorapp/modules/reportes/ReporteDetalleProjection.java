@@ -1,12 +1,9 @@
 package mx.edu.utez.sivemorapp.modules.reportes;
 
-import java.time.LocalDateTime;
+public interface ReporteDetalleProjection {
 
-public interface ReporteBaseProjection {
-    String getRegion();
     String getCliente();
-    String getNota();
-
+    String getRegion();
     String getCedis();
 
     String getPlaca();
@@ -16,6 +13,6 @@ public interface ReporteBaseProjection {
     String getFolioVerificacion();
     String getMateria();
     String getDictamen();
-    LocalDateTime getFecha();
+    String getFecha();
     String getTecnico();
 }

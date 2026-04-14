@@ -1,6 +1,8 @@
 package mx.edu.utez.sivemorapp.modules.evaluaciones;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -8,7 +10,6 @@ import java.util.Optional;
 
 public interface EvaluacionRepository extends JpaRepository<Evaluacion, Long> {
 
-    boolean existsByVerificacion_Vehiculo_IdAndActivoTrue(Long idVehiculo);
     boolean existsByVerificacion_IdAndActivoTrue(Long idVerificacion);
 
     Optional<Evaluacion> findByIdAndActivoTrue(Long id);
@@ -49,5 +50,15 @@ public interface EvaluacionRepository extends JpaRepository<Evaluacion, Long> {
             LocalDateTime fechaFin
     );
 
-
+    @Query(
+            value = """
+            SELECT e.*
+            FROM evaluaciones e
+            INNER JOIN verificaciones v ON v.id_verificacion = e.id_verificacion
+            WHERE e.activo = true
+              AND v.id_vehiculo = :vehicleId
+            """,
+            nativeQuery = true
+    )
+    List<Evaluacion> findActivasByVehiculoId(@Param("vehicleId") Long vehicleId);
 }

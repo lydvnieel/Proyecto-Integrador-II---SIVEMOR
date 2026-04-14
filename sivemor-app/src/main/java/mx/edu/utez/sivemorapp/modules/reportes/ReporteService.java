@@ -7,9 +7,11 @@ import mx.edu.utez.sivemorapp.modules.reportes.dto.ReporteOpcionesDTO;
 import mx.edu.utez.sivemorapp.modules.reportes.dto.ReporteResponseDTO;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.*;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
@@ -77,59 +79,25 @@ public class ReporteService {
             throw new RuntimeException("No hay datos para generar el reporte.");
         }
 
-        Map<String, List<ReporteBaseProjection>> agrupado = new LinkedHashMap<>();
+        List<ReporteItemDTO> data = base.stream()
+                .map(item -> ReporteItemDTO.builder()
+                        .tipo(normalizarTipo(filtros.getTipo()))
+                        .agrupacion(obtenerAgrupacion(item, filtros.getTipo()))
+                        .region(valor(item.getRegion(), "-"))
+                        .cliente(valor(item.getCliente(), "-"))
+                        .nota(valor(item.getNota(), "-"))
+                        .placa(valor(item.getPlaca(), "-"))
+                        .serie(valor(item.getSerie(), "-"))
+                        .tipoVehiculo(valor(item.getTipoVehiculo(), "-"))
+                        .folioVerificacion(valor(item.getFolioVerificacion(), "-"))
+                        .materia(valor(item.getMateria(), "-"))
+                        .dictamen(valor(item.getDictamen(), "-"))
+                        .fecha(formatearFecha(item.getFecha()))
+                        .tecnico(valor(item.getTecnico(), "-"))
+                        .build())
+                .collect(Collectors.toList());
 
-        for (ReporteBaseProjection item : base) {
-            String clave;
-
-            switch (normalizarTipo(filtros.getTipo())) {
-                case "region":
-                    clave = valor(item.getRegion(), "SIN REGIÓN");
-                    break;
-                case "nota":
-                    clave = valor(item.getNota(), "SIN NOTA");
-                    break;
-                default:
-                    clave = valor(item.getCliente(), "SIN CLIENTE");
-                    break;
-            }
-
-            agrupado.computeIfAbsent(clave, k -> new ArrayList<>()).add(item);
-        }
-
-        List<ReporteItemDTO> data = new ArrayList<>();
-
-        for (Map.Entry<String, List<ReporteBaseProjection>> entry : agrupado.entrySet()) {
-            List<ReporteBaseProjection> items = entry.getValue();
-
-            long total = items.size();
-            long aprobadas = items.stream()
-                    .filter(i -> "APROBADO".equalsIgnoreCase(valor(i.getDictamen(), "")))
-                    .count();
-            long reprobadas = total - aprobadas;
-
-            ReporteBaseProjection first = items.get(0);
-
-            String porcentaje = total > 0
-                    ? String.format(Locale.US, "%.2f", (aprobadas * 100.0) / total)
-                    : "0.00";
-
-            data.add(ReporteItemDTO.builder()
-                    .tipo(normalizarTipo(filtros.getTipo()))
-                    .agrupacion(entry.getKey())
-                    .region(valor(first.getRegion(), "-"))
-                    .cliente(valor(first.getCliente(), "-"))
-                    .nota(valor(first.getNota(), "-"))
-                    .vehiculo(valor(first.getVehiculo(), "-"))
-                    .dictamen(valor(first.getDictamen(), "-"))
-                    .numeroVerificaciones(total)
-                    .aprobadas(aprobadas)
-                    .reprobadas(reprobadas)
-                    .porcentajeAprobacion(porcentaje)
-                    .build());
-        }
-
-        String reportName = "Reporte_" + normalizarTipo(filtros.getTipo()) + "_" + java.time.LocalDate.now() + ".pdf";
+        String reportName = "Reporte_" + normalizarTipo(filtros.getTipo()) + "_" + LocalDate.now() + ".pdf";
 
         return ReporteResponseDTO.builder()
                 .tipo(normalizarTipo(filtros.getTipo()))
@@ -164,6 +132,24 @@ public class ReporteService {
                 && filtros.getFechaInicio().isAfter(filtros.getFechaFin())) {
             throw new RuntimeException("La fecha inicio no puede ser mayor a la fecha fin.");
         }
+    }
+
+    private String obtenerAgrupacion(ReporteBaseProjection item, String tipo) {
+        String tipoNormalizado = normalizarTipo(tipo);
+
+        switch (tipoNormalizado) {
+            case "region":
+                return valor(item.getRegion(), "SIN REGIÓN");
+            case "nota":
+                return valor(item.getNota(), "SIN NOTA");
+            default:
+                return valor(item.getCliente(), "SIN CLIENTE");
+        }
+    }
+
+    private String formatearFecha(LocalDateTime fecha) {
+        if (fecha == null) return "-";
+        return fecha.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
     }
 
     private String normalizarTipo(String tipo) {

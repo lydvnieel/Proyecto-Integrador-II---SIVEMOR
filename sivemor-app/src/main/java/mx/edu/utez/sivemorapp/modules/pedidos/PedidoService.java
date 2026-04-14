@@ -7,6 +7,8 @@ import mx.edu.utez.sivemorapp.modules.notas.NotaRepository;
 import mx.edu.utez.sivemorapp.modules.notas.Notas;
 import mx.edu.utez.sivemorapp.modules.pedidos.dtos.PedidoRequestDTO;
 import mx.edu.utez.sivemorapp.modules.pedidos.dtos.utils.PedidoMapper;
+import mx.edu.utez.sivemorapp.modules.verificaciones.Verificacion;
+import mx.edu.utez.sivemorapp.modules.verificaciones.VerificacionRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -24,6 +26,7 @@ public class PedidoService {
 
     private final PedidoRepository pedidoRepository;
     private final NotaRepository notaRepository;
+    private final VerificacionRepository verificacionRepository;
 
     @Transactional(readOnly = true)
     public ResponseEntity<ApiResponse> getAll(
@@ -144,6 +147,14 @@ public class PedidoService {
 
         Pedido saved = pedidoRepository.save(pedido);
 
+        List<Verificacion> verificaciones = verificacionRepository.findByActivoTrueAndNota_Id(nota.getId());
+
+        for (Verificacion verificacion : verificaciones) {
+            verificacion.setFechaPedido(saved.getFechaEnvio() != null ? saved.getFechaEnvio() : LocalDateTime.now());
+        }
+
+        verificacionRepository.saveAll(verificaciones);
+
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ApiResponse("Pedido creado", PedidoMapper.toDto(saved), HttpStatus.CREATED));
     }
@@ -215,6 +226,13 @@ public class PedidoService {
         }
 
         Pedido updated = pedidoRepository.save(found);
+        List<Verificacion> verificaciones = verificacionRepository.findByActivoTrueAndNota_Id(found.getNota().getId());
+
+        for (Verificacion verificacion : verificaciones) {
+            verificacion.setFechaPedido(updated.getFechaEnvio());
+        }
+
+        verificacionRepository.saveAll(verificaciones);
 
         return ResponseEntity.ok(
                 new ApiResponse("Pedido actualizado", PedidoMapper.toDto(updated), HttpStatus.OK)

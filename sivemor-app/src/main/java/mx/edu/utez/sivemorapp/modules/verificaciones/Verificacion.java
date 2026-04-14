@@ -12,6 +12,7 @@ import mx.edu.utez.sivemorapp.modules.vehiculos.Vehiculo;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "verificaciones")
@@ -50,6 +51,9 @@ public class Verificacion extends AuditFields {
 
     @Column(name = "fecha_verificacion")
     private LocalDate fechaVerificacion;
+
+    @Column(name = "fecha_pedido")
+    private LocalDateTime fechaPedido;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "dictamen")

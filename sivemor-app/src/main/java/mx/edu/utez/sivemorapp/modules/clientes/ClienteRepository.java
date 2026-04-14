@@ -1,4 +1,4 @@
-package mx.edu.utez.sivemorapp.modules.cedis.clientes;
+package mx.edu.utez.sivemorapp.modules.clientes;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 

@@ -15,6 +15,12 @@ public class VehiculoMapper {
                 .idCedis(vehiculo.getCedis() != null ? vehiculo.getCedis().getId() : null)
                 .cliente(vehiculo.getCliente() != null ? vehiculo.getCliente().getRazonSocial() : null)
                 .cedis(vehiculo.getCedis() != null ? vehiculo.getCedis().getNombre() : null)
+                .region(
+                        vehiculo.getCedis() != null &&
+                                vehiculo.getCedis().getRegion() != null
+                                ? vehiculo.getCedis().getRegion().getNombre()
+                                : null
+                )
                 .placa(vehiculo.getPlaca())
                 .serie(vehiculo.getSerie())
                 .tipo(vehiculo.getTipo())

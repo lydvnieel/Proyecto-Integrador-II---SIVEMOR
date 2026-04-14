@@ -17,4 +17,5 @@ public interface NotaRepository extends JpaRepository<Notas, Long> {
     List<Notas> findByActivoTrueAndVerificentro_Id(Long idVerificentro);
     List<Notas> findByActivoTrueAndFolioNotaContainingIgnoreCase(String folioNota);
     List<Notas> findByActivoTrueAndFechaCreacionBetween(LocalDateTime inicio, LocalDateTime fin);
+    long countByActivoTrue();
 }

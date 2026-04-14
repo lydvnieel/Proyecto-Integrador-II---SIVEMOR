@@ -12,6 +12,7 @@ public class VehiculoResponseDTO {
     private Long idCedis;
     private String cliente;
     private String cedis;
+    private String region;
     private String placa;
     private String serie;
     private String tipo;

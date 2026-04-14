@@ -24,7 +24,7 @@ public class VehiculoController {
 
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse> findVehiculoById(@PathVariable("id") Long id) {
-        return vehiculoService.findVehiculoById(id);
+        return vehiculoService.findByVehiculo(id);
     }
 
     @PostMapping("")

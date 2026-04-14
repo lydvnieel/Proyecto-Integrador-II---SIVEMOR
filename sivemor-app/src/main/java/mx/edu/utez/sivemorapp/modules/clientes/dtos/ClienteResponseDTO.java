@@ -1,4 +1,4 @@
-package mx.edu.utez.sivemorapp.modules.cedis.clientes.dtos;
+package mx.edu.utez.sivemorapp.modules.clientes.dtos;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

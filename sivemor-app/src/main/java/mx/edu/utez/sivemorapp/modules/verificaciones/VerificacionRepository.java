@@ -2,13 +2,29 @@ package mx.edu.utez.sivemorapp.modules.verificaciones;
 
 import mx.edu.utez.sivemorapp.kernel.enums.Dictamen;
 import mx.edu.utez.sivemorapp.kernel.enums.Materia;
+import mx.edu.utez.sivemorapp.modules.dashboard.dto.DashboardRegionDTO;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
 public interface VerificacionRepository extends JpaRepository<Verificacion, Long> {
+    @Query("""
+    SELECT new mx.edu.utez.sivemorapp.modules.dashboard.dto.DashboardRegionDTO(
+        r.nombre,
+        COUNT(v)
+    )
+    FROM Verificacion v
+    JOIN v.nota n
+    JOIN n.verificentro ver
+    JOIN ver.region r
+    WHERE v.activo = true
+    GROUP BY r.nombre
+    ORDER BY r.nombre
+""")
+    List<DashboardRegionDTO> countVerificacionesPorRegion();
 
     List<Verificacion> findByActivoTrue();
     boolean existsByNota_Cliente_IdAndMateriaAndActivoTrue(Long idCliente, Materia materia);
@@ -73,7 +89,6 @@ public interface VerificacionRepository extends JpaRepository<Verificacion, Long
     List<Verificacion> findByActivoTrueAndVehiculo_IdAndMateriaAndDictamenAndFechaVerificacion(Long idVehiculo, Materia materia, Dictamen dictamen, LocalDate fechaVerificacion);
 
     List<Verificacion> findByActivoTrueAndNota_IdAndMateriaAndDictamenAndFechaVerificacion(Long idNota, Materia materia, Dictamen dictamen, LocalDate fechaVerificacion);
-
     List<Verificacion> findByActivoTrueAndVehiculo_IdAndNota_IdAndMateriaAndDictamenAndFechaVerificacion(
             Long idVehiculo,
             Long idNota,
@@ -84,8 +99,15 @@ public interface VerificacionRepository extends JpaRepository<Verificacion, Long
 
     Optional<Verificacion> findByFolioVerificacion(String folio);
 
+
     boolean existsByVehiculo_IdAndActivoTrue(Long idVehiculo);
     boolean existsByNota_Verificentro_IdAndActivoTrue(Long  idNota);
 
     long countByNota_IdAndActivoTrue(Long idNota);
+    long countByActivoTrue();
+
+    long countByActivoTrueAndPagadoFalse();
+
+    long countByActivoTrueAndDictamen(mx.edu.utez.sivemorapp.kernel.enums.Dictamen dictamen);
+    long countByActivoTrueAndMultaIsNotNull();
 }

@@ -3,6 +3,7 @@ package mx.edu.utez.sivemorapp.modules.verificaciones.dtos;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 @Data
 @NoArgsConstructor
@@ -16,5 +17,6 @@ public class VerificacionRequestDTO {
     private BigDecimal precio;
     private BigDecimal multa;
     private Boolean pagado;
-
+    private String dictamen;
+    private LocalDate fechaVerificacion;
 }

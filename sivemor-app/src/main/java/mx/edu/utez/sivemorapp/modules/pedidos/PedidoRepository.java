@@ -20,4 +20,7 @@ public interface PedidoRepository extends JpaRepository<Pedido, Long> {
     List<Pedido> findByActivoTrueAndRecibioContainingIgnoreCase(String recibio);
 
     List<Pedido> findByActivoTrueAndFechaEnvioBetween(LocalDateTime inicio, LocalDateTime fin);
+    long countByActivoTrue();
+
+    long countByActivoTrueAndEstatusEnvio(mx.edu.utez.sivemorapp.kernel.enums.EstatusEnvio estatusEnvio);
 }

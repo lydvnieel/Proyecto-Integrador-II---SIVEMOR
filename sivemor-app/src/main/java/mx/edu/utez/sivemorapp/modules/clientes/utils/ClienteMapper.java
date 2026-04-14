@@ -1,4 +1,4 @@
-package mx.edu.utez.sivemorapp.modules.cedis.clientes.utils;
+package mx.edu.utez.sivemorapp.modules.clientes.utils;
 
 import mx.edu.utez.sivemorapp.modules.clientes.Cliente;
 import mx.edu.utez.sivemorapp.modules.clientes.dtos.ClienteResponseDTO;

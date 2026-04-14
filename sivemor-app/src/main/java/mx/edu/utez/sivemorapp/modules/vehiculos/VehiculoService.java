@@ -6,7 +6,9 @@ import mx.edu.utez.sivemorapp.modules.cedis.Cedis;
 import mx.edu.utez.sivemorapp.modules.cedis.CedisRepository;
 import mx.edu.utez.sivemorapp.modules.clientes.Cliente;
 import mx.edu.utez.sivemorapp.modules.clientes.ClienteRepository;
+import mx.edu.utez.sivemorapp.modules.evaluaciones.Evaluacion;
 import mx.edu.utez.sivemorapp.modules.evaluaciones.EvaluacionRepository;
+import mx.edu.utez.sivemorapp.modules.evaluaciones.dtos.utils.EvaluacionMapper;
 import mx.edu.utez.sivemorapp.modules.verificaciones.VerificacionRepository;
 import mx.edu.utez.sivemorapp.modules.vehiculos.dtos.VehiculoRequestDTO;
 import mx.edu.utez.sivemorapp.modules.vehiculos.dtos.utils.VehiculoMapper;
@@ -70,17 +72,19 @@ public class VehiculoService {
     }
 
     @Transactional(readOnly = true)
-    public ResponseEntity<ApiResponse> findVehiculoById(Long id) {
-        ApiResponse response;
-        Vehiculo found = vehiculoRepository.findById(id).orElse(null);
+    public ResponseEntity<ApiResponse> findByVehiculo(Long vehicleId) {
+        try {
+            List<Evaluacion> evaluaciones =
+                    evaluacionRepository.findActivasByVehiculoId(vehicleId);
 
-        if (found != null && Boolean.TRUE.equals(found.getActivo())) {
-            response = new ApiResponse("Operación exitosa", VehiculoMapper.toDto(found), HttpStatus.OK);
-        } else {
-            response = new ApiResponse("Recurso no encontrado", true, HttpStatus.NOT_FOUND);
+            return ResponseEntity.ok(
+                    new ApiResponse("Operación exitosa", EvaluacionMapper.toDtoList(evaluaciones), HttpStatus.OK)
+            );
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError()
+                    .body(new ApiResponse("Error al consultar evaluaciones del vehículo", true, HttpStatus.INTERNAL_SERVER_ERROR));
         }
-
-        return new ResponseEntity<>(response, response.getStatus());
     }
 
     @Transactional(rollbackFor = {SQLException.class, Exception.class})
@@ -306,15 +310,6 @@ public class VehiculoService {
             if (tieneVerificaciones) {
                 response = new ApiResponse(
                         "No se puede eliminar el vehículo porque tiene verificaciones asociadas",
-                        true,
-                        HttpStatus.BAD_REQUEST
-                );
-                return new ResponseEntity<>(response, response.getStatus());
-            }
-
-            boolean tieneEvaluaciones = evaluacionRepository.existsByVerificacion_Vehiculo_IdAndActivoTrue(id);            if (tieneEvaluaciones) {
-                response = new ApiResponse(
-                        "No se puede eliminar el vehículo porque tiene evaluaciones asociadas",
                         true,
                         HttpStatus.BAD_REQUEST
                 );

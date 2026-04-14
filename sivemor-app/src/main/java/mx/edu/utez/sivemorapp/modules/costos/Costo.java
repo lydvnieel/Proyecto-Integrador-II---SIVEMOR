@@ -7,7 +7,6 @@ import mx.edu.utez.sivemorapp.kernel.AuditFields;
 import mx.edu.utez.sivemorapp.kernel.enums.Materia;
 import mx.edu.utez.sivemorapp.modules.clientes.Cliente;
 import mx.edu.utez.sivemorapp.modules.usuarios.Usuario;
-import mx.edu.utez.sivemorapp.modules.verificaciones.Verificacion;
 
 import java.math.BigDecimal;
 import java.util.List;

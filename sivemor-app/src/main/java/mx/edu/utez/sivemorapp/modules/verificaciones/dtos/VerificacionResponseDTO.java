@@ -4,6 +4,7 @@ import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Data
 @AllArgsConstructor
@@ -18,6 +19,7 @@ public class VerificacionResponseDTO {
     private BigDecimal precio;
     private BigDecimal multa;
     private LocalDate fechaVerificacion;
+    private LocalDateTime fechaPedido;
     private String dictamen;
     private Boolean activo;
     private Boolean pagado;

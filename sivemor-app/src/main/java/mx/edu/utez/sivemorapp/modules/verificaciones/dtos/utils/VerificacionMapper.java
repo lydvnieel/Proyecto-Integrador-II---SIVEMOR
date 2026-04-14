@@ -18,9 +18,11 @@ public class VerificacionMapper {
                 .precio(v.getPrecio())
                 .multa(v.getMulta())
                 .fechaVerificacion(v.getFechaVerificacion())
+                .fechaPedido(v.getFechaPedido())
                 .dictamen(v.getDictamen() != null ? v.getDictamen().name() : null)
                 .activo(v.getActivo())
                 .pagado(v.getPagado())
+
 
                 .numeroNota(
                         v.getNota() != null ? v.getNota().getFolioNota() : null

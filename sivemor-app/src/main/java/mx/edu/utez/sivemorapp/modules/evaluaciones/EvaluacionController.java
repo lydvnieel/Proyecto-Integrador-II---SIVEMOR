@@ -28,6 +28,11 @@ public class EvaluacionController {
         return evaluacionService.filterEvaluaciones(idVerificacion, placa, idTecnico, fechaInicio, fechaFin);
     }
 
+    @GetMapping("/vehiculo/{vehicleId}")
+    public ResponseEntity<ApiResponse> getByVehiculo(@PathVariable Long vehicleId) {
+        return evaluacionService.findByVehiculo(vehicleId);
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse> getById(@PathVariable Long id) {
         return evaluacionService.findById(id);

@@ -11,40 +11,35 @@ import java.util.List;
 public interface ReporteRepository extends JpaRepository<Verificacion, Long> {
 
     @Query(value = """
-        SELECT
-            cl.id_cliente AS clienteId,
-            cl.razon_social AS cliente,
-            r.id_region AS regionId,
-            r.nombre AS region,
-            n.id_nota AS notaId,
-            n.folio_nota AS nota,
-            v.placa AS vehiculo,
-            ver.materia AS tipoVerificacion,
-            ver.dictamen AS dictamen,
-            COALESCE(ver.fecha_verificacion, n.fecha_creacion) AS fechaReferencia
-        FROM verificaciones ver
-        INNER JOIN notas n ON n.id_nota = ver.id_nota
-        INNER JOIN clientes cl ON cl.id_cliente = n.id_cliente
-        INNER JOIN verificentros vf ON vf.id_verificentro = n.id_verificentro
-        INNER JOIN regiones r ON r.id_region = vf.id_region
-        INNER JOIN vehiculos v ON v.id_vehiculo = ver.id_vehiculo
-        WHERE ver.activo = 1
-          AND n.activo = 1
-          AND cl.activo = 1
-          AND vf.activo = 1
-          AND v.activo = 1
-
-          AND (:clienteId IS NULL OR cl.id_cliente = :clienteId)
-          AND (:regionId IS NULL OR r.id_region = :regionId)
-          AND (:notaId IS NULL OR n.id_nota = :notaId)
-          AND (:tipoVerificacion IS NULL OR ver.materia = :tipoVerificacion)
-          AND (:estadoDictamen IS NULL OR ver.dictamen = :estadoDictamen)
-
-          AND (:fechaInicio IS NULL OR COALESCE(ver.fecha_verificacion, n.fecha_creacion) >= :fechaInicio)
-          AND (:fechaFin IS NULL OR COALESCE(ver.fecha_verificacion, n.fecha_creacion) <= :fechaFin)
-
-        ORDER BY fechaReferencia DESC
-    """, nativeQuery = true)
+    SELECT
+        cl.razon_social AS cliente,
+        r.nombre AS region,
+        n.folio_nota AS nota,
+        vf.nombre AS cedis,
+        v.placa AS placa,
+        v.serie AS serie,
+        v.tipo AS tipoVehiculo,
+        ver.folio_verificacion AS folioVerificacion,
+        ver.materia AS materia,
+        ver.dictamen AS dictamen,
+        ver.fecha_verificacion AS fecha,
+        'Técnico SIVEMOR' AS tecnico
+    FROM verificaciones ver
+    INNER JOIN notas n ON n.id_nota = ver.id_nota
+    INNER JOIN clientes cl ON cl.id_cliente = n.id_cliente
+    INNER JOIN verificentros vf ON vf.id_verificentro = n.id_verificentro
+    INNER JOIN regiones r ON r.id_region = vf.id_region
+    INNER JOIN vehiculos v ON v.id_vehiculo = ver.id_vehiculo
+    WHERE ver.activo = 1
+      AND (:clienteId IS NULL OR cl.id_cliente = :clienteId)
+      AND (:regionId IS NULL OR r.id_region = :regionId)
+      AND (:notaId IS NULL OR n.id_nota = :notaId)
+      AND (:tipoVerificacion IS NULL OR UPPER(ver.materia) = UPPER(:tipoVerificacion))
+      AND (:estadoDictamen IS NULL OR UPPER(ver.dictamen) = UPPER(:estadoDictamen))
+      AND (:fechaInicio IS NULL OR ver.fecha_verificacion >= :fechaInicio)
+      AND (:fechaFin IS NULL OR ver.fecha_verificacion <= :fechaFin)
+    ORDER BY cl.razon_social, n.folio_nota, ver.fecha_verificacion
+""", nativeQuery = true)
     List<ReporteBaseProjection> generarBaseReporte(
             @Param("clienteId") Long clienteId,
             @Param("regionId") Long regionId,
@@ -54,8 +49,6 @@ public interface ReporteRepository extends JpaRepository<Verificacion, Long> {
             @Param("fechaInicio") LocalDateTime fechaInicio,
             @Param("fechaFin") LocalDateTime fechaFin
     );
-
-    // OPCIONES
 
     @Query(value = """
         SELECT id_cliente, razon_social
@@ -85,6 +78,7 @@ public interface ReporteRepository extends JpaRepository<Verificacion, Long> {
         SELECT DISTINCT materia
         FROM verificaciones
         WHERE activo = 1
+        ORDER BY materia
     """, nativeQuery = true)
     List<String> obtenerTiposVerificacion();
 
@@ -92,6 +86,7 @@ public interface ReporteRepository extends JpaRepository<Verificacion, Long> {
         SELECT DISTINCT dictamen
         FROM verificaciones
         WHERE activo = 1
+        ORDER BY dictamen
     """, nativeQuery = true)
     List<String> obtenerDictamenes();
 }
